@@ -1,0 +1,92 @@
+{
+  "ChallengeOptions": {
+    "Hostname": "k8s.personal.horizon.lan",
+    "PrivateInstanceTimeoutMinutes": 5,
+    "Challenges": [
+      {
+        "Id": "httpd",
+        "Name": "httpd",
+        "Description": "Simple httpd server",
+        "Type": "shared",
+        "Containers": [
+          {
+            "ContainerName": "httpd",
+            "Image": "httpd:latest",
+            "Environment": {},
+            "Ports": [
+              {
+                "Port": 80,
+                "Protocol": "tcp",
+                "AppProtocol": "http",
+                "Exposed": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Id": "nginx",
+        "Name": "nginx",
+        "Description": "Simple nginx server",
+        "Type": "private",
+        "Containers": [
+          {
+            "ContainerName": "nginx",
+            "Image": "nginx:latest",
+            "Environment": {},
+            "Ports": [
+              {
+                "Port": 80,
+                "Protocol": "tcp",
+                "AppProtocol": "http",
+                "Exposed": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Id": "wordpress",
+        "Name": "wordpress",
+        "Description": "Two-Container wordpress setup",
+        "Type": "private",
+        "Containers": [
+          {
+            "ContainerName": "wordpress",
+            "Image": "wordpress:latest",
+            "Environment": {
+              "WORDPRESS_DB_HOST": "mariadb",
+              "WORDPRESS_DB_NAME": "wordpress",
+              "WORDPRESS_DB_USER": "root",
+              "WORDPRESS_DB_PASSWORD": "password"
+            },
+            "Ports": [
+              {
+                "Port": 80,
+                "Protocol": "tcp",
+                "AppProtocol": "http",
+                "Exposed": true
+              }
+            ]
+          },
+          {
+            "ContainerName": "mariadb",
+            "Image": "mariadb:latest",
+            "Environment": {
+              "MYSQL_ROOT_PASSWORD": "password",
+              "MYSQL_DATABASE": "wordpress"
+            },
+            "Ports": [
+              {
+                "Port": 3306,
+                "Protocol": "tcp",
+                "AppProtocol": "mysql",
+                "Exposed": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

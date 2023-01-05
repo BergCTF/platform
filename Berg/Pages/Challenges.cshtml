@@ -1,0 +1,114 @@
+@page
+@using Berg.DTO
+@using System.Security.Claims
+@model Berg.Pages.Challenges
+
+@{
+  var isLoggedIn = User.Identity?.IsAuthenticated ?? false;
+}
+
+<div class="row">
+  <h3>Dynamic</h3>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-gap-2">
+  @foreach (var challenge in Model._challengeService.GetChallenges(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "", CancellationToken.None).Result)
+  {
+    <div class="col">
+      <div class="d-grid gap-2">
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#challenge-modal-@challenge.Id">
+          @challenge.Name (TODO)
+          <br/>
+          Estimated difficulty:<span class="badge bg-info">Baby</span>
+        </button>
+      </div>
+    </div>
+    
+    <div id="challenge-modal-@challenge.Id" class="modal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">@challenge.Name (TODO)</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>@challenge.Description</p>
+            <hr>
+            @if (challenge.Type == ChallengeType.PrivateInstance)
+            {
+              <b>Private Instance</b>
+              if (isLoggedIn)
+              {
+                if (challenge.Status == ChallengeStatus.Running)
+                {
+                  <form action="/challenge/kill" method="POST">
+                    <input type="text" name="challengeId" value="@challenge.Id" hidden="hidden"/>
+                    <button class="btn btn-outline-danger">Kill</button>
+                  </form>
+                }
+                else
+                {
+                  <form action="/challenge/start" method="POST">
+                    <input type="text" name="challengeId" value="@challenge.Id" hidden="hidden"/>
+                    <button class="btn btn-outline-success">Start</button>
+                  </form>
+                }
+              }
+              else
+              {
+                <div class="alert alert-warning" role="alert">
+                  You need to be logged in to start private instances.
+                </div>
+              }
+            }
+            else
+            {
+              <b>Instance</b>
+            }
+            @foreach (var service in challenge.Services ?? new List<Service>())
+            {
+              if (service.Protocol == "http")
+              {
+                <a href="http://@service.Hostname:@service.Port/" target="_blank">http://@service.Hostname:@service.Port/</a>
+              }
+              else if (service.Protocol == "tcp")
+              {
+                <code>nc @service.Hostname @service.Port</code>
+              }
+              else if (service.Protocol == "udp")
+              {
+                <code>nc -u @service.Hostname @service.Port</code>
+              }
+              else
+              {
+                <code>@service.Protocol @service.Hostname @service.Port</code>
+              }
+            }
+          </div>
+          <div class="modal-footer">
+            <div class="container-fluid">
+              @if (isLoggedIn)
+              {
+                <form action="/submit" method="POST" class="row">
+                  <div class="col-9">
+                    <input type="text" name="flag" placeholder="shc2023{...}" class="form-control">
+                  </div>
+                  <div class="col-3 d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                  </div>
+                </form>
+              }
+              else
+              {
+                <div class="alert alert-light" role="alert">
+                  You need to be logged in to submit flags.
+                </div>
+              }
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  }
+</div>

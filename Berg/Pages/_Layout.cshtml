@@ -1,0 +1,73 @@
+@using System.Security.Claims
+
+@{
+  var redirect = @Url.RouteUrl(ViewContext.RouteData.Values)?.ToLowerInvariant();
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>@ViewData["Title"]</title>
+  <link href="/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <header class="p-3">
+    <div class="container">
+      <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+        <a href="/" class="d-flex align-items-center mb-2 mb-lg-0 text-primary text-decoration-none">
+          <img class="bi me-2" width="32" height="32" src="/img/logo-small.png" alt="Logo" />
+        </a>
+      
+        <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+          <li><a href="/" class="nav-link px-2 text-secondary">Home</a></li>
+          <li><a href="/challenges" class="nav-link px-2 text-secondary">Challenges</a></li>
+          <li><a href="/scoreboard" class="nav-link px-2 text-secondary">Scoreboard</a></li>
+          <li><a href="/rules" class="nav-link px-2 text-secondary">Rules</a></li>
+        </ul>
+        
+        @if (User.Identity?.IsAuthenticated ?? false)
+        {
+          <div class="dropdown text-end">
+            <a href="/profile" class="d-block link-dark text-decoration-none link-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+              @{
+                var id = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var avatar = User.FindFirst("urn:discord:avatar")?.Value;
+                var avatarUrl = $"https://cdn.discordapp.com/avatars/{id}/{avatar}.png?size=32";
+              }
+              <img src="@avatarUrl" alt="Avatar" class="rounded-circle" width="32" height="32">
+              @User.Identity?.Name
+            </a>
+            <ul class="dropdown-menu text-small">
+              <li><a class="dropdown-item" href="/profile">Profile</a></li>
+              <li><a class="dropdown-item" href="/account/logout?redirect=@redirect">Logout</a></li>
+            </ul>
+          </div>
+        }
+        else
+        {
+          <div class="text-end">
+            <a href="/account/login?redirect=@redirect" class="btn btn-primary">Login</a>
+          </div>
+        }
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+      <main role="main" class="pb-3">
+          @RenderBody()
+      </main>
+  </div>
+
+  <div class="container">
+    <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
+      <div class="col-md-12 d-flex align-items-center">
+        <span class="mb-12 mb-md-0 text-muted">© @DateTime.Now.Year Swiss Hacking Challenge</span>
+      </div>
+    </footer>
+  </div>
+  <script src="/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
