@@ -1,4 +1,31 @@
 @page
 @model Berg.Pages.Scoreboard
 
-Scoreboard
+<h3>Scoreboard</h3>
+
+<p>Category @Model.ScoreboardCategory</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Name</th>
+            <th scope="col">Score</th>
+            <th scope="col">Solved Challenges</th>
+        </tr>
+    </thead>
+    <tbody class="table-group-divider">
+    @{ var rank = 1;}
+    @foreach (var entry in Model.ScoreboardEntries)
+    {
+        var avatarUrl = $"https://cdn.discordapp.com/avatars/{entry.DiscordId}/{entry.DiscordAvatarId}.png?size=16";
+        <tr>
+            <th scope="row">@rank</th>
+            <td><img src="@avatarUrl" alt="Avatar" width="16px" height="16px">@entry.Name</td>
+            <td>@entry.Score</td>
+            <td>TODO</td>
+        </tr>
+        rank++;
+    }
+    </tbody>
+</table>

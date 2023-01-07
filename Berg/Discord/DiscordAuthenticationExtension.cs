@@ -1,6 +1,9 @@
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
+using Berg.Configuration;
+using Berg.Db;
+using Berg.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth;
@@ -9,7 +12,7 @@ namespace Berg.Discord;
 
 public static class DiscordAuthenticationExtension
 {
-    public static void AddDiscordAuthentication(this IServiceCollection services, DiscordAuthenticationConfig config)
+    public static void AddDiscordAuthentication(this IServiceCollection services, DiscordAuthenticationInfo info)
     {
         services.AddAuthentication(options =>
         {
@@ -20,8 +23,8 @@ public static class DiscordAuthenticationExtension
         .AddCookie()
         .AddOAuth("Discord", options =>
         {
-            options.ClientId = config.ClientId;
-            options.ClientSecret = config.ClientSecret;
+            options.ClientId = info.ClientId;
+            options.ClientSecret = info.ClientSecret;
             options.CallbackPath = new PathString("/oauth2/callback");
 
             options.AuthorizationEndpoint = "https://discord.com/api/oauth2/authorize";
@@ -53,6 +56,39 @@ public static class DiscordAuthenticationExtension
                     
                     var user = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
                     context.RunClaimActions(user.RootElement);
+
+                    if (!user.RootElement.GetProperty("verified").GetBoolean())
+                    {
+                        context.Fail("User is not verified");
+                        return;
+                    }
+
+                    await using var dbContext = context.HttpContext.RequestServices.GetService<BergDbContext>()!;
+                    var scoreService = context.HttpContext.RequestServices.GetService<ScoreService>()!;
+                    var discordId = user.RootElement.GetProperty("id").GetString()!;
+                    var player = dbContext.Players.FirstOrDefault(p => p.DiscordId == discordId);
+                    var name = user.RootElement.GetProperty("username").GetString()! + "#" +
+                               user.RootElement.GetProperty("discriminator").GetString()!;
+                    var email = user.RootElement.GetProperty("email").GetString()!;
+                    var avatarId = user.RootElement.GetProperty("avatar").GetString()!;
+                    if (player == null)
+                    {
+                        dbContext.Players.Add(new Player
+                        {
+                            DiscordId = discordId,
+                            DiscordAvatarId = avatarId,
+                            Name = name,
+                            Email = email,
+                        });
+                    }
+                    else
+                    {
+                        player.DiscordAvatarId = avatarId;
+                        player.Name = name;
+                        player.Email = email;
+                    }
+                    await dbContext.SaveChangesAsync();
+                    scoreService.RecalculateScores(dbContext);
                 }
             };
         });

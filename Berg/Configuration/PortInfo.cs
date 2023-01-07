@@ -1,4 +1,4 @@
-﻿namespace Berg.Options;
+﻿namespace Berg.Configuration;
 
 public class PortInfo
 {

@@ -5,11 +5,13 @@ namespace Berg.Pages;
 
 public class Challenges : PageModel
 {
-    public ChallengeService _challengeService;
+    public ChallengeService ChallengeService;
+    public ScoreService ScoreService;
     
-    public Challenges(ChallengeService challengeService)
+    public Challenges(ChallengeService challengeService, ScoreService scoreService)
     {
-        _challengeService = challengeService;
+        ChallengeService = challengeService;
+        ScoreService = scoreService;
     }
     
     public void OnGet()

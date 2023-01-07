@@ -12,7 +12,7 @@
 </div>
 
 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-gap-2">
-  @foreach (var challenge in Model._challengeService.GetChallenges(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "", CancellationToken.None).Result)
+  @foreach (var challenge in Model.ChallengeService.GetChallenges(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "", CancellationToken.None).Result)
   {
     <div class="col">
       <div class="d-grid gap-2">
@@ -89,7 +89,8 @@
             <div class="container-fluid">
               @if (isLoggedIn)
               {
-                <form action="/submit" method="POST" class="row">
+                <form action="/challenge/submit" method="POST" class="row">
+                  <input type="text" name="challengeId" value="@challenge.Id" hidden="hidden">
                   <div class="col-9">
                     <input type="text" name="flag" placeholder="shc2023{...}" class="form-control">
                   </div>

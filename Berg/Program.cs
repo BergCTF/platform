@@ -1,24 +1,31 @@
+using Berg.Db;
 using Berg.Discord;
-using Berg.Options;
+using Berg.Configuration;
 using Berg.Services;
 using Berg.Workers;
 using k8s;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddJsonFile("challenges.json", false, true);
-builder.Services.Configure<ChallengeOptions>(builder.Configuration.GetSection("ChallengeOptions"));
+builder.Configuration.AddJsonFile("ctf.json", false, true);
+var ctfInfo = new CtfInfo();
+builder.Configuration.GetSection("CtfInfo").Bind(ctfInfo);
+builder.Services.AddSingleton(ctfInfo);
 
-var discordConfig = new DiscordAuthenticationConfig();
+var discordConfig = new DiscordAuthenticationInfo();
 builder.Configuration.GetSection("DiscordAuthConfig").Bind(discordConfig);
 builder.Services.AddDiscordAuthentication(discordConfig);
 builder.Services.AddControllers();
 builder.Services.AddRazorPages();
 
 builder.Services.AddSingleton<ChallengeService>();
+builder.Services.AddSingleton<ScoreService>();
 builder.Services.AddSingleton(s =>
     new Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigFile("kubeconfig.yaml")));
 builder.Services.AddHostedService<ChallengeWorker>();
+builder.Services.AddDbContext<BergDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("BergContext")));
 
 if (builder.Environment.IsDevelopment())
 {
@@ -30,8 +37,16 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var challengeService = scope.ServiceProvider.GetService<ChallengeService>();
-    await challengeService!.CreateSharedChallenges(CancellationToken.None);
+    var challengeService = scope.ServiceProvider.GetService<ChallengeService>()!;
+    await challengeService.CreateSharedChallenges(CancellationToken.None);
+
+    var dbContext = scope.ServiceProvider.GetService<BergDbContext>()!;
+    dbContext.Database.Migrate();
+    
+    ChallengeLoader.LoadFromConfig(dbContext, ctfInfo);
+    
+    var scoreService = scope.ServiceProvider.GetService<ScoreService>()!;
+    scoreService.RecalculateScores(dbContext);
 }
 
 if (app.Environment.IsDevelopment())

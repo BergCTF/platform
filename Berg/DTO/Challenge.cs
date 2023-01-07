@@ -2,7 +2,7 @@ namespace Berg.DTO;
 
 public class Challenge
 {
-    public string Id { get; set; } = null!;
+    public Guid Id { get; set; }
     public string? Name { get; set; }
     public string? Description { get; set; }
     public ChallengeType Type { get; set; }
