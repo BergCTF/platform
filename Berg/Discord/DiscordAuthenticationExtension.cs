@@ -60,35 +60,7 @@ public static class DiscordAuthenticationExtension
                     if (!user.RootElement.GetProperty("verified").GetBoolean())
                     {
                         context.Fail("User is not verified");
-                        return;
                     }
-
-                    await using var dbContext = context.HttpContext.RequestServices.GetService<BergDbContext>()!;
-                    var scoreService = context.HttpContext.RequestServices.GetService<ScoreService>()!;
-                    var discordId = user.RootElement.GetProperty("id").GetString()!;
-                    var player = dbContext.Players.FirstOrDefault(p => p.DiscordId == discordId);
-                    var name = user.RootElement.GetProperty("username").GetString()! + "#" +
-                               user.RootElement.GetProperty("discriminator").GetString()!;
-                    var email = user.RootElement.GetProperty("email").GetString()!;
-                    var avatarId = user.RootElement.GetProperty("avatar").GetString()!;
-                    if (player == null)
-                    {
-                        dbContext.Players.Add(new Player
-                        {
-                            DiscordId = discordId,
-                            DiscordAvatarId = avatarId,
-                            Name = name,
-                            Email = email,
-                        });
-                    }
-                    else
-                    {
-                        player.DiscordAvatarId = avatarId;
-                        player.Name = name;
-                        player.Email = email;
-                    }
-                    await dbContext.SaveChangesAsync();
-                    scoreService.RecalculateScores(dbContext);
                 }
             };
         });

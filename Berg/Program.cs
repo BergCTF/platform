@@ -1,6 +1,7 @@
 using Berg.Db;
 using Berg.Discord;
 using Berg.Configuration;
+using Berg.Middleware;
 using Berg.Services;
 using Berg.Workers;
 using k8s;
@@ -12,10 +13,14 @@ builder.Configuration.AddJsonFile("ctf.json", false, true);
 var ctfInfo = new CtfInfo();
 builder.Configuration.GetSection("CtfInfo").Bind(ctfInfo);
 builder.Services.AddSingleton(ctfInfo);
+builder.Services.AddResponseCaching();
+builder.Services.AddResponseCompression();
+builder.Services.AddDistributedMemoryCache();
 
 var discordConfig = new DiscordAuthenticationInfo();
 builder.Configuration.GetSection("DiscordAuthConfig").Bind(discordConfig);
 builder.Services.AddDiscordAuthentication(discordConfig);
+builder.Services.AddSession();
 builder.Services.AddControllers();
 builder.Services.AddRazorPages();
 
@@ -60,10 +65,15 @@ else
     app.UseHttpsRedirection();
 }
 
+app.UseResponseCaching();
+app.UseResponseCompression();
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseSession();
+app.UsePlayerRegistration();
 
-app.UseStaticFiles();
 app.MapControllers();
 app.MapRazorPages();
 

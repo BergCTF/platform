@@ -11,6 +11,8 @@ public class ScoreService
     private readonly object _scoreUpdateLock = new();
     private readonly CtfInfo _ctfInfo;
     private readonly Dictionary<Category, List<ScoreboardEntry>> _scoresByCategory = new();
+    private readonly Dictionary<Guid, int> _challengeValues = new();
+    private readonly Dictionary<Guid, int> _challengeSolves = new();
 
     public ScoreService(CtfInfo ctfInfo)
     {
@@ -24,10 +26,17 @@ public class ScoreService
 
     public List<ScoreboardEntry> GetScoreboard(Category category)
     {
-        lock (_scoreUpdateLock)
-        {
-            return _scoresByCategory[category];
-        }
+        return _scoresByCategory[category];
+    }
+
+    public int GetChallengeValue(Guid challengeId)
+    {
+        return _challengeValues.GetValueOrDefault(challengeId, _ctfInfo.Scoring.Initial);
+    }
+    
+    public int GetChallengeSolves(Guid challengeId)
+    {
+        return _challengeSolves.GetValueOrDefault(challengeId);
     }
 
     public SubmissionResult SubmitFlag(BergDbContext dbContext, string discordUserId, Guid challengeId, string flag)
@@ -78,29 +87,19 @@ public class ScoreService
         lock (_scoreUpdateLock)
         {
             using var transaction = dbContext.Database.BeginTransaction();
-        
-            // dbContext.Challenges
-            //     .ExecuteUpdate(s =>
-            //         s.SetProperty(c => c.Value, c =>
-            //             (int)Math.Max(
-            //                 config.Minimum,
-            //                 Math.Ceiling(factor * Math.Pow(c.Solves.Count, 2) + config.Initial)
-            //             )
-            //         )
-            //     );
 
             foreach (var challengeSolve in dbContext
                          .Challenges.Select(c => new {Challenge = c, Solves = c.Solves.Count}))
             {
-                challengeSolve.Challenge.Value = (int)Math.Max(
+                var challenge = challengeSolve.Challenge;
+                challenge.Value = (int)Math.Max(
                     config.Minimum,
                     Math.Ceiling(factor * Math.Pow(challengeSolve.Solves, 2) + config.Initial)
                 );
+                _challengeValues[challenge.Id] = challenge.Value;
+                _challengeSolves[challenge.Id] = challengeSolve.Solves;
             }
             dbContext.SaveChanges();
-            
-            // dbContext.Players.ExecuteUpdate(s =>
-            //     s.SetProperty(p => p.Score, p => p.Solves.Sum(sv => sv.Challenge.Value)));
             
             foreach (var playerScore in dbContext
                          .Players.Select(p => new {Player = p, Score = p.Solves.Sum(s => s.Challenge.Value)}))
@@ -120,7 +119,7 @@ public class ScoreService
                         DiscordAvatarId = p.DiscordAvatarId,
                         Score = p.Solves.Sum(s => s.Challenge.Value),
                         LastSolveAt = p.Solves.Max(s => s.SolvedAt),
-                        SolvedChallenges = p.Solves.Select(s => s.Challenge.Id).ToList(),
+                        SolvedChallenges = p.Solves.Select(s => s.Challenge.Id).ToHashSet(),
                     })
                     .OrderByDescending(p => p.Score)
                     .ThenBy(p => p.LastSolveAt)

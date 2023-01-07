@@ -4,5 +4,5 @@ public enum Category
 {
     Junior,
     Senior,
-    Earth,
+    Open,
 }

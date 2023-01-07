@@ -14,10 +14,15 @@
 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-gap-2">
   @foreach (var challenge in Model.ChallengeService.GetChallenges(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "", CancellationToken.None).Result)
   {
+    var value = Model.ScoreService.GetChallengeValue(challenge.Id);
+    var solves = Model.ScoreService.GetChallengeSolves(challenge.Id);
+    var solveWord = solves == 1 ? "solve" : "solves";
     <div class="col">
       <div class="d-grid gap-2">
         <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#challenge-modal-@challenge.Id">
-          @challenge.Name (TODO)
+          @challenge.Name (@value)
+          <br/>
+          @solves @solveWord
           <br/>
           Estimated difficulty:<span class="badge bg-info">Baby</span>
         </button>
@@ -28,7 +33,7 @@
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">@challenge.Name (TODO)</h5>
+            <h5 class="modal-title">@challenge.Name (@value)</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">

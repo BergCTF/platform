@@ -1,31 +1,86 @@
 @page
+@using Berg.Db
 @model Berg.Pages.Scoreboard
 
 <h3>Scoreboard</h3>
 
-<p>Category @Model.ScoreboardCategory</p>
+<ul class="nav nav-tabs">
+    @foreach (var category in Enum.GetValues<Category>())
+    {
+        if (category == Model.ScoreboardCategory) 
+        {
+            <li class="nav-item">
+                <a class="nav-link active" href="/scoreboard?category=@category">
+                    @category
+                    @if (Model.PlayerCategory == category)
+                    {
+                        <span class="badge bg-info">you</span>
+                    }
+                </a>
+            </li>
+        }
+        else
+        {
+            <li class="nav-item">
+                <a class="nav-link" href="/scoreboard?category=@category">
+                    @category
+                    @if (Model.PlayerCategory == category)
+                    {
+                        <span class="badge bg-info">you</span>
+                    }
+                </a>
+            </li>
+        }
+    }
+</ul>
 
 <table class="table table-striped">
     <thead>
-        <tr>
-            <th scope="col">#</th>
-            <th scope="col">Name</th>
-            <th scope="col">Score</th>
-            <th scope="col">Solved Challenges</th>
-        </tr>
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">Name</th>
+        <th scope="col">Score</th>
+        <th scope="col">Solved Challenges</th>
+    </tr>
     </thead>
     <tbody class="table-group-divider">
     @{ var rank = 1;}
     @foreach (var entry in Model.ScoreboardEntries)
     {
-        var avatarUrl = $"https://cdn.discordapp.com/avatars/{entry.DiscordId}/{entry.DiscordAvatarId}.png?size=16";
+        var avatarUrl = $"https://cdn.discordapp.com/avatars/{entry.DiscordId}/{entry.DiscordAvatarId}.png?size=32";
         <tr>
             <th scope="row">@rank</th>
-            <td><img src="@avatarUrl" alt="Avatar" width="16px" height="16px">@entry.Name</td>
+            <td>
+                <img src="@avatarUrl" alt="Avatar" class="rounded-circle" width="20px" height="20px">
+                @entry.Name
+                @if (Model.DiscordId == entry.DiscordId)
+                {
+                    <span class="badge bg-info">you</span>
+                }
+            </td>
             <td>@entry.Score</td>
-            <td>TODO</td>
+            <td>
+                @foreach (var challenge in Model.CtfInfo.Challenges)
+                {
+                    if (@entry.SolvedChallenges.Contains(challenge.Id))
+                    {
+                        <i class="bi bi-pentagon-fill text-primary" data-bs-toggle="tooltip" data-bs-title="@challenge.Name"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-pentagon text-secondary" data-bs-toggle="tooltip" data-bs-title="@challenge.Name"></i>
+                    }
+                }
+            </td>
         </tr>
         rank++;
     }
     </tbody>
 </table>
+
+@section scripts {
+    <script>
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    </script>
+}

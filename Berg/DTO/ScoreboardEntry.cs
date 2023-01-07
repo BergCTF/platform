@@ -7,5 +7,5 @@ public class ScoreboardEntry
     public string DiscordAvatarId { get; set; } = null!;
     public int Score { get; set; }
     public DateTime? LastSolveAt { get; set; }
-    public List<Guid> SolvedChallenges { get; set; } = null!;
+    public HashSet<Guid> SolvedChallenges { get; set; } = null!;
 }

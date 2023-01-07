@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using Berg.Configuration;
 using Berg.Db;
 using Berg.DTO;
+using Berg.Middleware;
 using Berg.Services;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -11,28 +13,33 @@ public class Scoreboard : PageModel
 
     private readonly BergDbContext _dbContext;
     private readonly ScoreService _scoreService;
-    public bool IsLoggedIn;
-    public Category ScoreboardCategory = Category.Earth;
+    public readonly CtfInfo CtfInfo;
+    public Category ScoreboardCategory = Category.Open;
+    public string? DiscordId = null;
+    public Category? PlayerCategory = null;
     public List<ScoreboardEntry> ScoreboardEntries = new();
 
-    public Scoreboard(BergDbContext dbContext, ScoreService scoreService)
+    public Scoreboard(BergDbContext dbContext, ScoreService scoreService, CtfInfo ctfInfo)
     {
         _dbContext = dbContext;
         _scoreService = scoreService;
+        CtfInfo = ctfInfo;
     }
     
-    public void OnGet()
+    public void OnGet(Category? category = null)
     {
-        IsLoggedIn = User.Identity?.IsAuthenticated ?? false;
-        if (IsLoggedIn)
+        if (HttpContext.HasCachedPlayer())
         {
-            var discordUserId = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
-            var player = _dbContext.Players.First(p => p.DiscordId == discordUserId);
-            ScoreboardCategory = player.Category;
+            var cachedPlayer = HttpContext.GetCachedPlayer();
+            DiscordId = cachedPlayer.DiscordId;
+            PlayerCategory = cachedPlayer.Category;
+            ScoreboardCategory = category ?? cachedPlayer.Category!.Value;
         }
         else
         {
-            ScoreboardCategory = Category.Earth;
+            ScoreboardCategory = category ?? Category.Open;
+            PlayerCategory = null;
+            DiscordId = null;
         }
         ScoreboardEntries = _scoreService.GetScoreboard(ScoreboardCategory);
     }

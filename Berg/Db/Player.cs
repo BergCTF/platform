@@ -8,7 +8,7 @@ public class Player
     public string DiscordId { get; set; } = null!;
     public string DiscordAvatarId { get; set; } = null!;
     public int Score { get; set; }
-    public Category Category { get; set; } = Category.Earth;
+    public Category Category { get; set; } = Category.Open;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public List<Solve> Solves { get; set; } = null!;
     public List<Submission> Submissions { get; set; } = null!;

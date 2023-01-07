@@ -1,5 +1,7 @@
 using System.Security.Claims;
 using Berg.Db;
+using Berg.Middleware;
+using Berg.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,10 +13,12 @@ namespace Berg.Controllers;
 public class AccountController : ControllerBase
 {
     private readonly BergDbContext _dbContext;
+    private readonly ScoreService _scoreService;
 
-    public AccountController(BergDbContext dbContext)
+    public AccountController(BergDbContext dbContext, ScoreService scoreService)
     {
         _dbContext = dbContext;
+        _scoreService = scoreService;
     }
     
     [HttpGet("login", Name = "Login")]
@@ -26,10 +30,42 @@ public class AccountController : ControllerBase
     }
     
     [Authorize]
+    [HttpPost("select-category", Name = "Select Category")]
+    public IActionResult Register([FromForm] Category category, [FromForm] string? redirect = null)
+    {
+        var cachedPlayer = HttpContext.GetCachedPlayer();
+        var dbPlayer = _dbContext.Players.FirstOrDefault(p => p.DiscordId == cachedPlayer.DiscordId);
+        if (dbPlayer == null)
+        {
+            _dbContext.Players.Add(new Player
+            {
+                DiscordId = cachedPlayer.DiscordId,
+                DiscordAvatarId = cachedPlayer.DiscordAvatarId,
+                Category = category,
+                Name = cachedPlayer.Name,
+                Email = cachedPlayer.Email,
+                CreatedAt = DateTime.UtcNow,
+            });
+            _dbContext.SaveChanges();
+        }
+        // Do not allow category changes
+        else
+        {
+            return Redirect("/error");
+        }
+        
+        HttpContext.RefreshCachedPlayer();
+        _scoreService.RecalculateScores(_dbContext);
+        
+        return Redirect(redirect ?? "/");
+    }
+    
+    [Authorize]
     [HttpGet("logout", Name = "Logout")]
     public async Task<IActionResult> Logout(string? redirect = null)
     {
         await HttpContext.SignOutAsync();
+        HttpContext.RemoveCachedPlayer();
         return Redirect(redirect ?? "/");
     }
     
@@ -42,6 +78,8 @@ public class AccountController : ControllerBase
         var player = _dbContext.Players.First(p => p.DiscordId == discordId);
         _dbContext.Players.Remove(player);
         await _dbContext.SaveChangesAsync();
+        _scoreService.RecalculateScores(_dbContext);
+        HttpContext.RemoveCachedPlayer();
         return Redirect(redirect ?? "/");
     }
 
