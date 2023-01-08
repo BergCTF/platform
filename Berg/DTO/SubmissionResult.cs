@@ -5,4 +5,5 @@ public enum SubmissionResult
     Accepted,
     Rejected,
     RateLimited,
+    AlreadySubmitted,
 }

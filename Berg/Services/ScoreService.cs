@@ -57,6 +57,9 @@ public class ScoreService
         
         if (flag.Trim() == challenge.Flag)
         {
+            if (dbContext.Solves.Any(s => s.Player == player && s.Challenge == challenge))
+                return SubmissionResult.AlreadySubmitted;
+            
             dbContext.Solves.Add(new Solve
             {
                 Player = player,
