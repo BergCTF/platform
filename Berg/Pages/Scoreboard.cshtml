@@ -44,6 +44,7 @@
         <th scope="col">#</th>
         <th scope="col">Name</th>
         <th scope="col">Score</th>
+        <th scope="col">Last Submission (CET)</th>
         <th scope="col">Solved Challenges</th>
     </tr>
     </thead>
@@ -63,6 +64,7 @@
                 }
             </td>
             <td>@entry.Score</td>
+            <td>@entry.LastSolveAt?.ToLocalTime()</td>
             <td>
                 @foreach (var challenge in Model.CtfInfo.Challenges)
                 {
