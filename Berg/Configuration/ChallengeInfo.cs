@@ -9,5 +9,5 @@ public class ChallengeInfo
     public string Flag { get; set; } = null!;
     public string Type { get; set; } = null!;
     public List<ContainerInfo> Containers { get; set; } = null!;
-    public List<string> AttachmentLinks { get; set; } = null!;
+    public List<AttachmentInfo> Attachments { get; set; } = null!;
 }

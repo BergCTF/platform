@@ -1,8 +1,8 @@
 using k8s;
 using k8s.Models;
-using Microsoft.Extensions.Options;
 using Berg.DTO;
 using Berg.Configuration;
+using Berg.Middleware;
 
 namespace Berg.Services;
 
@@ -31,53 +31,75 @@ public class ChallengeService
         _ctfInfo = ctfInfo;
     }
 
-    public async Task<List<Challenge>> GetChallenges(string userId, CancellationToken cancellationToken)
+    public async Task<Challenge> GetChallenge(CachedPlayer? player, Guid challengeId,
+        CancellationToken cancellationToken)
     {
+        var configChallenge = _ctfInfo.Challenges.FirstOrDefault(c => c.Id == challengeId) ??
+                              throw new ArgumentException("Invalid challenge Id");
+
         var allNamespaces = await _kubernetes.ListNamespaceAsync(cancellationToken: cancellationToken);
-        var namespaces = allNamespaces.Items
+
+        var filter = allNamespaces.Items
             .Where(n => n.Status.Phase == "Active")
-            .Where(n => n.GetLabel(ManagedByKey) == BergManager)
-            .Where(n => n.GetLabel(ChallengeTypeKey) == ChallengeTypeShared || n.GetLabel(UserIdKey) == userId);
-
-        var runningChallenges = namespaces.Select(n =>
+            .Where(n => n.GetLabel(ManagedByKey) == BergManager);
+        if (player == null)
         {
-            var challengeId = Guid.Parse(n.GetLabel(ChallengeIdKey));
-            var challengeInfo = _ctfInfo.Challenges!.First(c => c.Id == challengeId);
-            var services = _kubernetes.ListNamespacedService(n.Name());
-            return new Challenge()
-            {
-                Id = challengeId,
-                Name = challengeInfo.Name,
-                Description = challengeInfo.Description,
-                Type = challengeInfo.Type == ChallengeTypeShared ? ChallengeType.Shared : ChallengeType.PrivateInstance,
-                ExpiresAt = challengeInfo.Type == ChallengeTypeShared ? null : n.Metadata.CreationTimestamp!.Value.ToUniversalTime().AddMinutes(_ctfInfo.PrivateInstanceTimeoutMinutes),
-                Status = ChallengeStatus.Running,
-                Services = services.Items.Where(s => s.Name().EndsWith("-exposed"))
-                    .SelectMany(s => s.Spec.Ports.Select(p =>
-                    new Service()
-                    {
-                        Hostname = _ctfInfo.Hostname ?? _kubernetes.BaseUri.Host,
-                        Port = p.NodePort ?? -1,
-                        Protocol = p.AppProtocol,
-                    })).ToList(),
-                AttachmentLinks = challengeInfo.AttachmentLinks,
-            };
-        });
+            filter = filter.Where(n => n.GetLabel(ChallengeTypeKey) == ChallengeTypeShared);
+        }
+        else
+        {
+            filter = filter.Where(n => n.GetLabel(ChallengeTypeKey) == ChallengeTypeShared ||
+                                       n.GetLabel(UserIdKey) == player.Id.ToString());
+        }
+        var challengeNamespace = filter
+            .FirstOrDefault(n => Guid.Parse(n.GetLabel(ChallengeIdKey)) == challengeId);
 
-        var stoppedChallenges = _ctfInfo.Challenges!
-            .Where(c => runningChallenges.All(r => r.Id != c.Id))
-            .Select(c => new Challenge()
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Description = c.Description,
-                Type = c.Type == ChallengeTypeShared ? ChallengeType.Shared : ChallengeType.PrivateInstance,
-                Status = ChallengeStatus.Stopped,
-                ExpiresAt = null,
-                Services = new List<Service>(),
-            });
+        var dtoChallenge = new Challenge
+        {
+            Id = challengeId,
+            Category = configChallenge.Category,
+            Name = configChallenge.Name,
+            Description = configChallenge.Description,
+            Type = configChallenge.Type == ChallengeTypeShared ? ChallengeType.Shared : ChallengeType.PrivateInstance,
+            ExpiresAt = null,
+            Status = ChallengeStatus.Stopped,
+            Services = new List<Service>(),
+            Attachments = configChallenge.Attachments,
+        };
 
-        return runningChallenges.Concat(stoppedChallenges).ToList();
+        // If challenge is not running, we can't find service details,
+        // so we just return the config details
+        if (challengeNamespace == null)
+            return dtoChallenge;
+        
+        // If challenge is a private instance
+        if (dtoChallenge.Type == ChallengeType.PrivateInstance)
+        {
+            dtoChallenge.ExpiresAt = challengeNamespace.Metadata.CreationTimestamp!.Value
+                .ToUniversalTime().AddMinutes(_ctfInfo.PrivateInstanceTimeoutMinutes);
+        }
+
+        var services = await _kubernetes.ListNamespacedServiceAsync(challengeNamespace.Name(), cancellationToken: cancellationToken);
+        dtoChallenge.Status = ChallengeStatus.Running;
+        dtoChallenge.Services = services.Items.Where(s => s.Name().EndsWith("-exposed"))
+            .SelectMany(s => s.Spec.Ports.Select(p =>
+                new Service
+                {
+                    Hostname = _ctfInfo.Hostname,
+                    Port = p.NodePort ?? -1,
+                    Protocol = p.AppProtocol,
+                })).ToList();
+        return dtoChallenge;
+    }
+
+    public async Task<List<Challenge>> GetChallenges(CachedPlayer? player, CancellationToken cancellationToken)
+    {
+        var challenges = new List<Challenge>();
+        foreach (var challengeId in _ctfInfo.Challenges.Select(c => c.Id))
+        {
+            challenges.Add(await GetChallenge(player, challengeId, cancellationToken));
+        }
+        return challenges;
     }
 
     public async Task CreateSharedChallenges(CancellationToken cancellationToken)
@@ -112,7 +134,7 @@ public class ChallengeService
         }
     }
 
-    public async Task<Challenge?> CreatePrivateInstance(string userId, Guid challengeId, CancellationToken cancellationToken)
+    public async Task CreatePrivateInstance(Guid userId, Guid challengeId, CancellationToken cancellationToken)
     {
         var challengeInfo = _ctfInfo.Challenges!
             .Where(c => c.Type == ChallengeTypePrivate)
@@ -121,12 +143,12 @@ public class ChallengeService
         if (challengeInfo == null)
         {
             _logger.LogWarning("Can't find challenge with id '{}' and private instance type", challengeId);
-            return null;
+            return;
         }
 
         var allNamespaces = await _kubernetes.ListNamespaceAsync(cancellationToken: cancellationToken);
         var userNamespaces = allNamespaces.Items
-            .Where(n => n.GetLabel(UserIdKey) == userId)
+            .Where(n => n.GetLabel(UserIdKey) == userId.ToString())
             .ToList();
 
         if (userNamespaces.Count > 0)
@@ -141,34 +163,12 @@ public class ChallengeService
         _logger.LogInformation("Creating private instance challenge '{}'", challengeInfo.Name);
         
         var namespaceName = "challenge-private-" + Guid.NewGuid();
-        var ns = await CreateNamespace(userId, namespaceName, ChallengeTypePrivate, challengeInfo.Id, cancellationToken);
-        var services = new List<Service>();
+        var ns = await CreateNamespace(userId.ToString(), namespaceName, ChallengeTypePrivate, challengeInfo.Id, cancellationToken);
         foreach (var container in challengeInfo.Containers!)
         {
             await CreateDeployment(container, ns.Name(), cancellationToken);
-            var service = await CreateService(container, ns.Name(), cancellationToken);
-
-            if (service == null)
-                continue;
-            
-            services.AddRange(service.Spec.Ports
-                .Select(port => new Service()
-                {
-                    Hostname = _ctfInfo.Hostname ?? _kubernetes.BaseUri.Host,
-                    Port = port.NodePort ?? -1,
-                    Protocol = port.Protocol.ToLowerInvariant()
-                }));
+            await CreateService(container, ns.Name(), cancellationToken);
         }
-
-        return new Challenge()
-        {
-            Id = challengeInfo.Id,
-            Name = challengeInfo.Name,
-            Description = challengeInfo.Description,
-            Type = challengeInfo.Type == ChallengeTypeShared ? ChallengeType.Shared : ChallengeType.PrivateInstance,
-            Services = services,
-            AttachmentLinks = challengeInfo.AttachmentLinks,
-        };
     }
     
     public async Task CleanupExpiredDemandedChallenges(CancellationToken cancellationToken)
@@ -331,11 +331,11 @@ public class ChallengeService
         await _kubernetes.CreateNamespacedDeploymentAsync(deployment, ns, cancellationToken: cancellationToken);
     }
 
-    public async Task KillPrivateInstance(string userId, Guid challengeId, CancellationToken cancellationToken)
+    public async Task KillPrivateInstance(Guid userId, Guid challengeId, CancellationToken cancellationToken)
     {
         var allNamespaces = await _kubernetes.ListNamespaceAsync(cancellationToken: cancellationToken);
         var userNamespaces = allNamespaces.Items
-            .Where(n => n.GetLabel(UserIdKey) == userId)
+            .Where(n => n.GetLabel(UserIdKey) == userId.ToString())
             .ToList();
 
         var namespaceToDelete = userNamespaces.FirstOrDefault(n => Guid.Parse(n.GetLabel(ChallengeIdKey)) == challengeId);

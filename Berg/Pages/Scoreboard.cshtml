@@ -2,6 +2,10 @@
 @using Berg.Db
 @model Berg.Pages.Scoreboard
 
+@{
+    ViewData["Title"] = $"{Model.ScoreboardCategory} Scoreboard";
+}
+
 <h3>Scoreboard</h3>
 
 <ul class="nav nav-tabs">
@@ -51,7 +55,7 @@
         <tr>
             <th scope="row">@rank</th>
             <td>
-                <img src="@avatarUrl" alt="Avatar" class="rounded-circle" width="20px" height="20px">
+                <img src="@avatarUrl" alt="Avatar" width="20px" height="20px">
                 @entry.Name
                 @if (Model.DiscordId == entry.DiscordId)
                 {

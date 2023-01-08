@@ -13,6 +13,11 @@ public static class BergMiddlewareExtensions
         return builder.UseMiddleware<PlayerRegistrationMiddleware>();
     }
 
+    public static CachedPlayer? GetCachedPlayerOrDefault(this HttpContext context)
+    {
+        return context.HasCachedPlayer() ? context.GetCachedPlayer() : null;
+    }
+    
     public static CachedPlayer GetCachedPlayer(this HttpContext context)
     {
         if (!context.Session.Keys.Contains(PlayerRegistrationMiddleware.CachedPlayerKey))

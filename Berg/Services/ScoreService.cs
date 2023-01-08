@@ -1,8 +1,8 @@
 ﻿using Berg.Configuration;
 using Berg.Db;
 using Berg.DTO;
+using Berg.Middleware;
 using Microsoft.EntityFrameworkCore;
-using Challenge = Berg.Db.Challenge;
 
 namespace Berg.Services;
 
@@ -11,8 +11,7 @@ public class ScoreService
     private readonly object _scoreUpdateLock = new();
     private readonly CtfInfo _ctfInfo;
     private readonly Dictionary<Category, List<ScoreboardEntry>> _scoresByCategory = new();
-    private readonly Dictionary<Guid, int> _challengeValues = new();
-    private readonly Dictionary<Guid, int> _challengeSolves = new();
+    private readonly Dictionary<Guid, ScoredChallenge> _scoredChallenges = new();
 
     public ScoreService(CtfInfo ctfInfo)
     {
@@ -29,40 +28,40 @@ public class ScoreService
         return _scoresByCategory[category];
     }
 
-    public int GetChallengeValue(Guid challengeId)
+    public ScoredChallenge GetScoredChallenge(Guid challengeId)
     {
-        return _challengeValues.GetValueOrDefault(challengeId, _ctfInfo.Scoring.Initial);
-    }
-    
-    public int GetChallengeSolves(Guid challengeId)
-    {
-        return _challengeSolves.GetValueOrDefault(challengeId);
+        return _scoredChallenges[challengeId];
     }
 
-    public SubmissionResult SubmitFlag(BergDbContext dbContext, string discordUserId, Guid challengeId, string flag)
+    public Dictionary<Guid, ScoredChallenge> GetScoredChallenges()
     {
-        var player = dbContext.Players
+        return _scoredChallenges;
+    }
+
+    public SubmissionResult SubmitFlag(BergDbContext dbContext, CachedPlayer player, Guid challengeId, string flag)
+    {
+        var dbPlayer = dbContext.Players
                        .Include(u => u.Submissions)
-                       .FirstOrDefault(p => p.DiscordId == discordUserId) ?? 
+                       .FirstOrDefault(p => p.DiscordId == player.DiscordId) ?? 
             throw new ArgumentException("Invalid userId");
 
         var challenge = dbContext.Challenges.FirstOrDefault(c => c.Id == challengeId) ?? 
             throw new ArgumentException("Invalid challengeId");
 
         var lastMinute = DateTime.UtcNow.AddMinutes(-1);
-        var numFailedSubmissions = player.Submissions.Count(s => s.SubmittedAt > lastMinute);
+        var numFailedSubmissions = dbPlayer.Submissions.Count(s => s.SubmittedAt > lastMinute);
         
         if (numFailedSubmissions >= _ctfInfo.Scoring.MaxFailedFlagsPerMinute)
             return SubmissionResult.RateLimited;
         
         if (flag.Trim() == challenge.Flag)
         {
-            if (dbContext.Solves.Any(s => s.Player == player && s.Challenge == challenge))
+            if (dbContext.Solves.Any(s => s.Player == dbPlayer && s.Challenge == challenge))
                 return SubmissionResult.AlreadySubmitted;
             
             dbContext.Solves.Add(new Solve
             {
-                Player = player,
+                Player = dbPlayer,
                 Challenge = challenge,
                 SolvedAt = DateTime.UtcNow
             });
@@ -73,7 +72,7 @@ public class ScoreService
         
         dbContext.Submissions.Add(new Submission
         {
-            Player = player,
+            Player = dbPlayer,
             Challenge = challenge,
             Value = flag,
             SubmittedAt = DateTime.UtcNow
@@ -91,16 +90,31 @@ public class ScoreService
         {
             using var transaction = dbContext.Database.BeginTransaction();
 
-            foreach (var challengeSolve in dbContext
-                         .Challenges.Select(c => new {Challenge = c, Solves = c.Solves.Count}))
+            foreach (var challengeSolve in dbContext.Challenges
+                         .Select(c => new {Challenge = c, Solves = c.Solves.Count})
+                         .ToList())
             {
                 var challenge = challengeSolve.Challenge;
                 challenge.Value = (int)Math.Max(
                     config.Minimum,
                     Math.Ceiling(factor * Math.Pow(challengeSolve.Solves, 2) + config.Initial)
                 );
-                _challengeValues[challenge.Id] = challenge.Value;
-                _challengeSolves[challenge.Id] = challengeSolve.Solves;
+                _scoredChallenges[challenge.Id] = new ScoredChallenge
+                {
+                    Id = challenge.Id,
+                    Value = challenge.Value,
+                    Solves = dbContext.Solves.Include(s => s.Player)
+                        .Where(s => s.Challenge == challenge)
+                        .Select(s => new ScoredChallengeSolve
+                            {
+                                Name = s.Player.Name,
+                                DiscordId = s.Player.DiscordId,
+                                DiscordAvatarId = s.Player.DiscordAvatarId,
+                                SolvedAt = s.SolvedAt
+                            })
+                        .OrderBy(s => s.SolvedAt)
+                        .ToList()
+                };
             }
             dbContext.SaveChanges();
             

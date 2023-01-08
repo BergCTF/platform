@@ -3,136 +3,167 @@
 @model Berg.Pages.Register
 
 @{
-  Layout = null;
+    Layout = null;
+    ViewData["Title"] = "Register";
 }
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="auto">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>@ViewData["Title"]</title>
-  <link href="/css/bootstrap.min.css" rel="stylesheet">
-  <link href="/css/bootstrap-icons.css" rel="stylesheet" >
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] | SHC</title>
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/bootstrap-icons.css" rel="stylesheet">
+    <link href="/img/logo-small.png" rel="shortcut icon" type="image/png"/>
+    <script src="/js/theme-selector.js"></script>
 </head>
 <body>
-  <header class="p-3">
+    <header class="p-3">
+        <div class="container">
+            <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+                <a href="/" class="d-flex align-items-center mb-2 mb-lg-0 text-primary text-decoration-none">
+                    <img class="bi me-2" width="32" height="32" src="/img/logo-small.png" alt="Logo" />
+                </a>
+                
+                <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+                    <li>Registration</li>
+                </ul>
+                
+                <div class="text-end">
+                    <a href="/account/logout?redirect=@Model.Redirect" class="btn btn-outline-danger">Cancel</a>
+                </div>
+                <div class="dropdown text-end ms-3">
+                    <a class="d-block text-decoration-none link-secondary dropdown-toggle theme-icon-active" style="height: 28px;" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-circle-half"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light">
+                                <i class="bi bi-sun-fill"></i>
+                                &nbsp;
+                                Light
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark">
+                                <i class="bi bi-moon-stars-fill"></i>
+                                &nbsp;
+                                Dark
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="auto">
+                                <i class="bi bi-circle-half"></i>
+                                &nbsp;
+                                Auto
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </header>
+
     <div class="container">
-      <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
-        <a href="/" class="d-flex align-items-center mb-2 mb-lg-0 text-primary text-decoration-none">
-          <img class="bi me-2" width="32" height="32" src="/img/logo-small.png" alt="Logo" />
-        </a>
-        
-        <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
-          <li>Registration</li>
-        </ul>
-        
-        <div class="text-end">
-          <a href="/account/logout?redirect=@Model.Redirect" class="btn btn-outline-danger">Cancel</a>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <div class="container">
-    <main role="main" class="gap-3">
-      <div class="row">
-        <h3>Select a category</h3>
-      </div>
+        <main role="main" class="gap-3">
+            <div class="row">
+                <h3>Select a category</h3>
+            </div>
+          
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-globe-europe-africa"></i>
+                                Open
+                            </h5>
+                            <p class="card-text">
+                                This category is for everybody that wants to participate in this CTF, regardless of nationality or age.
+                            </p>
+                            <form action="/account/select-category" method="POST">
+                                <input type="text" name="category" value="@Category.Open" hidden="hidden"/>
+                                <input type="text" name="redirect" value="@Model.Redirect" hidden="hidden"/>
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="bi bi-box-arrow-in-right"></i>
+                                    Register here
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
       
-      <div class="row">
-        <div class="col-md-12">
-          <div class="card mb-3">
-            <div class="card-body">
-              <h5 class="card-title">
-                <i class="bi bi-globe-europe-africa"></i>
-                Open
-              </h5>
-              <p class="card-text">
-                This category is for everybody that wants to participate in this CTF, regardless of nationality or age.
-              </p>
-              <form action="/account/select-category" method="POST">
-                <input type="text" name="category" value="@Category.Open" hidden="hidden"/>
-                <input type="text" name="redirect" value="@Model.Redirect" hidden="hidden"/>
-                <button type="submit" class="btn btn-outline-primary">
-                  <i class="bi bi-box-arrow-in-right"></i>
-                  Register here
-                </button>
-              </form>
+                <div class="col-lg-6">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-award"></i>
+                                Swiss Junior
+                            </h5>
+                            <p class="card-text">
+                                This category is for our junior swiss talents. 
+                                Playing in this category allows you to qualify for the swiss final and/or
+                                the SwissSkills cyber security trade competition.
+                                <dl class="row">
+                                    <dt class="col-sm-3">Age</dt>
+                                    <dd class="col-sm-9">14-20 on 31.12.2023</dd>
+                                    <dt class="col-sm-3">Nationality</dt>
+                                    <dd class="col-sm-9">Swiss</dd>
+                                </dl>
+                            </p>
+                            <form action="/account/select-category" method="POST">
+                                <input type="text" name="category" value="@Category.Junior" hidden="hidden"/>
+                                <input type="text" name="redirect" value="@Model.Redirect" hidden="hidden"/>
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="bi bi-box-arrow-in-right"></i>
+                                    Register as Junior
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+      
+                <div class="col-lg-6">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-award"></i>
+                                Swiss Senior
+                            </h5>
+                            <p class="card-text">
+                                This category is for our senior swiss talents.
+                                Playing in this category allows you to qualify for the swiss final and/or
+                                the SwissSkills cyber security trade competition.
+                                <dl class="row">
+                                    <dt class="col-sm-3">Age</dt>
+                                    <dd class="col-sm-9">21-25 on 31.12.2023</dd>
+                                    <dt class="col-sm-3">Nationality</dt>
+                                    <dd class="col-sm-9">Swiss</dd>
+                                </dl>
+                            </p>
+                            <form action="/account/select-category" method="POST">
+                                <input type="text" name="category" value="@Category.Senior" hidden="hidden"/>
+                                <input type="text" name="redirect" value="@Model.Redirect" hidden="hidden"/>
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="bi bi-box-arrow-in-right"></i>
+                                    Register as Senior
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
+        </main>
+    </div>
 
-        <div class="col-lg-6">
-          <div class="card mb-3">
-            <div class="card-body">
-              <h5 class="card-title">
-                <i class="bi bi-award"></i>
-                Swiss Junior
-              </h5>
-              <p class="card-text">
-                This category is for our junior swiss talents. 
-                Playing in this category allows you to qualify for the swiss final and/or
-                the SwissSkills cyber security trade competition.
-                <dl class="row">
-                  <dt class="col-sm-3">Age</dt>
-                  <dd class="col-sm-9">14-20 on 31.12.2023</dd>
-                  <dt class="col-sm-3">Nationality</dt>
-                  <dd class="col-sm-9">Swiss</dd>
-                </dl>
-              </p>
-              <form action="/account/select-category" method="POST">
-                <input type="text" name="category" value="@Category.Junior" hidden="hidden"/>
-                <input type="text" name="redirect" value="@Model.Redirect" hidden="hidden"/>
-                <button type="submit" class="btn btn-outline-primary">
-                  <i class="bi bi-box-arrow-in-right"></i>
-                  Register as Junior
-                </button>
-              </form>
+    <div class="container">
+        <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
+            <div class="col-md-12 d-flex align-items-center">
+                <span class="mb-12 mb-md-0 text-muted">© @DateTime.Now.Year Swiss Hacking Challenge</span>
             </div>
-          </div>
-        </div>
-
-        <div class="col-lg-6">
-          <div class="card mb-3">
-            <div class="card-body">
-              <h5 class="card-title">
-                <i class="bi bi-award"></i>
-                Swiss Senior
-              </h5>
-              <p class="card-text">
-                This category is for our senior swiss talents.
-                Playing in this category allows you to qualify for the swiss final and/or
-                the SwissSkills cyber security trade competition.
-                <dl class="row">
-                  <dt class="col-sm-3">Age</dt>
-                  <dd class="col-sm-9">21-25 on 31.12.2023</dd>
-                  <dt class="col-sm-3">Nationality</dt>
-                  <dd class="col-sm-9">Swiss</dd>
-                </dl>
-              </p>
-              <form action="/account/select-category" method="POST">
-                <input type="text" name="category" value="@Category.Senior" hidden="hidden"/>
-                <input type="text" name="redirect" value="@Model.Redirect" hidden="hidden"/>
-                <button type="submit" class="btn btn-outline-primary">
-                  <i class="bi bi-box-arrow-in-right"></i>
-                  Register as Senior
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <div class="container">
-    <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
-      <div class="col-md-12 d-flex align-items-center">
-        <span class="mb-12 mb-md-0 text-muted">© @DateTime.Now.Year Swiss Hacking Challenge</span>
-      </div>
-    </footer>
-  </div>
-  <script src="/js/bootstrap.bundle.min.js"></script>
+        </footer>
+    </div>
+    <script src="/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

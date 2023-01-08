@@ -6,4 +6,5 @@ public enum SubmissionResult
     Rejected,
     RateLimited,
     AlreadySubmitted,
+    NotLoggedIn,
 }

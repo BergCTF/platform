@@ -1,15 +1,31 @@
 @page
 @model Berg.Pages.Index
 
-Index Page
+@{
+    ViewData["Title"] = "Home";
+}
+
+<h3>About</h3>
+
+<p>
+    The Swiss Hacking Challenge (SHC), is the annual National Hacking Championship of Switzerland.
+    If you love to play Capture the Flag (CTF), love Hacking and Cyber Security, you are completely right here!
+</p>
 
 <h3>Categories</h3>
 
 <dl class="row">
-  <dt class="col-sm-3">Junior</dt>
-  <dd class="col-sm-9">A swiss citizen of age 14-20 on 31.12.2023</dd>
-  <dt class="col-sm-3">Senior</dt>
-  <dd class="col-sm-9">A swiss citizen of age 21-25 on 31.12.2023</dd>
-  <dt class="col-sm-3">Earth</dt>
-  <dd class="col-sm-9">Everybody</dd>
+    <dt class="col-sm-3">Junior</dt>
+    <dd class="col-sm-9">A swiss citizen of age 14-20 on 31.12.2023</dd>
+    <dt class="col-sm-3">Senior</dt>
+    <dd class="col-sm-9">A swiss citizen of age 21-25 on 31.12.2023</dd>
+    <dt class="col-sm-3">Open</dt>
+    <dd class="col-sm-9">Everybody</dd>
 </dl>
+
+@if (!(User.Identity?.IsAuthenticated ?? false))
+{
+    <div>
+        <a href="/account/login" class="btn btn-primary">Login with <i class="bi bi-discord"></i></a>
+    </div>
+}

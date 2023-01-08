@@ -1,0 +1,196 @@
+﻿@page
+@using Berg.DTO
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Berg.Pages.ChallengeDetail
+
+@{
+    ViewData["Title"] = Model.Challenge.Name;
+}
+
+<h3>
+    <a href="/challenges"><i class="bi bi-arrow-left text-secondary"></i></a>
+    @Model.Challenge.Name (@Model.ScoredChallenge.Value)
+</h3>
+
+<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#challenge-pane" type="button" role="tab" aria-controls="challenge-pane" aria-selected="true">Challenge</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#solves-pane" type="button" role="tab" aria-controls="solves-pane" aria-selected="false">Solves (@Model.ScoredChallenge.Solves.Count)</button>
+    </li>
+</ul>
+<div class="tab-content border-start border-bottom border-end rounded-bottom p-3">
+    <div class="tab-pane show active" id="challenge-pane" role="tabpanel" aria-labelledby="home-tab" tabindex="0">
+        <h5>Description</h5>
+        <p>@Model.Challenge.Description</p>
+        @if (Model.Challenge.Type == ChallengeType.PrivateInstance)
+        {
+            <h5>Private Instance Control</h5>
+            if (Model.Player != null)
+            {
+                if (Model.Challenge.Status == ChallengeStatus.Running)
+                {
+                    <form action="/challenge/kill" method="POST">
+                        <input type="text" name="challengeId" value="@Model.Challenge.Id" hidden="hidden"/>
+                        <button class="btn btn-outline-danger">
+                            <i class="bi bi-trash"></i>
+                            Kill
+                        </button>
+                    </form>
+                    if (Model.Challenge.ExpiresAt.HasValue)
+                    {
+                        <p>Will automatically be killed if you start another private instance or after @Model.Challenge.ExpiresAt.Value.ToLocalTime() CET</p>
+                    }
+                }
+                else
+                {
+                    <form action="/challenge/start" method="POST">
+                        <input type="text" name="challengeId" value="@Model.Challenge.Id" hidden="hidden"/>
+                        <button class="btn btn-outline-success">
+                            <i class="bi bi-play"></i>
+                            Start
+                        </button>
+                    </form>
+                }
+            }
+            else
+            {
+                <div class="alert alert-warning" role="alert">
+                    This challenge requires you to log in to start a private instance.
+                </div>
+            }
+        }
+        @if (Model.Challenge.Services?.Any() ?? false)
+        {
+            <h5>Instance</h5>
+            <ul class="list-unstyled">
+                @foreach (var service in Model.Challenge.Services)
+                {
+                    switch (service.Protocol)
+                    {
+                        case "http":
+                            var url = $"http://{service.Hostname}:{service.Port}/";
+                            <li><code><a href="@url" target="_blank">@url</a></code></li>
+                            break;
+                        case "tcp":
+                            <li><code>nc @service.Hostname @service.Port</code></li>
+                            break;
+                        case "udp":
+                            <li><code>nc -u @service.Hostname @service.Port</code></li>
+                            break;
+                        default:
+                            <li><code>@service.Protocol @service.Hostname @service.Port</code></li>
+                            break;
+                    }
+                }
+            </ul>
+        }
+        @if (Model.Challenge.Attachments?.Any() ?? false)
+        {
+            <h5>Downloads</h5>
+            <ul class="list-inline">
+                @foreach (var attachment in Model.Challenge.Attachments)
+                {
+                    <li class="list-inline-item">
+                        <a class="btn btn-secondary" href="@attachment.DownloadUrl" target="_blank" download="@attachment.Filename">
+                            <i class="bi bi-download"></i>
+                            @attachment.Filename
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+        <br/>
+        <h5>Submit Flag</h5>
+        @if (Model.Player != null)
+        {
+            @* @if (Model.SubmissionResult.HasValue) *@
+            @* { *@
+            @*     switch (Model.SubmissionResult.Value) *@
+            @*     { *@
+            @*         case SubmissionResult.Accepted: *@
+            @*             <div class="alert alert-success" role="alert"> *@
+            @*                 Flag is correct. *@
+            @*             </div> *@
+            @*             break; *@
+            @*         case SubmissionResult.Rejected: *@
+            @*             <div class="alert alert-warning" role="alert"> *@
+            @*                 Flag is incorrect. *@
+            @*             </div> *@
+            @*             break; *@
+            @*         case SubmissionResult.RateLimited: *@
+            @*             <div class="alert alert-danger" role="alert"> *@
+            @*                 You are being rate-limited. *@
+            @*             </div> *@
+            @*             break; *@
+            @*         case SubmissionResult.AlreadySubmitted: *@
+            @*             <div class="alert alert-warning" role="alert"> *@
+            @*                 This flag has alreay been submitted. *@
+            @*             </div> *@
+            @*             break; *@
+            @*         case SubmissionResult.NotLoggedIn: *@
+            @*             <div class="alert alert-danger" role="alert"> *@
+            @*                 You are not logged in. *@
+            @*             </div> *@
+            @*             break; *@
+            @*         default: *@
+            @*             throw new ArgumentOutOfRangeException(); *@
+            @*     } *@
+            @* } *@
+            if (Model.ScoredChallenge.Solves.Any(s => s.DiscordId == Model.Player.DiscordId))
+            {
+                <div class="alert alert-success" role="alert">
+                    You have already solved this challenge.
+                </div>
+            }
+            else
+            {
+                <form action="/challenge/submit" method="POST" class="row">
+                    <input type="text" name="challengeId" value="@Model.Challenge.Id" hidden="hidden">
+                    <div class="col-9">
+                        <input type="text" name="flag" placeholder="shc2023{...}" class="form-control">
+                    </div>
+                    <div class="col-3 d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </div>
+                </form>
+            }
+        }
+        else
+        {
+            <p>You need to be logged in to submit flags.</p>
+        }
+    </div>
+    <div class="tab-pane" id="solves-pane" role="tabpanel" tabindex="0">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Name</th>
+                <th scope="col">Solved At (CET)</th>
+            </tr>
+            </thead>
+            <tbody class="table-group-divider">
+            @{ var rank = 1;}
+            @foreach (var entry in Model.ScoredChallenge.Solves)
+            {
+                var avatarUrl = $"https://cdn.discordapp.com/avatars/{entry.DiscordId}/{entry.DiscordAvatarId}.png?size=32";
+                <tr>
+                    <th scope="row">@rank</th>
+                    <td>
+                        <img src="@avatarUrl" alt="Avatar" class="rounded-circle" width="20px" height="20px">
+                        @entry.Name
+                        @if (Model.Player?.DiscordId == entry.DiscordId)
+                        {
+                            <span class="badge bg-info">you</span>
+                        }
+                    </td>
+                    <td>@entry.SolvedAt.ToLocalTime()</td>
+                </tr>
+                rank++;
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
