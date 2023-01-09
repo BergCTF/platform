@@ -50,6 +50,39 @@ using (var scope = app.Services.CreateScope())
     
     ChallengeLoader.LoadFromConfig(dbContext, ctfInfo);
     
+    if (app.Environment.IsDevelopment())
+    {
+        dbContext.Players.RemoveRange(dbContext.Players);
+        
+        var random = new Random();
+        var categoryValues = Enum.GetValues<Category>();
+        var challenges = dbContext.Challenges.ToList();
+        for (var i = 0; i < 9; i++)
+        {
+            var player = new Player
+            {
+                Name = $"Demo#000{i}",
+                Category = categoryValues[random.Next(categoryValues.Length)],
+                Email = $"demo.000{i}@example.com",
+                DiscordId = "299478604809764876",
+                DiscordAvatarId = "3168495edc04b8b00c66dcd3c54c5763",
+                CreatedAt = DateTime.UtcNow,
+                Solves = new List<Solve>()
+            };
+                
+            foreach (var challenge in challenges.Where(_ => random.Next(2) == 1))
+            {
+                player.Solves.Add(new Solve
+                {
+                    Challenge = challenge,
+                    SolvedAt = DateTime.UtcNow.AddSeconds(-random.Next(100000))
+                });
+            }
+            dbContext.Players.Add(player);
+        }
+        dbContext.SaveChanges();
+    }
+    
     var scoreService = scope.ServiceProvider.GetService<ScoreService>()!;
     scoreService.RecalculateScores(dbContext);
 }

@@ -14,6 +14,7 @@ public class ChallengeDetail : PageModel
     public new DTO.Challenge Challenge = null!;
     public CachedPlayer? Player;
     public ScoredChallenge ScoredChallenge = null!;
+    public SubmissionResult? SubmissionResult;
 
     public ChallengeDetail(ChallengeService challengeService, ScoreService scoreService)
     {
@@ -21,11 +22,15 @@ public class ChallengeDetail : PageModel
         _scoreService = scoreService;
     }
     
-    public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken, Guid? challengeId = null)
+    public async Task<IActionResult> OnGetAsync(
+        CancellationToken cancellationToken,
+        Guid? challengeId = null,
+        SubmissionResult? result = null)
     {
         if (!challengeId.HasValue)
             return Redirect("/challenges");
 
+        SubmissionResult = result;
         Player = HttpContext.GetCachedPlayerOrDefault();
         Challenge = await _challengeService.GetChallenge(Player, challengeId.Value, cancellationToken);
         ScoredChallenge = _scoreService.GetScoredChallenge(challengeId.Value);

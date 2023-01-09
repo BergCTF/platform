@@ -105,44 +105,48 @@
         <h5>Submit Flag</h5>
         @if (Model.Player != null)
         {
-            @* @if (Model.SubmissionResult.HasValue) *@
-            @* { *@
-            @*     switch (Model.SubmissionResult.Value) *@
-            @*     { *@
-            @*         case SubmissionResult.Accepted: *@
-            @*             <div class="alert alert-success" role="alert"> *@
-            @*                 Flag is correct. *@
-            @*             </div> *@
-            @*             break; *@
-            @*         case SubmissionResult.Rejected: *@
-            @*             <div class="alert alert-warning" role="alert"> *@
-            @*                 Flag is incorrect. *@
-            @*             </div> *@
-            @*             break; *@
-            @*         case SubmissionResult.RateLimited: *@
-            @*             <div class="alert alert-danger" role="alert"> *@
-            @*                 You are being rate-limited. *@
-            @*             </div> *@
-            @*             break; *@
-            @*         case SubmissionResult.AlreadySubmitted: *@
-            @*             <div class="alert alert-warning" role="alert"> *@
-            @*                 This flag has alreay been submitted. *@
-            @*             </div> *@
-            @*             break; *@
-            @*         case SubmissionResult.NotLoggedIn: *@
-            @*             <div class="alert alert-danger" role="alert"> *@
-            @*                 You are not logged in. *@
-            @*             </div> *@
-            @*             break; *@
-            @*         default: *@
-            @*             throw new ArgumentOutOfRangeException(); *@
-            @*     } *@
-            @* } *@
+            @if (Model.SubmissionResult.HasValue)
+            {
+                switch (Model.SubmissionResult.Value)
+                {
+                    case SubmissionResult.Accepted:
+                        <div class="alert alert-success" role="alert">
+                            Flag is correct.
+                        </div>
+                        break;
+                    case SubmissionResult.Rejected:
+                        <div class="alert alert-warning" role="alert">
+                            Flag is incorrect.
+                        </div>
+                        break;
+                    case SubmissionResult.RateLimited:
+                        <div class="alert alert-danger" role="alert">
+                            You are being rate-limited.
+                        </div>
+                        break;
+                    case SubmissionResult.AlreadySubmitted:
+                        <div class="alert alert-warning" role="alert">
+                            This flag has alreay been submitted.
+                        </div>
+                        break;
+                    case SubmissionResult.NotLoggedIn:
+                        <div class="alert alert-danger" role="alert">
+                            You are not logged in.
+                        </div>
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
             if (Model.ScoredChallenge.Solves.Any(s => s.DiscordId == Model.Player.DiscordId))
             {
-                <div class="alert alert-success" role="alert">
-                    You have already solved this challenge.
-                </div>
+                if (Model.SubmissionResult is not SubmissionResult.Accepted)
+                {
+                    <div class="alert alert-success" role="alert">
+                        You have already solved this challenge.
+                    </div>
+                }
+                
             }
             else
             {

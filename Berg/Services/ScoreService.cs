@@ -140,6 +140,7 @@ public class ScoreService
                     })
                     .OrderByDescending(p => p.Score)
                     .ThenBy(p => p.LastSolveAt)
+                    .ThenBy(p => p.Name)
                     .ToList();
             }
         

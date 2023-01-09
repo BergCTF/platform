@@ -47,7 +47,7 @@ public class ChallengeController : ControllerBase
     public IActionResult Submit([FromForm] Guid challengeId, [FromForm] string flag)
     {
         var player = HttpContext.GetCachedPlayer();
-        _scoreService.SubmitFlag(_dbContext, player, challengeId, flag);
-        return RedirectToPage("/challenge", new { challengeId });
+        var result = _scoreService.SubmitFlag(_dbContext, player, challengeId, flag);
+        return RedirectToPage("/challenge", new { challengeId, result });
     }
 }
