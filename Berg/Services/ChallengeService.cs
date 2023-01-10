@@ -23,6 +23,7 @@ public class ChallengeService
     private readonly ILogger<ChallengeService> _logger;
     private readonly Kubernetes _kubernetes;
     private readonly CtfInfo _ctfInfo;
+    private int _staticPort = 30000;
 
     public ChallengeService(ILogger<ChallengeService> logger, Kubernetes kubernetes, CtfInfo ctfInfo)
     {
@@ -129,7 +130,7 @@ public class ChallengeService
             foreach (var container in challengeInfo.Containers!)
             {
                 await CreateDeployment(container, ns.Name(), cancellationToken);
-                await CreateService(container, ns.Name(), cancellationToken);
+                await CreateService(container, ns.Name(), cancellationToken, true);
             }
         }
     }
@@ -208,7 +209,7 @@ public class ChallengeService
         }, cancellationToken: cancellationToken);
     }
 
-    private async Task<V1Service?> CreateService(ContainerInfo container, string ns, CancellationToken cancellationToken)
+    private async Task<V1Service?> CreateService(ContainerInfo container, string ns, CancellationToken cancellationToken, bool useStaticPort = false)
     {
         var privateService = new V1Service
         {
@@ -258,6 +259,7 @@ public class ChallengeService
                     Port = p.Port,
                     TargetPort = p.Port,
                     Protocol = p.Protocol.ToUpperInvariant(),
+                    NodePort = useStaticPort ? _staticPort++ : null,
                     AppProtocol = p.AppProtocol
                 }).ToList(),
             }
