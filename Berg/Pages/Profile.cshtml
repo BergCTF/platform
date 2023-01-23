@@ -67,17 +67,10 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form action="/account/delete" method="POST">
+                <form asp-controller="Account" asp-action="Delete" method="POST">
                     <button type="submit" class="btn btn-danger">Delete Account</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
-
-@section scripts {
-    <script>
-        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
-    </script>
-}

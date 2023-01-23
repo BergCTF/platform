@@ -16,7 +16,7 @@
     <link href="/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/bootstrap-icons.css" rel="stylesheet">
     <link href="/img/logo-small.png" rel="shortcut icon" type="image/png"/>
-    <script src="/js/theme-selector.js"></script>
+    <script type="text/javascript" src="/js/theme-selector.js" nonce="@Request.HttpContext.Items["CSPNonce"]"></script>
 </head>
 <body>
     <header class="p-3">
@@ -82,7 +82,7 @@
                             <p class="card-text">
                                 This category is for everybody that wants to participate in this CTF, regardless of nationality or age.
                             </p>
-                            <form action="/account/select-category" method="POST">
+                            <form asp-controller="Account" asp-action="SelectCategory" method="POST">
                                 <input type="text" name="category" value="@Category.Open" hidden="hidden"/>
                                 <input type="text" name="redirect" value="@Model.Redirect" hidden="hidden"/>
                                 <button type="submit" class="btn btn-outline-primary">
@@ -112,7 +112,7 @@
                                     <dd class="col-sm-9">Swiss</dd>
                                 </dl>
                             </p>
-                            <form action="/account/select-category" method="POST">
+                            <form asp-controller="Account" asp-action="SelectCategory" method="POST">
                                 <input type="text" name="category" value="@Category.Junior" hidden="hidden"/>
                                 <input type="text" name="redirect" value="@Model.Redirect" hidden="hidden"/>
                                 <button type="submit" class="btn btn-outline-primary">
@@ -142,7 +142,7 @@
                                     <dd class="col-sm-9">Swiss</dd>
                                 </dl>
                             </p>
-                            <form action="/account/select-category" method="POST">
+                            <form asp-controller="Account" asp-action="SelectCategory" method="POST">
                                 <input type="text" name="category" value="@Category.Senior" hidden="hidden"/>
                                 <input type="text" name="redirect" value="@Model.Redirect" hidden="hidden"/>
                                 <button type="submit" class="btn btn-outline-primary">
@@ -164,6 +164,6 @@
             </div>
         </footer>
     </div>
-    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="/js/bootstrap.bundle.min.js" nonce="@Request.HttpContext.Items["CSPNonce"]"></script>
 </body>
 </html>

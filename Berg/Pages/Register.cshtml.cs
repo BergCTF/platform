@@ -15,7 +15,7 @@ public class Register : PageModel
         CachedPlayer = HttpContext.GetCachedPlayer();
 
         if (CachedPlayer.Id.HasValue)
-            return Redirect(redirect ?? "/");
+            return LocalRedirect(redirect ?? "/");
         
         return Page();
     }

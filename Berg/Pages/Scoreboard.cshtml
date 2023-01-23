@@ -44,8 +44,8 @@
         <th scope="col">#</th>
         <th scope="col">Name</th>
         <th scope="col">Score</th>
-        <th scope="col">Last Submission (CET)</th>
-        <th scope="col">Solved Challenges</th>
+        <th scope="col">Last solve (CET)</th>
+        <th scope="col">Solved challenges</th>
     </tr>
     </thead>
     <tbody class="table-group-divider">
@@ -83,10 +83,3 @@
     }
     </tbody>
 </table>
-
-@section scripts {
-    <script>
-        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
-    </script>
-}

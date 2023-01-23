@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Berg.Controllers;
 
 [ApiController]
+[AutoValidateAntiforgeryToken]
 [Route("/challenge")]
 public class ChallengeController : ControllerBase
 {

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Berg.Controllers;
 
 [ApiController]
+[AutoValidateAntiforgeryToken]
 [Route("/account")]
 public class AccountController : ControllerBase
 {
@@ -25,13 +26,13 @@ public class AccountController : ControllerBase
     public IActionResult Login(string? redirect = null)
     {
         if (User.Identity?.IsAuthenticated ?? false)
-            return Redirect(redirect ?? "/");
+            return LocalRedirect(redirect ?? "/");
         return Challenge(new AuthenticationProperties { RedirectUri = redirect ?? "/" });
     }
     
     [Authorize]
     [HttpPost("select-category", Name = "Select Category")]
-    public IActionResult Register([FromForm] Category category, [FromForm] string? redirect = null)
+    public IActionResult SelectCategory([FromForm] Category category, [FromForm] string? redirect = null)
     {
         var cachedPlayer = HttpContext.GetCachedPlayer();
         var dbPlayer = _dbContext.Players.FirstOrDefault(p => p.DiscordId == cachedPlayer.DiscordId);
@@ -51,13 +52,13 @@ public class AccountController : ControllerBase
         // Do not allow category changes
         else
         {
-            return Redirect("/error");
+            return LocalRedirect("/error");
         }
         
         HttpContext.RefreshCachedPlayer();
         _scoreService.RecalculateScores(_dbContext);
         
-        return Redirect(redirect ?? "/");
+        return LocalRedirect(redirect ?? "/");
     }
     
     [Authorize]
@@ -66,7 +67,7 @@ public class AccountController : ControllerBase
     {
         await HttpContext.SignOutAsync();
         HttpContext.RemoveCachedPlayer();
-        return Redirect(redirect ?? "/");
+        return LocalRedirect(redirect ?? "/");
     }
     
     [Authorize]
@@ -80,7 +81,7 @@ public class AccountController : ControllerBase
         await _dbContext.SaveChangesAsync();
         _scoreService.RecalculateScores(_dbContext);
         HttpContext.RemoveCachedPlayer();
-        return Redirect(redirect ?? "/");
+        return LocalRedirect(redirect ?? "/");
     }
 
 }

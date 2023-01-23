@@ -20,7 +20,11 @@ public static class DiscordAuthenticationExtension
             options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = "Discord";
         })
-        .AddCookie()
+        .AddCookie(o => o.Cookie = new CookieBuilder()
+        {
+            Name = "auth",
+            HttpOnly = true
+        })
         .AddOAuth("Discord", options =>
         {
             options.ClientId = info.ClientId;

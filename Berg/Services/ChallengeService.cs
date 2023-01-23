@@ -41,7 +41,6 @@ public class ChallengeService
         var allNamespaces = await _kubernetes.ListNamespaceAsync(cancellationToken: cancellationToken);
 
         var filter = allNamespaces.Items
-            .Where(n => n.Status.Phase == "Active")
             .Where(n => n.GetLabel(ManagedByKey) == BergManager);
         if (player == null)
         {
@@ -86,7 +85,7 @@ public class ChallengeService
             .SelectMany(s => s.Spec.Ports.Select(p =>
                 new Service
                 {
-                    Hostname = _ctfInfo.Hostname,
+                    Hostname = _ctfInfo.ChallengeServerHostname,
                     Port = p.NodePort ?? -1,
                     Protocol = p.AppProtocol,
                 })).ToList();
@@ -118,7 +117,7 @@ public class ChallengeService
         // Delete all existing deployments
         foreach (var ns in sharedNamespaces)
         {
-            await _kubernetes.DeleteNamespaceAsync(ns.Name(), gracePeriodSeconds: 0, cancellationToken: cancellationToken);
+            await EnsureNamespaceDeleted(ns.Name(), cancellationToken);
         }
         
         // Create new deployments
@@ -157,7 +156,7 @@ public class ChallengeService
             _logger.LogInformation("User already has a private instance, deleting the old one");
             foreach (var existingNamespace in userNamespaces)
             {
-                await _kubernetes.DeleteNamespaceAsync(existingNamespace.Name(), gracePeriodSeconds: 0, cancellationToken: cancellationToken);
+                await EnsureNamespaceDeleted(existingNamespace.Name(), cancellationToken);
             }
         }
         
@@ -343,7 +342,19 @@ public class ChallengeService
         var namespaceToDelete = userNamespaces.FirstOrDefault(n => Guid.Parse(n.GetLabel(ChallengeIdKey)) == challengeId);
         if (namespaceToDelete != null)
         {
-            await _kubernetes.DeleteNamespaceAsync(namespaceToDelete.Name(), gracePeriodSeconds: 0, cancellationToken: cancellationToken);
+            await EnsureNamespaceDeleted(namespaceToDelete.Name(), cancellationToken);
+        }
+    }
+
+    private async Task EnsureNamespaceDeleted(string namespaceName, CancellationToken cancellationToken)
+    {
+        await _kubernetes.DeleteNamespaceAsync(namespaceName, gracePeriodSeconds: 0, cancellationToken: cancellationToken);
+        while(true)
+        {
+            var namespaceList = await _kubernetes.ListNamespaceAsync(cancellationToken: cancellationToken);
+            if (namespaceList.Items.All(n => n.Name() != namespaceName))
+                break;
+            await Task.Delay(250, cancellationToken);
         }
     }
 }

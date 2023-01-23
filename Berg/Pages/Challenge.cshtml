@@ -31,7 +31,7 @@
             {
                 if (Model.Challenge.Status == ChallengeStatus.Running)
                 {
-                    <form action="/challenge/kill" method="POST">
+                    <form asp-controller="Challenge" asp-action="Kill" method="POST">
                         <input type="text" name="challengeId" value="@Model.Challenge.Id" hidden="hidden"/>
                         <button class="btn btn-outline-danger">
                             <i class="bi bi-trash"></i>
@@ -45,7 +45,7 @@
                 }
                 else
                 {
-                    <form action="/challenge/start" method="POST">
+                    <form asp-controller="Challenge" asp-action="Start" method="POST">
                         <input type="text" name="challengeId" value="@Model.Challenge.Id" hidden="hidden"/>
                         <button class="btn btn-outline-success">
                             <i class="bi bi-play"></i>
@@ -150,7 +150,7 @@
             }
             else
             {
-                <form action="/challenge/submit" method="POST" class="row">
+                <form asp-controller="Challenge" asp-action="Submit" method="POST" class="row">
                     <input type="text" name="challengeId" value="@Model.Challenge.Id" hidden="hidden">
                     <div class="col-9">
                         <input type="text" name="flag" placeholder="shc2023{...}" class="form-control">

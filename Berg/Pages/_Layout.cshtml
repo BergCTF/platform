@@ -20,7 +20,7 @@
     <link href="/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/bootstrap-icons.css" rel="stylesheet">
     <link href="/img/logo-small.png" rel="shortcut icon" type="image/png"/>
-    <script src="/js/theme-selector.js"></script>
+    <script type="text/javascript" src="/js/theme-selector.js" nonce="@Context.Items["CSPNonce"]"></script>
 </head>
 <body>
 <header class="p-3">
@@ -63,7 +63,7 @@
                 </div>
             }
             <div class="dropdown text-end ms-3">
-                <a class="d-block text-decoration-none dropdown-toggle link-secondary theme-icon-active" style="height: 28px;" type="button" data-bs-toggle="dropdown">
+                <a class="d-block text-decoration-none dropdown-toggle link-secondary theme-icon-active" type="button" data-bs-toggle="dropdown">
                     <i class="bi bi-circle-half"></i>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
@@ -107,7 +107,11 @@
         </div>
     </footer>
 </div>
-<script src="/js/bootstrap.bundle.min.js"></script>
+<script type="text/javascript" src="/js/bootstrap.bundle.min.js" nonce="@Context.Items["CSPNonce"]"></script>
+<script type="text/javascript" nonce="@Context.Items["CSPNonce"]">
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+</script>
 @await RenderSectionAsync("scripts", required: false)
 </body>
 </html>

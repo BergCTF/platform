@@ -12,6 +12,12 @@ public static class BergMiddlewareExtensions
     {
         return builder.UseMiddleware<PlayerRegistrationMiddleware>();
     }
+    
+    public static IApplicationBuilder UseCSP(
+        this IApplicationBuilder builder)
+    {
+        return builder.UseMiddleware<CspMiddleware>();
+    }
 
     public static CachedPlayer? GetCachedPlayerOrDefault(this HttpContext context)
     {
