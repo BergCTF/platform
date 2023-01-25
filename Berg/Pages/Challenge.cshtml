@@ -22,149 +22,174 @@
 </ul>
 <div class="tab-content border-start border-bottom border-end rounded-bottom p-3">
     <div class="tab-pane show active" id="challenge-pane" role="tabpanel" aria-labelledby="home-tab" tabindex="0">
-        <h5>Description</h5>
-        <p>@Model.Challenge.Description</p>
-        @if (Model.Challenge.Type == ChallengeType.PrivateInstance)
-        {
-            <h5>Private Instance Control</h5>
-            if (Model.Player != null)
-            {
-                if (Model.Challenge.Status == ChallengeStatus.Running)
+        <div class="row">
+            <div class="col-12 col-md-6">
+                <h5>Description</h5>
+                <p>@Model.Challenge.Description</p>
+                @if (Model.Challenge.Type == ChallengeType.PrivateInstance)
                 {
-                    <form asp-controller="Challenge" asp-action="Kill" method="POST">
-                        <input type="text" name="challengeId" value="@Model.Challenge.Id" hidden="hidden"/>
-                        <button class="btn btn-outline-danger">
-                            <i class="bi bi-trash"></i>
-                            Kill
-                        </button>
-                    </form>
-                    if (Model.Challenge.ExpiresAt.HasValue)
+                    <h5>Private Instance Control</h5>
+                    if (Model.Player != null)
                     {
-                        <p>Will automatically be killed if you start another private instance or after @Model.Challenge.ExpiresAt.Value.ToLocalTime() CET</p>
+                        if (Model.Challenge.Status == ChallengeStatus.Running)
+                        {
+                            <form asp-controller="Challenge" asp-action="Kill" method="POST">
+                                <input type="text" name="challengeId" value="@Model.Challenge.Id" hidden="hidden"/>
+                                <button class="btn btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                    Kill
+                                </button>
+                            </form>
+                            if (Model.Challenge.ExpiresAt.HasValue)
+                            {
+                                <p>Will automatically be killed if you start another private instance or after @Model.Challenge.ExpiresAt.Value.ToLocalTime() CET</p>
+                            }
+                        }
+                        else
+                        {
+                            <form asp-controller="Challenge" asp-action="Start" method="POST">
+                                <input type="text" name="challengeId" value="@Model.Challenge.Id" hidden="hidden"/>
+                                <button class="btn btn-outline-success">
+                                    <i class="bi bi-play"></i>
+                                    Start
+                                </button>
+                            </form>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning" role="alert">
+                            This challenge requires you to log in to start a private instance.
+                        </div>
+                    }
+                }
+                @if (Model.Challenge.Services?.Any() ?? false)
+                {
+                    <h5>Instance</h5>
+                    <ul class="list-unstyled">
+                        @foreach (var service in Model.Challenge.Services)
+                        {
+                            switch (service.Protocol)
+                            {
+                                case "http":
+                                    var url = $"http://{service.Hostname}:{service.Port}/";
+                                    <li><code><a href="@url" target="_blank">@url</a></code></li>
+                                    break;
+                                case "tcp":
+                                    <li><code>nc @service.Hostname @service.Port</code></li>
+                                    break;
+                                case "udp":
+                                    <li><code>nc -u @service.Hostname @service.Port</code></li>
+                                    break;
+                                default:
+                                    <li><code>@service.Protocol @service.Hostname @service.Port</code></li>
+                                    break;
+                            }
+                        }
+                    </ul>
+                }
+                @if (Model.Challenge.Attachments?.Any() ?? false)
+                {
+                    <h5>Downloads</h5>
+                    <ul class="list-inline">
+                        @foreach (var attachment in Model.Challenge.Attachments)
+                        {
+                            <li class="list-inline-item">
+                                <a class="btn btn-secondary mb-2" href="@attachment.DownloadUrl" target="_blank" download="@attachment.Filename">
+                                    <i class="bi bi-download"></i>
+                                    @attachment.Filename
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                }
+                <br/>
+                <h5>Submit Flag</h5>
+                @if (Model.Player != null)
+                {
+                    @if (Model.SubmissionResult.HasValue)
+                    {
+                        switch (Model.SubmissionResult.Value)
+                        {
+                            case SubmissionResult.Accepted:
+                                <div class="alert alert-success" role="alert">
+                                    Flag is correct.
+                                </div>
+                                break;
+                            case SubmissionResult.Rejected:
+                                <div class="alert alert-warning" role="alert">
+                                    Flag is incorrect.
+                                </div>
+                                break;
+                            case SubmissionResult.RateLimited:
+                                <div class="alert alert-danger" role="alert">
+                                    You are being rate-limited.
+                                </div>
+                                break;
+                            case SubmissionResult.AlreadySubmitted:
+                                <div class="alert alert-warning" role="alert">
+                                    This flag has alreay been submitted.
+                                </div>
+                                break;
+                            case SubmissionResult.NotLoggedIn:
+                                <div class="alert alert-danger" role="alert">
+                                    You are not logged in.
+                                </div>
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
+                    }
+                    if (Model.ScoredChallenge.Solves.Any(s => s.DiscordId == Model.Player.DiscordId))
+                    {
+                        if (Model.SubmissionResult is not SubmissionResult.Accepted)
+                        {
+                            <div class="alert alert-success" role="alert">
+                                You have already solved this challenge.
+                            </div>
+                        }
+                
+                    }
+                    else
+                    {
+                        <form asp-controller="Challenge" asp-action="Submit" method="POST" class="row">
+                            <input type="text" name="challengeId" value="@Model.Challenge.Id" hidden="hidden">
+                            <div class="col-9">
+                                <input type="text" name="flag" placeholder="shc2023{...}" class="form-control">
+                            </div>
+                            <div class="col-3 d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">Submit</button>
+                            </div>
+                        </form>
                     }
                 }
                 else
                 {
-                    <form asp-controller="Challenge" asp-action="Start" method="POST">
-                        <input type="text" name="challengeId" value="@Model.Challenge.Id" hidden="hidden"/>
-                        <button class="btn btn-outline-success">
-                            <i class="bi bi-play"></i>
-                            Start
-                        </button>
-                    </form>
+                    <p>You need to be logged in to submit flags.</p>
                 }
-            }
-            else
-            {
-                <div class="alert alert-warning" role="alert">
-                    This challenge requires you to log in to start a private instance.
+            </div>
+            <div class="col-12 col-md-2"></div>
+            <div class="col-12 col-md-4">
+                <h5>Sponsor</h5>
+                <div class="card mb-3">
+                    <img src="/img/sponsors/sponsor.png" class="card-img-top mx-auto d-block" alt="Sponsor">
+                    <div class="card-body">
+                        <h5 class="card-title">About SPONSOR</h5>
+                        <p class="card-text">
+                            Et perspiciatis et voluptatum eum est. Consectetur rerum molestiae veritatis dolorum nam.
+                            Enim explicabo unde maxime molestiae consequuntur aliquam voluptatem.
+                            Corporis fugit eveniet dolor officiis repellendus blanditiis error.
+                            Provident molestiae eius ratione repellat modi tempora eius aut.
+                            Hic quo est placeat cupiditate aut. Vel sit qui quos odit. Et et quidem aut nemo.
+                            Et aliquam iste perferendis.
+                            Eaque nostrum accusamus sint aspernatur perferendis iure. Accusantium hic ipsam commodi sunt.
+                        </p>
+                        <p class="card-text"><small class="text-muted">Go to website</small></p>
+                    </div>
                 </div>
-            }
-        }
-        @if (Model.Challenge.Services?.Any() ?? false)
-        {
-            <h5>Instance</h5>
-            <ul class="list-unstyled">
-                @foreach (var service in Model.Challenge.Services)
-                {
-                    switch (service.Protocol)
-                    {
-                        case "http":
-                            var url = $"http://{service.Hostname}:{service.Port}/";
-                            <li><code><a href="@url" target="_blank">@url</a></code></li>
-                            break;
-                        case "tcp":
-                            <li><code>nc @service.Hostname @service.Port</code></li>
-                            break;
-                        case "udp":
-                            <li><code>nc -u @service.Hostname @service.Port</code></li>
-                            break;
-                        default:
-                            <li><code>@service.Protocol @service.Hostname @service.Port</code></li>
-                            break;
-                    }
-                }
-            </ul>
-        }
-        @if (Model.Challenge.Attachments?.Any() ?? false)
-        {
-            <h5>Downloads</h5>
-            <ul class="list-inline">
-                @foreach (var attachment in Model.Challenge.Attachments)
-                {
-                    <li class="list-inline-item">
-                        <a class="btn btn-secondary" href="@attachment.DownloadUrl" target="_blank" download="@attachment.Filename">
-                            <i class="bi bi-download"></i>
-                            @attachment.Filename
-                        </a>
-                    </li>
-                }
-            </ul>
-        }
-        <br/>
-        <h5>Submit Flag</h5>
-        @if (Model.Player != null)
-        {
-            @if (Model.SubmissionResult.HasValue)
-            {
-                switch (Model.SubmissionResult.Value)
-                {
-                    case SubmissionResult.Accepted:
-                        <div class="alert alert-success" role="alert">
-                            Flag is correct.
-                        </div>
-                        break;
-                    case SubmissionResult.Rejected:
-                        <div class="alert alert-warning" role="alert">
-                            Flag is incorrect.
-                        </div>
-                        break;
-                    case SubmissionResult.RateLimited:
-                        <div class="alert alert-danger" role="alert">
-                            You are being rate-limited.
-                        </div>
-                        break;
-                    case SubmissionResult.AlreadySubmitted:
-                        <div class="alert alert-warning" role="alert">
-                            This flag has alreay been submitted.
-                        </div>
-                        break;
-                    case SubmissionResult.NotLoggedIn:
-                        <div class="alert alert-danger" role="alert">
-                            You are not logged in.
-                        </div>
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-            }
-            if (Model.ScoredChallenge.Solves.Any(s => s.DiscordId == Model.Player.DiscordId))
-            {
-                if (Model.SubmissionResult is not SubmissionResult.Accepted)
-                {
-                    <div class="alert alert-success" role="alert">
-                        You have already solved this challenge.
-                    </div>
-                }
-                
-            }
-            else
-            {
-                <form asp-controller="Challenge" asp-action="Submit" method="POST" class="row">
-                    <input type="text" name="challengeId" value="@Model.Challenge.Id" hidden="hidden">
-                    <div class="col-9">
-                        <input type="text" name="flag" placeholder="shc2023{...}" class="form-control">
-                    </div>
-                    <div class="col-3 d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Submit</button>
-                    </div>
-                </form>
-            }
-        }
-        else
-        {
-            <p>You need to be logged in to submit flags.</p>
-        }
+            </div>
+        </div>
+        
     </div>
     <div class="tab-pane" id="solves-pane" role="tabpanel" tabindex="0">
         <table class="table table-striped">
