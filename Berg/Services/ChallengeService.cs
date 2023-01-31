@@ -212,7 +212,7 @@ public class ChallengeService
     
     private async Task<V1NetworkPolicy> CreateNetworkPolicy(string ns, CancellationToken cancellationToken)
     {
-        return  await _kubernetes.CreateNamespacedNetworkPolicyAsync(new V1NetworkPolicy
+        return await _kubernetes.CreateNamespacedNetworkPolicyAsync(new V1NetworkPolicy
         {
             Metadata = new V1ObjectMeta
             {
@@ -220,9 +220,44 @@ public class ChallengeService
             },
             Spec = new V1NetworkPolicySpec
             {
-                Ingress = new List<V1NetworkPolicyIngressRule>(),
                 Egress = new List<V1NetworkPolicyEgressRule>
                 {
+                    new()
+                    {
+                        To = new List<V1NetworkPolicyPeer>
+                        {
+                            new()
+                            {
+                                NamespaceSelector = new V1LabelSelector
+                                {
+                                    MatchLabels = new Dictionary<string, string>
+                                    {
+                                        {"kubernetes.io/metadata.name", "kube-system"}
+                                    }
+                                },
+                                PodSelector = new V1LabelSelector
+                                {
+                                    MatchLabels = new Dictionary<string, string>
+                                    {
+                                        {"k8s-app", "kube-dns"}
+                                    }
+                                }
+                            }
+                        },
+                        Ports = new List<V1NetworkPolicyPort>
+                        {
+                            new()
+                            {
+                                Port = "53",
+                                Protocol = "UDP",
+                            },
+                            new()
+                            {
+                                Port = "53",
+                                Protocol = "TCP",
+                            },
+                        }
+                    },
                     new()
                     {
                         To = new List<V1NetworkPolicyPeer>
@@ -253,7 +288,7 @@ public class ChallengeService
                         }
                     }
                 },
-                PolicyTypes = new List<string> {"Ingress", "Egress"}
+                PolicyTypes = new List<string> {"Egress"}
             }
         }, ns, cancellationToken: cancellationToken);
     }
