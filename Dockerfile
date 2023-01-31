@@ -15,6 +15,7 @@ FROM build AS publish
 RUN dotnet publish "Berg.csproj" -c Release -o /app/publish
 
 FROM base AS final
+LABEL org.opencontainers.image.source=https://github.com/norelect/berg
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Berg.dll"]
