@@ -131,6 +131,7 @@ public class ChallengeService
                 await CreateDeployment(container, ns.Name(), cancellationToken);
                 await CreateService(container, ns.Name(), cancellationToken, true);
             }
+            await CreateNetworkPolicy(ns.Name(), cancellationToken);
         }
     }
 
@@ -169,8 +170,9 @@ public class ChallengeService
             await CreateDeployment(container, ns.Name(), cancellationToken);
             await CreateService(container, ns.Name(), cancellationToken);
         }
+        await CreateNetworkPolicy(ns.Name(), cancellationToken);
     }
-    
+
     public async Task CleanupExpiredDemandedChallenges(CancellationToken cancellationToken)
     {
         var namespaces = await _kubernetes.ListNamespaceAsync(cancellationToken: cancellationToken);
@@ -206,6 +208,54 @@ public class ChallengeService
                 }
             }
         }, cancellationToken: cancellationToken);
+    }
+    
+    private async Task<V1NetworkPolicy> CreateNetworkPolicy(string ns, CancellationToken cancellationToken)
+    {
+        return  await _kubernetes.CreateNamespacedNetworkPolicyAsync(new V1NetworkPolicy
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "challenge-network-policy",
+            },
+            Spec = new V1NetworkPolicySpec
+            {
+                Ingress = new List<V1NetworkPolicyIngressRule>(),
+                Egress = new List<V1NetworkPolicyEgressRule>
+                {
+                    new()
+                    {
+                        To = new List<V1NetworkPolicyPeer>
+                        {
+                            new()
+                            {
+                                NamespaceSelector = new V1LabelSelector
+                                {
+                                    MatchLabels = new Dictionary<string, string>
+                                    {
+                                        {"kubernetes.io/metadata.name", ns}
+                                    }
+                                }
+                            },
+                            new()
+                            {
+                                IpBlock = new V1IPBlock
+                                {
+                                    Cidr = "0.0.0.0/0",
+                                    Except = new List<string>
+                                    {
+                                        "10.0.0.0/8",
+                                        "172.16.0.0/12",
+                                        "192.168.0.0/16",
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                PolicyTypes = new List<string> {"Ingress", "Egress"}
+            }
+        }, ns, cancellationToken: cancellationToken);
     }
 
     private async Task<V1Service?> CreateService(ContainerInfo container, string ns, CancellationToken cancellationToken, bool useStaticPort = false)
