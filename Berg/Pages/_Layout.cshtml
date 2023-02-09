@@ -17,6 +17,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] | SHC</title>
+    <link href="/css/style.css" rel="stylesheet">
     <link href="/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/bootstrap-icons.css" rel="stylesheet">
     <link href="/img/logo-small.png" rel="shortcut icon" type="image/png"/>
@@ -102,9 +103,12 @@
 </div>
 
 <div class="container">
-    <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
-        <div class="col-md-12 d-flex align-items-center">
+    <footer class="d-flex flex-wrap justify-content-between py-3 my-4 border-top">
+        <div class="align-items-start">
             <span class="mb-12 mb-md-0 text-muted">© @DateTime.Now.Year Swiss Hacking Challenge</span>
+        </div>
+        <div class="align-items-end">
+            <span class="mb-12 mb-md-0 text-muted">Berg CTF Platform by <a class="text-body" href="https://norelect.ch" target="_blank">NoRelect</a></span>
         </div>
     </footer>
 </div>

@@ -1,0 +1,21 @@
+﻿.bg-yellow {
+    background-color: #fbc617;
+}
+
+.logo-patron {
+    max-width: 250px;
+}
+
+.logo-bronze {
+    max-width: 275px;
+}
+
+.logo-silver {
+    max-width: 300px;
+}
+
+.logo-partner,
+.logo-gold,
+.logo-silver {
+    max-width: 100%;
+}

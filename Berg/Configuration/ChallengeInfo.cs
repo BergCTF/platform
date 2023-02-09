@@ -8,6 +8,7 @@ public class ChallengeInfo
     public string Description { get; set; } = null!;
     public string Flag { get; set; } = null!;
     public string Type { get; set; } = null!;
+    public string Sponsor { get; set; } = null!;
     public List<ContainerInfo> Containers { get; set; } = null!;
     public List<AttachmentInfo> Attachments { get; set; } = null!;
 }

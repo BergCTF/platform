@@ -7,7 +7,7 @@
     ViewData["Title"] = Model.Challenge.Name;
 }
 
-<h3>
+<h3 class="mb-3">
     <a href="/challenges"><i class="bi bi-arrow-left text-secondary"></i></a>
     @Model.Challenge.Name (@Model.ScoredChallenge.Value)
 </h3>
@@ -23,7 +23,7 @@
 <div class="tab-content border-start border-bottom border-end rounded-bottom p-3">
     <div class="tab-pane show active" id="challenge-pane" role="tabpanel" aria-labelledby="home-tab" tabindex="0">
         <div class="row">
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-6 mb-5">
                 <h5>Description</h5>
                 <p>@Model.Challenge.Description</p>
                 @if (Model.Challenge.Type == ChallengeType.PrivateInstance)
@@ -136,6 +136,11 @@
                                     You are not logged in.
                                 </div>
                                 break;
+                            case SubmissionResult.CtfNotActive:
+                                <div class="alert alert-danger" role="alert">
+                                    The CTF is not active at the moment.
+                                </div>
+                                break;
                             default:
                                 throw new ArgumentOutOfRangeException();
                         }
@@ -168,26 +173,22 @@
                     <p>You need to be logged in to submit flags.</p>
                 }
             </div>
-            <div class="col-12 col-md-2"></div>
-            <div class="col-12 col-md-4">
-                <h5>Sponsor</h5>
-                <div class="card mb-3">
-                    <img src="/img/sponsors/sponsor.png" class="card-img-top mx-auto d-block" alt="Sponsor">
-                    <div class="card-body">
-                        <h5 class="card-title">About SPONSOR</h5>
-                        <p class="card-text">
-                            Et perspiciatis et voluptatum eum est. Consectetur rerum molestiae veritatis dolorum nam.
-                            Enim explicabo unde maxime molestiae consequuntur aliquam voluptatem.
-                            Corporis fugit eveniet dolor officiis repellendus blanditiis error.
-                            Provident molestiae eius ratione repellat modi tempora eius aut.
-                            Hic quo est placeat cupiditate aut. Vel sit qui quos odit. Et et quidem aut nemo.
-                            Et aliquam iste perferendis.
-                            Eaque nostrum accusamus sint aspernatur perferendis iure. Accusantium hic ipsam commodi sunt.
-                        </p>
-                        <p class="card-text"><small class="text-muted">Go to website</small></p>
+            @if (Model.Challenge.Sponsor != null)
+            {
+                var sponsor = Model.Challenge.Sponsor;
+                <div class="col-12 col-md-2"></div>
+                <div class="col-12 col-md-4">
+                    <h5>Sponsor</h5>
+                    <div class="card mb-3">
+                        <img src="@sponsor.Logo" class="mx-auto d-block p-5 bg-@sponsor.Background logo-@sponsor.Tier.ToString().ToLowerInvariant()" alt="@sponsor.Name Logo">
+                        <div class="card-body">
+                            <h5 class="card-title">@sponsor.Name</h5>
+                            <p class="card-text">@sponsor.Description</p>
+                            <p class="card-text"><a href="@sponsor.Website" target="_blank">Go to website</a></p>
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
         </div>
         
     </div>
@@ -208,7 +209,7 @@
                 <tr>
                     <th scope="row">@rank</th>
                     <td>
-                        <img src="@avatarUrl" alt="Avatar" class="rounded-circle" width="20px" height="20px">
+                        <img src="@avatarUrl" alt="Avatar" width="20px" height="20px">
                         @entry.Name
                         @if (Model.Player?.DiscordId == entry.DiscordId)
                         {

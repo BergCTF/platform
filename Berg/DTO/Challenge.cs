@@ -9,6 +9,7 @@ public class Challenge
     public string? Name { get; set; }
     public string? Description { get; set; }
     public ChallengeType Type { get; set; }
+    public SponsorInfo? Sponsor { get; set; }
     public ChallengeStatus Status { get; set; }
     public DateTime? ExpiresAt { get; set; }
     public List<Service> Services { get; set; } = null!;

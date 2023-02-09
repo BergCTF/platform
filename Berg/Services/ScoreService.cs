@@ -40,6 +40,12 @@ public class ScoreService
 
     public SubmissionResult SubmitFlag(BergDbContext dbContext, CachedPlayer player, Guid challengeId, string flag)
     {
+        var now = DateTime.Now;
+        if (_ctfInfo.CtfStart > now || _ctfInfo.CtfEnd < now)
+        {
+            return SubmissionResult.CtfNotActive;
+        }
+        
         var dbPlayer = dbContext.Players
                        .Include(u => u.Submissions)
                        .FirstOrDefault(p => p.DiscordId == player.DiscordId) ?? 

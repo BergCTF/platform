@@ -61,6 +61,7 @@ public class ChallengeService
             Name = configChallenge.Name,
             Description = configChallenge.Description,
             Type = configChallenge.Type == ChallengeTypeShared ? ChallengeType.Shared : ChallengeType.PrivateInstance,
+            Sponsor = _ctfInfo.Sponsors.GetValueOrDefault(configChallenge.Sponsor ?? ""),
             ExpiresAt = null,
             Status = ChallengeStatus.Stopped,
             Services = new List<Service>(),

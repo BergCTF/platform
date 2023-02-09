@@ -1,3 +1,4 @@
+using Berg.Configuration;
 using Berg.Db;
 using Berg.Middleware;
 using Berg.Services;
@@ -14,15 +15,18 @@ public class ChallengeController : ControllerBase
     private readonly ChallengeService _challengeService;
     private readonly ScoreService _scoreService;
     private readonly BergDbContext _dbContext;
+    private readonly CtfInfo _ctfInfo;
 
     public ChallengeController(
         ChallengeService challengeService,
         ScoreService scoreService,
-        BergDbContext dbContext)
+        BergDbContext dbContext,
+        CtfInfo ctfInfo)
     {
         _challengeService = challengeService;
         _dbContext = dbContext;
         _scoreService = scoreService;
+        _ctfInfo = ctfInfo;
     }
     
     [Authorize]

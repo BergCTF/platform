@@ -7,4 +7,5 @@ public enum SubmissionResult
     RateLimited,
     AlreadySubmitted,
     NotLoggedIn,
+    CtfNotActive,
 }
