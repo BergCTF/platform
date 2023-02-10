@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Berg.Configuration;
 using Berg.Db;
 using Berg.DTO;
@@ -10,8 +9,6 @@ namespace Berg.Pages;
 
 public class Scoreboard : PageModel
 {
-
-    private readonly BergDbContext _dbContext;
     private readonly ScoreService _scoreService;
     public readonly CtfInfo CtfInfo;
     public Category ScoreboardCategory = Category.Open;
@@ -19,9 +16,8 @@ public class Scoreboard : PageModel
     public Category? PlayerCategory = null;
     public List<ScoreboardEntry> ScoreboardEntries = new();
 
-    public Scoreboard(BergDbContext dbContext, ScoreService scoreService, CtfInfo ctfInfo)
+    public Scoreboard(ScoreService scoreService, CtfInfo ctfInfo)
     {
-        _dbContext = dbContext;
         _scoreService = scoreService;
         CtfInfo = ctfInfo;
     }

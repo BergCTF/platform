@@ -1,4 +1,5 @@
 @page
+@using Berg.Configuration
 @using Berg.Db
 @model Berg.Pages.Scoreboard
 
@@ -66,15 +67,18 @@
             <td>@entry.Score</td>
             <td>@entry.LastSolveAt?.ToLocalTime()</td>
             <td>
-                @foreach (var challenge in Model.CtfInfo.Challenges)
+                @if (Model.CtfInfo.CtfStart < DateTime.Now)
                 {
-                    if (@entry.SolvedChallenges.Contains(challenge.Id))
+                    foreach (var challenge in Model.CtfInfo.Challenges)
                     {
-                        <i class="bi bi-pentagon-fill text-primary" data-bs-toggle="tooltip" data-bs-title="@challenge.Name"></i>
-                    }
-                    else
-                    {
-                        <i class="bi bi-pentagon text-secondary" data-bs-toggle="tooltip" data-bs-title="@challenge.Name"></i>
+                        if (@entry.SolvedChallenges.Contains(challenge.Id))
+                        {
+                            <i class="bi bi-pentagon-fill text-primary" data-bs-toggle="tooltip" data-bs-title="@challenge.Name"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-pentagon text-secondary" data-bs-toggle="tooltip" data-bs-title="@challenge.Name"></i>
+                        }
                     }
                 }
             </td>
