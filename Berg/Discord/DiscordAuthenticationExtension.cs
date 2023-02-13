@@ -2,8 +2,6 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
 using Berg.Configuration;
-using Berg.Db;
-using Berg.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth;
@@ -23,6 +21,8 @@ public static class DiscordAuthenticationExtension
         .AddCookie(o => o.Cookie = new CookieBuilder()
         {
             Name = "auth",
+            SecurePolicy = CookieSecurePolicy.Always,
+            SameSite = SameSiteMode.Strict,
             HttpOnly = true
         })
         .AddOAuth("Discord", options =>
