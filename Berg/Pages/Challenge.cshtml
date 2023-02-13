@@ -23,7 +23,7 @@
 <div class="tab-content border-start border-bottom border-end rounded-bottom p-3">
     <div class="tab-pane show active" id="challenge-pane" role="tabpanel" aria-labelledby="home-tab" tabindex="0">
         <div class="row">
-            <div class="col-12 col-md-6 mb-5">
+            <div class="col-12 col-lg-6 mb-5">
                 <h5>Description</h5>
                 <p>@Model.Challenge.Description</p>
                 @if (Model.Challenge.Type == ChallengeType.PrivateInstance)
@@ -176,8 +176,8 @@
             @if (Model.Challenge.Sponsor != null)
             {
                 var sponsor = Model.Challenge.Sponsor;
-                <div class="col-12 col-md-2"></div>
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-lg-2"></div>
+                <div class="col-12 col-lg-4">
                     <h5>Sponsor</h5>
                     <div class="card mb-3">
                         <img src="@sponsor.Logo" class="mx-auto d-block p-5 bg-@sponsor.Background logo-@sponsor.Tier.ToString().ToLowerInvariant()" alt="@sponsor.Name Logo">
