@@ -22,7 +22,7 @@ public static class DiscordAuthenticationExtension
         {
             Name = "auth",
             SecurePolicy = CookieSecurePolicy.Always,
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.Lax,
             HttpOnly = true
         })
         .AddOAuth("Discord", options =>
