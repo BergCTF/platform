@@ -35,6 +35,8 @@ public static class DiscordAuthenticationExtension
             options.TokenEndpoint = "https://discord.com/api/oauth2/token";
             options.UserInformationEndpoint = "https://discord.com/api/users/@me";
             options.SaveTokens = true;
+            options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.CorrelationCookie.SameSite = SameSiteMode.Lax;
             
             options.Scope.Add("identify");
             options.Scope.Add("email");
