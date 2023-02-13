@@ -206,6 +206,10 @@
             @foreach (var entry in Model.ScoredChallenge.Solves)
             {
                 var avatarUrl = $"https://cdn.discordapp.com/avatars/{entry.DiscordId}/{entry.DiscordAvatarId}.png?size=32";
+                if (entry.DiscordAvatarId == null)
+                {
+                    avatarUrl = "https://cdn.discordapp.com/embed/avatars/1.png?size=32";
+                }
                 <tr>
                     <th scope="row">@rank</th>
                     <td>

@@ -47,6 +47,10 @@
                             var id = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                             var avatar = User.FindFirst("urn:discord:avatar")?.Value;
                             var avatarUrl = $"https://cdn.discordapp.com/avatars/{id}/{avatar}.png?size=32";
+                            if (avatar == null)
+                            {
+                                avatarUrl = "https://cdn.discordapp.com/embed/avatars/1.png?size=32";
+                            }
                         }
                         <img src="@avatarUrl" alt="Avatar" width="32" height="32">
                         &nbsp;

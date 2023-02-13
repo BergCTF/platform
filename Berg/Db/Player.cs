@@ -6,7 +6,7 @@ public class Player
     public string Name { get; set; } = null!;
     public string Email { get; set; } = null!;
     public string DiscordId { get; set; } = null!;
-    public string DiscordAvatarId { get; set; } = null!;
+    public string? DiscordAvatarId { get; set; }
     public int Score { get; set; }
     public Category Category { get; set; } = Category.Open;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

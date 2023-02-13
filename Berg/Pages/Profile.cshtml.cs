@@ -15,7 +15,7 @@ public class Profile : PageModel
 
     public string Name { get; set; } = null!;
     public string DiscordId { get; set; } = null!;
-    public string DiscordAvatarId { get; set; } = null!;
+    public string? DiscordAvatarId { get; set; }
     public string Email { get; set; } = null!;
     public Category Category { get; set; }
 
