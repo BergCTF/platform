@@ -6,7 +6,6 @@ using Berg.Services;
 using Berg.Workers;
 using k8s;
 using k8s.Autorest;
-using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
