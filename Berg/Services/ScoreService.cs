@@ -1,4 +1,5 @@
-﻿using Berg.Configuration;
+﻿using System.Text.RegularExpressions;
+using Berg.Configuration;
 using Berg.Db;
 using Berg.DTO;
 using Berg.Middleware;
@@ -113,7 +114,7 @@ public class ScoreService
                         .Where(s => s.Challenge == challenge)
                         .Select(s => new ScoredChallengeSolve
                             {
-                                Name = s.Player.Name,
+                                Name = Regex.Replace(s.Player.Name, "#\\d{4}$", ""),
                                 DiscordId = s.Player.DiscordId,
                                 DiscordAvatarId = s.Player.DiscordAvatarId,
                                 SolvedAt = s.SolvedAt
@@ -137,7 +138,7 @@ public class ScoreService
                     .Where(p => p.Category == category)
                     .Select(p => new ScoreboardEntry
                     {
-                        Name = p.Name,
+                        Name = Regex.Replace(p.Name, "#\\d{4}$", ""),
                         DiscordId = p.DiscordId,
                         DiscordAvatarId = p.DiscordAvatarId,
                         Score = p.Solves.Sum(s => s.Challenge.Value),
