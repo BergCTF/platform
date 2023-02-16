@@ -106,21 +106,29 @@ public class ScoreService
                     config.Minimum,
                     Math.Ceiling(factor * Math.Pow(challengeSolve.Solves, 2) + config.Initial)
                 );
+
+                var solves = dbContext.Solves.Include(s => s.Player)
+                    .Where(s => s.Challenge == challenge)
+                    .Select(s => new ScoredChallengeSolve
+                    {
+                        Name = CensorName(s.Player.Name),
+                        DiscordId = s.Player.DiscordId,
+                        DiscordAvatarId = s.Player.DiscordAvatarId,
+                        SolvedAt = s.SolvedAt
+                    })
+                    .OrderBy(s => s.SolvedAt)
+                    .ToList();
+                
+                foreach (var entry in solves)
+                {
+                    entry.Name = CensorName(entry.Name);
+                }
+                
                 _scoredChallenges[challenge.Id] = new ScoredChallenge
                 {
                     Id = challenge.Id,
                     Value = challenge.Value,
-                    Solves = dbContext.Solves.Include(s => s.Player)
-                        .Where(s => s.Challenge == challenge)
-                        .Select(s => new ScoredChallengeSolve
-                            {
-                                Name = CensorName(s.Player.Name),
-                                DiscordId = s.Player.DiscordId,
-                                DiscordAvatarId = s.Player.DiscordAvatarId,
-                                SolvedAt = s.SolvedAt
-                            })
-                        .OrderBy(s => s.SolvedAt)
-                        .ToList()
+                    Solves = solves
                 };
             }
             dbContext.SaveChanges();
@@ -138,7 +146,7 @@ public class ScoreService
                     .Where(p => p.Category == category)
                     .Select(p => new ScoreboardEntry
                     {
-                        Name = CensorName(p.Name),
+                        Name = p.Name,
                         DiscordId = p.DiscordId,
                         DiscordAvatarId = p.DiscordAvatarId,
                         Score = p.Solves.Sum(s => s.Challenge.Value),
@@ -147,8 +155,13 @@ public class ScoreService
                     })
                     .OrderByDescending(p => p.Score)
                     .ThenBy(p => p.LastSolveAt)
-                    .ThenBy(p => p.Name)
+                    .ThenBy(p => p.DiscordId)
                     .ToList();
+
+                foreach (var entry in _scoresByCategory[category])
+                {
+                    entry.Name = CensorName(entry.Name);
+                }
             }
         
             transaction.Commit();
