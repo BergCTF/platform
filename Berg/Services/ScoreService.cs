@@ -155,7 +155,7 @@ public class ScoreService
         }
     }
 
-    internal string CensorName(string name)
+    private static string CensorName(string name)
     {
         return Regex.Replace(name, @"#\d{4}$", "");
     }
