@@ -114,7 +114,7 @@ public class ScoreService
                         .Where(s => s.Challenge == challenge)
                         .Select(s => new ScoredChallengeSolve
                             {
-                                Name = Regex.Replace(s.Player.Name, "#\\d{4}$", ""),
+                                Name = CensorName(s.Player.Name),
                                 DiscordId = s.Player.DiscordId,
                                 DiscordAvatarId = s.Player.DiscordAvatarId,
                                 SolvedAt = s.SolvedAt
@@ -138,7 +138,7 @@ public class ScoreService
                     .Where(p => p.Category == category)
                     .Select(p => new ScoreboardEntry
                     {
-                        Name = Regex.Replace(p.Name, "#\\d{4}$", ""),
+                        Name = CensorName(p.Name),
                         DiscordId = p.DiscordId,
                         DiscordAvatarId = p.DiscordAvatarId,
                         Score = p.Solves.Sum(s => s.Challenge.Value),
@@ -153,5 +153,10 @@ public class ScoreService
         
             transaction.Commit();
         }
+    }
+
+    internal string CensorName(string name)
+    {
+        return Regex.Replace(name, @"#\d{4}$", "");
     }
 }
