@@ -42,7 +42,7 @@
                             </form>
                             if (Model.Challenge.ExpiresAt.HasValue)
                             {
-                                <p>Will automatically be killed if you start another private instance or after @Model.Challenge.ExpiresAt.Value.ToLocalTime() CET</p>
+                                <p>Will automatically be killed if you start another private instance or after @Model.Challenge.ExpiresAt.Value UTC</p>
                             }
                         }
                         else

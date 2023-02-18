@@ -19,6 +19,7 @@ public class ChallengeService
     private const string BergManager = "berg";
     private const string ChallengeTypeShared = "shared";
     private const string ChallengeTypePrivate = "private";
+    private const string PullSecretName = "ctf-pull-secret";
     
     private readonly ILogger<ChallengeService> _logger;
     private readonly Kubernetes _kubernetes;
@@ -127,6 +128,7 @@ public class ChallengeService
             _logger.LogInformation("Creating shared challenge: {}", challengeInfo.Id);
             var namespaceName = "challenge-shared-" + Guid.NewGuid();
             var ns = await CreateNamespace("", namespaceName, ChallengeTypeShared, challengeInfo.Id, cancellationToken);
+            await CreatePullSecret(ns.Name());
             foreach (var container in challengeInfo.Containers!)
             {
                 await CreateDeployment(container, ns.Name(), cancellationToken);
@@ -166,6 +168,7 @@ public class ChallengeService
         
         var namespaceName = "challenge-private-" + Guid.NewGuid();
         var ns = await CreateNamespace(userId.ToString(), namespaceName, ChallengeTypePrivate, challengeInfo.Id, cancellationToken);
+        await CreatePullSecret(ns.Name());
         foreach (var container in challengeInfo.Containers!)
         {
             await CreateDeployment(container, ns.Name(), cancellationToken);
@@ -209,6 +212,24 @@ public class ChallengeService
                 }
             }
         }, cancellationToken: cancellationToken);
+    }
+    
+    private async Task CreatePullSecret(string nsName)
+    {
+        if(_ctfInfo.ImagePullSecret == null)
+            return;
+        await _kubernetes.CreateNamespacedSecretAsync(new V1Secret
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = PullSecretName,
+            },
+            Type = "kubernetes.io/dockerconfigjson",
+            Data = new Dictionary<string, byte[]>
+            {
+                {".dockerconfigjson", Convert.FromBase64String(_ctfInfo.ImagePullSecret)}
+            }
+        }, nsName);
     }
     
     private async Task<V1NetworkPolicy> CreateNetworkPolicy(string ns, CancellationToken cancellationToken)
@@ -389,6 +410,10 @@ public class ChallengeService
                     Spec = new V1PodSpec
                     {
                         AutomountServiceAccountToken = false,
+                        ImagePullSecrets = _ctfInfo.ImagePullSecret != null ? new List<V1LocalObjectReference>
+                        {
+                          new(PullSecretName)  
+                        } : new List<V1LocalObjectReference>(),
                         Containers = new List<V1Container>
                         {
                             new()
