@@ -7,6 +7,7 @@ public class Challenge
     public Guid Id { get; set; }
     public string? Category { get; set; }
     public string? Name { get; set; }
+    //public string? Author { get; set; } TODO: Add author field
     public string? Description { get; set; }
     public ChallengeType Type { get; set; }
     public SponsorInfo? Sponsor { get; set; }

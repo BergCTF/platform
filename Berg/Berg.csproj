@@ -20,8 +20,12 @@
 
     <ItemGroup>
       <Folder Include="Migrations" />
-      <Folder Include="wwwroot\download\misc" />
+      <Folder Include="wwwroot\download\re" />
       <Folder Include="wwwroot\download\web" />
+      <Folder Include="wwwroot\download\crypto" />
+      <Folder Include="wwwroot\download\pwn" />
+      <Folder Include="wwwroot\download\misc" />
+      <Folder Include="wwwroot\download\forensics" />
     </ItemGroup>
 
 </Project>

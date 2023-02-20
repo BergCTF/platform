@@ -25,7 +25,7 @@
         <div class="row">
             <div class="col-12 col-lg-6 mb-5">
                 <h5>Description</h5>
-                <p>@Model.Challenge.Description</p>
+                <p>@Html.Raw(Model.Challenge.Description)</p>
                 @if (Model.Challenge.Type == ChallengeType.PrivateInstance)
                 {
                     <h5>Private Instance Control</h5>
