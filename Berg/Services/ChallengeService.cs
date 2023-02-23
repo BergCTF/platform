@@ -113,6 +113,7 @@ public class ChallengeService
 
         var sharedChallengeInfos = _ctfInfo.Challenges!
             .Where(c => c.Type == ChallengeTypeShared)
+            .Where(c => c.Containers.Any())
             .ToList();
         _logger.LogInformation("Creating {} shared challenges", sharedChallengeInfos.Count);
         
