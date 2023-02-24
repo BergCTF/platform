@@ -60,6 +60,7 @@ public class ChallengeService
             Id = challengeId,
             Category = configChallenge.Category,
             Name = configChallenge.Name,
+            Author = configChallenge.Author,
             Description = configChallenge.Description,
             Type = configChallenge.Type == ChallengeTypeShared ? ChallengeType.Shared : ChallengeType.PrivateInstance,
             Sponsor = _ctfInfo.Sponsors.GetValueOrDefault(configChallenge.Sponsor ?? ""),
