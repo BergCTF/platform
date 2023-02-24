@@ -162,7 +162,7 @@
                         <form asp-controller="Challenge" asp-action="Submit" method="POST" class="row">
                             <input type="text" name="challengeId" value="@Model.Challenge.Id" hidden="hidden">
                             <div class="col-9">
-                                <input type="text" name="flag" placeholder="shc2023{...}" class="form-control">
+                                <input type="text" name="flag" placeholder="shc2023{...}" class="form-control" required="required">
                             </div>
                             <div class="col-3 d-grid gap-2">
                                 <button type="submit" class="btn btn-primary">Submit</button>

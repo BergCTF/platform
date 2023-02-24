@@ -139,13 +139,26 @@ public class ScoreService
                 playerScore.Player.Score = playerScore.Score;
             }
             dbContext.SaveChanges();
-            
+
             foreach (var category in Enum.GetValues<Category>())
             {
+                var firstBloods = dbContext.Solves
+                    .Where(s => s.Player.Category == category)
+                    .Select(s => new
+                    {
+                        ChallengeId = s.Challenge.Id,
+                        PlayerId = s.Player.Id,
+                        SolvedAt = s.SolvedAt,
+                    })
+                    .GroupBy(s => s.ChallengeId)
+                    .ToDictionary(g => g.Key, g => g.ToList())
+                    .ToDictionary(s => s.Key, s => s.Value.MinBy(v => v.SolvedAt)!.PlayerId);
+
                 _scoresByCategory[category] = dbContext.Players
                     .Where(p => p.Category == category)
                     .Select(p => new ScoreboardEntry
                     {
+                        PlayerId = p.Id,
                         Name = p.Name,
                         DiscordId = p.DiscordId,
                         DiscordAvatarId = p.DiscordAvatarId,
@@ -161,6 +174,8 @@ public class ScoreService
                 foreach (var entry in _scoresByCategory[category])
                 {
                     entry.Name = CensorName(entry.Name);
+                    entry.FirstBloodedChallenges = entry.SolvedChallenges
+                            .Where(c => firstBloods[c] == entry.PlayerId).ToHashSet();
                 }
             }
         

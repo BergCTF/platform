@@ -74,9 +74,16 @@
                 {
                     foreach (var challenge in Model.CtfInfo.Challenges)
                     {
-                        if (@entry.SolvedChallenges.Contains(challenge.Id))
+                        if (entry.SolvedChallenges.Contains(challenge.Id))
                         {
-                            <i class="bi bi-pentagon-fill text-primary" data-bs-toggle="tooltip" data-bs-title="@challenge.Name"></i>
+                            if (entry.FirstBloodedChallenges.Contains(challenge.Id))
+                            {
+                                <i class="bi bi-droplet-fill text-danger" data-bs-toggle="tooltip" data-bs-title="@challenge.Name"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-pentagon-fill text-primary" data-bs-toggle="tooltip" data-bs-title="@challenge.Name"></i>
+                            }
                         }
                         else
                         {
