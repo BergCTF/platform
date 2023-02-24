@@ -17,6 +17,7 @@ public static class ChallengeLoader
                 {
                     Id = configChallenge.Id,
                     Name = configChallenge.Name.Trim(),
+                    Author = configChallenge.Author,
                     Description = configChallenge.Description.Trim(),
                     Category = configChallenge.Category.Trim(),
                     Flag = configChallenge.Flag.Trim(),
@@ -25,6 +26,7 @@ public static class ChallengeLoader
             else
             {
                 dbChallenge.Name = configChallenge.Name;
+                dbChallenge.Author = configChallenge.Author;
                 dbChallenge.Description = configChallenge.Description;
                 dbChallenge.Flag = configChallenge.Flag;
                 dbChallenge.Category = configChallenge.Category.Trim();

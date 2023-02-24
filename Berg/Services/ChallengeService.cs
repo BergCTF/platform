@@ -403,7 +403,7 @@ public class ChallengeService
                     {
                         Name = container.ContainerName,
                         NamespaceProperty = ns,
-                        Labels = new Dictionary<string, string>()
+                        Labels = new Dictionary<string, string>
                         {
                             { AppNameSelectorKey, container.ContainerName },
                         }
@@ -414,7 +414,7 @@ public class ChallengeService
                         TerminationGracePeriodSeconds = 0,
                         ImagePullSecrets = _ctfInfo.ImagePullSecret != null ? new List<V1LocalObjectReference>
                         {
-                          new(PullSecretName)  
+                            new(PullSecretName)  
                         } : new List<V1LocalObjectReference>(),
                         Containers = new List<V1Container>
                         {
@@ -425,19 +425,23 @@ public class ChallengeService
                                 Env = container.Environment
                                     .Select(e => new V1EnvVar(e.Key, e.Value))
                                     .ToList(),
-                                Resources = new V1ResourceRequirements()
+                                SecurityContext = new V1SecurityContext
                                 {
-                                    Limits = new Dictionary<string, ResourceQuantity>()
+                                    Privileged = container.Privileged
+                                },
+                                Resources = new V1ResourceRequirements
+                                {
+                                    Limits = new Dictionary<string, ResourceQuantity>
                                     {
                                         { "cpu", new ResourceQuantity("100m") },
                                         { "memory", new ResourceQuantity("500Mi") }
-                                    },
+                                    }
                                 },
                                 Ports = container.Ports
                                     .Select(p => new V1ContainerPort(p.Port, protocol: p.Protocol.ToUpperInvariant()))
                                     .ToList(),
                             }
-                        },
+                        }
                     }
                 }
             }
