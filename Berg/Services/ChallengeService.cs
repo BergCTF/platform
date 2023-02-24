@@ -411,6 +411,7 @@ public class ChallengeService
                     Spec = new V1PodSpec
                     {
                         AutomountServiceAccountToken = false,
+                        TerminationGracePeriodSeconds = 0,
                         ImagePullSecrets = _ctfInfo.ImagePullSecret != null ? new List<V1LocalObjectReference>
                         {
                           new(PullSecretName)  
