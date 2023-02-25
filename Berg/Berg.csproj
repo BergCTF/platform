@@ -25,7 +25,6 @@
       <Folder Include="wwwroot\download\crypto" />
       <Folder Include="wwwroot\download\pwn" />
       <Folder Include="wwwroot\download\misc" />
-      <Folder Include="wwwroot\download\forensics" />
     </ItemGroup>
 
 </Project>
