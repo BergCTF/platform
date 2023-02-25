@@ -430,7 +430,7 @@ public class ChallengeService
                                 {
                                     Privileged = container.Privileged
                                 },
-                                Resources = new V1ResourceRequirements
+                                Resources = container.DisableResourceLimit ? null : new V1ResourceRequirements
                                 {
                                     Limits = new Dictionary<string, ResourceQuantity>
                                     {
