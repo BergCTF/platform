@@ -423,6 +423,7 @@ public class ChallengeService
                             {
                                 Name = container.ContainerName,
                                 Image = container.Image,
+                                ImagePullPolicy = "Always",
                                 Env = container.Environment
                                     .Select(e => new V1EnvVar(e.Key, e.Value))
                                     .ToList(),
