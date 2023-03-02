@@ -44,7 +44,7 @@
         <th scope="col">#</th>
         <th scope="col">Name</th>
         <th scope="col">Score</th>
-        <th scope="col">Last solve (CET)</th>
+        <th scope="col">Last solve (UTC)</th>
         <th scope="col">Solved challenges</th>
     </tr>
     </thead>
@@ -68,7 +68,7 @@
                 }
             </td>
             <td>@entry.Score</td>
-            <td>@entry.LastSolveAt?.ToLocalTime()</td>
+            <td>@entry.LastSolveAt</td>
             <td>
                 @if (Model.CtfInfo.CtfStart < DateTime.Now)
                 {

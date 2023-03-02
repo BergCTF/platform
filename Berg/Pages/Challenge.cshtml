@@ -200,7 +200,7 @@
             <tr>
                 <th scope="col">#</th>
                 <th scope="col">Name</th>
-                <th scope="col">Solved At (CET)</th>
+                <th scope="col">Solved At (UTC)</th>
             </tr>
             </thead>
             <tbody class="table-group-divider">
@@ -222,7 +222,7 @@
                             <span class="badge bg-info">you</span>
                         }
                     </td>
-                    <td>@entry.SolvedAt.ToLocalTime()</td>
+                    <td>@entry.SolvedAt</td>
                 </tr>
                 rank++;
             }
