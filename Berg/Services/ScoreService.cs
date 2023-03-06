@@ -11,22 +11,20 @@ public class ScoreService
 {
     private readonly object _scoreUpdateLock = new();
     private readonly CtfInfo _ctfInfo;
-    private readonly Dictionary<Category, List<ScoreboardEntry>> _scoresByCategory = new();
     private readonly Dictionary<Guid, ScoredChallenge> _scoredChallenges = new();
+    private List<ScoreboardEntry> _scoreboard = new();
+    private List<PlayerActivity> _latestPlayerActivities = new();
 
     public ScoreService(CtfInfo ctfInfo)
     {
         _ctfInfo = ctfInfo;
-
-        foreach (var category in Enum.GetValues<Category>())
-        {
-            _scoresByCategory[category] = new List<ScoreboardEntry>();
-        }
     }
 
-    public List<ScoreboardEntry> GetScoreboard(Category category)
+    public List<ScoreboardEntry> GetScoreboard(Category? category = null)
     {
-        return _scoresByCategory[category];
+        return category == null ? _scoreboard : _scoreboard
+            .Where(e => e.PlayerCategory == category)
+            .ToList();
     }
 
     public ScoredChallenge GetScoredChallenge(Guid challengeId)
@@ -37,6 +35,11 @@ public class ScoreService
     public Dictionary<Guid, ScoredChallenge> GetScoredChallenges()
     {
         return _scoredChallenges;
+    }
+
+    public List<PlayerActivity> GetLatestPlayerActivities()
+    {
+        return _latestPlayerActivities;
     }
 
     public SubmissionResult SubmitFlag(BergDbContext dbContext, CachedPlayer player, Guid challengeId, string flag)
@@ -111,7 +114,8 @@ public class ScoreService
                     .Where(s => s.Challenge == challenge)
                     .Select(s => new ScoredChallengeSolve
                     {
-                        Name = CensorName(s.Player.Name),
+                        PlayerName = s.Player.Name,
+                        PlayerCategory = s.Player.Category,
                         DiscordId = s.Player.DiscordId,
                         DiscordAvatarId = s.Player.DiscordAvatarId,
                         SolvedAt = s.SolvedAt
@@ -121,7 +125,7 @@ public class ScoreService
                 
                 foreach (var entry in solves)
                 {
-                    entry.Name = CensorName(entry.Name);
+                    entry.PlayerName = CensorName(entry.PlayerName);
                 }
                 
                 _scoredChallenges[challenge.Id] = new ScoredChallenge
@@ -140,6 +144,23 @@ public class ScoreService
             }
             dbContext.SaveChanges();
 
+            _scoreboard = dbContext.Players
+                .Select(p => new ScoreboardEntry
+                {
+                    PlayerId = p.Id,
+                    PlayerName = p.Name,
+                    PlayerCategory = p.Category,
+                    DiscordId = p.DiscordId,
+                    DiscordAvatarId = p.DiscordAvatarId,
+                    Score = p.Solves.Sum(s => s.Challenge.Value),
+                    LastSolveAt = p.Solves.Max(s => s.SolvedAt),
+                    SolvedChallenges = p.Solves.Select(s => s.Challenge.Id).ToHashSet(),
+                })
+                .OrderByDescending(p => p.Score)
+                .ThenBy(p => p.LastSolveAt)
+                .ThenBy(p => p.DiscordId)
+                .ToList();
+            
             foreach (var category in Enum.GetValues<Category>())
             {
                 var firstBloods = dbContext.Solves
@@ -154,30 +175,36 @@ public class ScoreService
                     .ToDictionary(g => g.Key, g => g.ToList())
                     .ToDictionary(s => s.Key, s => s.Value.MinBy(v => v.SolvedAt)!.PlayerId);
 
-                _scoresByCategory[category] = dbContext.Players
-                    .Where(p => p.Category == category)
-                    .Select(p => new ScoreboardEntry
-                    {
-                        PlayerId = p.Id,
-                        Name = p.Name,
-                        DiscordId = p.DiscordId,
-                        DiscordAvatarId = p.DiscordAvatarId,
-                        Score = p.Solves.Sum(s => s.Challenge.Value),
-                        LastSolveAt = p.Solves.Max(s => s.SolvedAt),
-                        SolvedChallenges = p.Solves.Select(s => s.Challenge.Id).ToHashSet(),
-                    })
-                    .OrderByDescending(p => p.Score)
-                    .ThenBy(p => p.LastSolveAt)
-                    .ThenBy(p => p.DiscordId)
-                    .ToList();
-
-                foreach (var entry in _scoresByCategory[category])
+                foreach (var entry in _scoreboard.Where(e => e.PlayerCategory == category))
                 {
-                    entry.Name = CensorName(entry.Name);
                     entry.FirstBloodedChallenges = entry.SolvedChallenges
                             .Where(c => firstBloods[c] == entry.PlayerId).ToHashSet();
                 }
             }
+            
+            foreach (var entry in _scoreboard)
+            {
+                entry.PlayerName = CensorName(entry.PlayerName);
+            }
+
+            _latestPlayerActivities = dbContext.Solves
+                .Include(s => s.Player)
+                .Include(s => s.Challenge)
+                .OrderByDescending(s => s.SolvedAt)
+                .Take(25)
+                .ToList()
+                .Select(s => new PlayerActivity
+                {
+                    SolvedAt = s.SolvedAt,
+                    ChallengeId = s.Challenge.Id,
+                    DiscordId = s.Player.DiscordId,
+                    DiscordAvatarId = s.Player.DiscordAvatarId,
+                    ChallengeName = s.Challenge.Name,
+                    PlayerName = CensorName(s.Player.Name),
+                    PlayerCategory = s.Player.Category,
+                    FirstBlood = false
+                })
+                .ToList();
         
             transaction.Commit();
         }

@@ -1,0 +1,45 @@
+@page
+@using Berg.Services
+@model Berg.Pages.Activity
+
+@inject ScoreService ScoreService
+
+@{
+    ViewData["Title"] = $"Activity";
+}
+
+<h3>Activity</h3>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th scope="col">Time (UTC)</th>
+        <th scope="col">Name</th>
+        <th scope="col">Category</th>
+        <th scope="col">Solved challenge</th>
+    </tr>
+    </thead>
+    <tbody class="table-group-divider">
+    @foreach (var activity in ScoreService.GetLatestPlayerActivities())
+    {
+        var avatarUrl = $"https://cdn.discordapp.com/avatars/{activity.DiscordId}/{activity.DiscordAvatarId}.png?size=32";
+        if (activity.DiscordAvatarId == null)
+        {
+            avatarUrl = "https://cdn.discordapp.com/embed/avatars/1.png?size=32";
+        }
+        <tr>
+            <th scope="row">@activity.SolvedAt</th>
+            <td>
+                <img src="@avatarUrl" alt="Avatar" width="20px" height="20px">
+                @activity.PlayerName
+                @if (activity.DiscordId == Model.DiscordId)
+                {
+                    <span class="badge bg-info">you</span>
+                }
+            </td>
+            <td>@activity.PlayerCategory</td>
+            <td><a asp-page="Challenge" asp-route-challengeId="@activity.ChallengeId">@activity.ChallengeName</a></td>
+        </tr>
+    }
+    </tbody>
+</table>

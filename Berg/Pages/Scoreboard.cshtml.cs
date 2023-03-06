@@ -11,9 +11,9 @@ public class Scoreboard : PageModel
 {
     private readonly ScoreService _scoreService;
     public readonly CtfInfo CtfInfo;
-    public Category ScoreboardCategory = Category.Open;
-    public string? DiscordId = null;
-    public Category? PlayerCategory = null;
+    public Category? SelectedCategory;
+    public string? DiscordId;
+    public Category? PlayerCategory;
     public List<ScoreboardEntry> ScoreboardEntries = new();
 
     public Scoreboard(ScoreService scoreService, CtfInfo ctfInfo)
@@ -22,21 +22,37 @@ public class Scoreboard : PageModel
         CtfInfo = ctfInfo;
     }
     
-    public void OnGet(Category? category = null)
+    public void OnGet(ScoreboardCategory? category = null)
     {
         if (HttpContext.HasCachedPlayer())
         {
             var cachedPlayer = HttpContext.GetCachedPlayer();
             DiscordId = cachedPlayer.DiscordId;
             PlayerCategory = cachedPlayer.Category;
-            ScoreboardCategory = category ?? cachedPlayer.Category!.Value;
+            SelectedCategory = ToCategory(category, cachedPlayer.Category!.Value);
         }
         else
         {
-            ScoreboardCategory = category ?? Category.Open;
+            SelectedCategory = ToCategory(category ?? ScoreboardCategory.Combined);
             PlayerCategory = null;
             DiscordId = null;
         }
-        ScoreboardEntries = _scoreService.GetScoreboard(ScoreboardCategory);
+        ScoreboardEntries = _scoreService.GetScoreboard(SelectedCategory);
+    }
+
+    private static Category? ToCategory(ScoreboardCategory? scoreboardCategory, Category? fallback = null)
+    {
+        if (scoreboardCategory == null)
+        {
+            return fallback;
+        }
+        return scoreboardCategory switch
+        {
+            ScoreboardCategory.Junior => Category.Junior,
+            ScoreboardCategory.Senior => Category.Senior,
+            ScoreboardCategory.Open => Category.Open,
+            ScoreboardCategory.Combined => null,
+            _ => throw new ArgumentOutOfRangeException(nameof(scoreboardCategory), scoreboardCategory, null)
+        };
     }
 }

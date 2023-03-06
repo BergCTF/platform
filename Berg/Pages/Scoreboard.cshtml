@@ -3,7 +3,7 @@
 @model Berg.Pages.Scoreboard
 
 @{
-    ViewData["Title"] = $"{Model.ScoreboardCategory} Scoreboard";
+    ViewData["Title"] = $"{Model.SelectedCategory} Scoreboard";
 }
 
 <h3>Scoreboard</h3>
@@ -11,7 +11,7 @@
 <ul class="nav nav-tabs">
     @foreach (var category in Enum.GetValues<Category>())
     {
-        if (category == Model.ScoreboardCategory) 
+        if (category == Model.SelectedCategory) 
         {
             <li class="nav-item">
                 <a class="nav-link active" href="/scoreboard?category=@category">
@@ -36,6 +36,20 @@
             </li>
         }
     }
+    <li class="nav-item">
+        @if (Model.SelectedCategory == null)
+        {
+            <a class="nav-link active" href="/scoreboard?category=Combined">
+                Combined
+            </a>
+        }
+        else
+        {
+            <a class="nav-link" href="/scoreboard?category=Combined">
+                Combined
+            </a>
+        }
+    </li>
 </ul>
 
 <table class="table table-striped">
@@ -61,7 +75,7 @@
             <th scope="row">@rank</th>
             <td>
                 <img src="@avatarUrl" alt="Avatar" width="20px" height="20px">
-                @entry.Name
+                @entry.PlayerName
                 @if (Model.DiscordId == entry.DiscordId)
                 {
                     <span class="badge bg-info">you</span>
@@ -76,7 +90,7 @@
                     {
                         if (entry.SolvedChallenges.Contains(challenge.Id))
                         {
-                            if (entry.FirstBloodedChallenges.Contains(challenge.Id))
+                            if (entry.FirstBloodedChallenges.Contains(challenge.Id) && Model.SelectedCategory != null)
                             {
                                 <i class="bi bi-droplet-fill text-danger" data-bs-toggle="tooltip" data-bs-title="@challenge.Name"></i>
                             }

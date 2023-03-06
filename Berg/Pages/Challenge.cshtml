@@ -200,6 +200,7 @@
             <tr>
                 <th scope="col">#</th>
                 <th scope="col">Name</th>
+                <th scope="col">Category</th>
                 <th scope="col">Solved At (UTC)</th>
             </tr>
             </thead>
@@ -216,12 +217,13 @@
                     <th scope="row">@rank</th>
                     <td>
                         <img src="@avatarUrl" alt="Avatar" width="20px" height="20px">
-                        @entry.Name
+                        @entry.PlayerName
                         @if (Model.Player?.DiscordId == entry.DiscordId)
                         {
                             <span class="badge bg-info">you</span>
                         }
                     </td>
+                    <td>@entry.PlayerCategory</td>
                     <td>@entry.SolvedAt</td>
                 </tr>
                 rank++;
