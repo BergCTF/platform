@@ -57,6 +57,10 @@
     <tr>
         <th scope="col">#</th>
         <th scope="col">Name</th>
+        @if (Model.SelectedCategory == null)
+        {
+            <th scope="col">Category</th>
+        }
         <th scope="col">Score</th>
         <th scope="col">Last solve (UTC)</th>
         <th scope="col">Solved challenges</th>
@@ -81,6 +85,10 @@
                     <span class="badge bg-info">you</span>
                 }
             </td>
+            @if (Model.SelectedCategory == null)
+            {
+                <td>@entry.PlayerCategory</td>
+            }
             <td>@entry.Score</td>
             <td>@entry.LastSolveAt</td>
             <td>
