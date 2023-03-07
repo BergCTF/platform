@@ -2,10 +2,20 @@ version: '3'
 services:
   berg:
     image: berg:latest
-    build: .
+    build:
+      context: .
+      dockerfile: Berg/Dockerfile
     ports:
       - "5000:80"
     volumes:
       - "./Berg/ctf.json:/app/ctf.json:ro"
       - "./Berg/kubeconfig.yaml:/app/kubeconfig.yaml:ro"
       - "./Berg/appsettings.Development.json:/app/appsettings.json:ro"
+
+  berg-discord-integration:
+    image: berg-discord-integration:latest
+    build:
+      context: .
+      dockerfile: Berg.DiscordIntegration/Dockerfile
+    volumes:
+      - "./Berg.DiscordIntegration/appsettings.Development.json:/app/appsettings.json:ro"
