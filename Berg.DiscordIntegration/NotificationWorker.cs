@@ -30,7 +30,7 @@ public class NotificationWorker : BackgroundService
             return;
         }
 
-        var latestCheckedDateTime = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(5));
+        var latestCheckedDateTime = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(_discordConfiguration.LookBehindMinutes));
         
         while (!stoppingToken.IsCancellationRequested)
         {
