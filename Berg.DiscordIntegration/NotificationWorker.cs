@@ -46,6 +46,13 @@ public class NotificationWorker : BackgroundService
                     return;
                 }
 
+                var guild = await client.GetGuildAsync(_discordConfiguration.GuildId);
+                if (_discordConfiguration.GuildId == 0 || guild == null)
+                {
+                    _logger.LogError("No or guild id configured, aborting.");
+                    return;
+                }
+
                 using var scope = _serviceScopeFactory.CreateScope();
                 
                 while (!stoppingToken.IsCancellationRequested)
@@ -64,7 +71,7 @@ public class NotificationWorker : BackgroundService
 
                     foreach (var solve in latestSolves)
                     {
-                        var user = await client.GetUserAsync(ulong.Parse(solve.Player.DiscordId));
+                        var user = await guild.GetUserAsync(ulong.Parse(solve.Player.DiscordId));
                         var username = user == null ? solve.Player.Name : user.Mention;
                         await channel.SendMessageAsync($"{username} ({solve.Player.Category}) solved challenge `{solve.Challenge.Name}`");
 
