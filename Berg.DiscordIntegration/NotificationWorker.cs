@@ -30,7 +30,7 @@ public class NotificationWorker : BackgroundService
             return;
         }
 
-        var latestCheckedDateTime = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(1));
+        var latestCheckedDateTime = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(5));
         
         while (!stoppingToken.IsCancellationRequested)
         {
