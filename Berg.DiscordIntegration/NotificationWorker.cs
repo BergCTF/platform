@@ -64,9 +64,9 @@ public class NotificationWorker : BackgroundService
 
                     foreach (var solve in latestSolves)
                     {
-                        var user = await client.GetUserAsync(ulong.Parse(solve.Player.DiscordId));
+                        var user = await channel.GetUserAsync(ulong.Parse(solve.Player.DiscordId));
                         var username = user == null ? solve.Player.Name : user.Mention;
-                        await channel.SendMessageAsync($"{username} solved challenge `{solve.Challenge.Name}`");
+                        await channel.SendMessageAsync($"{username} ({solve.Player.Category}) solved challenge `{solve.Challenge.Name}`");
 
                         if (latestCheckedDateTime <= solve.SolvedAt)
                             latestCheckedDateTime = solve.SolvedAt;
