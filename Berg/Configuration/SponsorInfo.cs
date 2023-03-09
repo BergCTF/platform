@@ -8,4 +8,5 @@ public class SponsorInfo
     public string Logo { get; set; }
     public string Website { get; set; }
     public string Background { get; set; } = "dark";
+    public bool HideOnSponsoringPage { get; set; }
 }

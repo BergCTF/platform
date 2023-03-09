@@ -181,12 +181,12 @@
                 <div class="col-12 col-lg-2"></div>
                 <div class="col-12 col-lg-4">
                     <h5>Sponsor</h5>
-                    <div class="card mb-3">
+                    <div class="card mb-3 rounded-0">
                         <img src="@sponsor.Logo" class="mx-auto d-block p-5 bg-@sponsor.Background logo-@sponsor.Tier.ToString().ToLowerInvariant()" alt="@sponsor.Name Logo">
                         <div class="card-body">
                             <h5 class="card-title">@sponsor.Name</h5>
-                            <p class="card-text">@sponsor.Description</p>
-                            <p class="card-text"><a href="@sponsor.Website" target="_blank">Go to website</a></p>
+                            <p class="card-text">@Html.Raw(sponsor.Description)</p>
+                            <p class="card-text"><a href="@sponsor.Website" target="_blank">Find out more</a></p>
                         </div>
                     </div>
                 </div>

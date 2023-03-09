@@ -11,7 +11,7 @@
 @{
     void RenderSponsors(List<SponsorInfo> sponsors)
     {
-        foreach (var sponsor in sponsors)
+        foreach (var sponsor in sponsors.Where(s => !s.HideOnSponsoringPage))
         {
             <div class="row">
                 <div class="col-12">
@@ -23,42 +23,42 @@
                             <div class="col-lg-9">
                                 <div class="card-body">
                                     <h5 class="card-title">@sponsor.Name</h5>
-                                    <p class="card-text">@sponsor.Description</p>
-                                    <p class="card-text"><a href="@sponsor.Website" target="_blank">Go to website</a></p>
+                                    <p class="card-text">@Html.Raw(sponsor.Description)</p>
+                                    <p class="card-text"><a href="@sponsor.Website" target="_blank">Find out more</a></p>
                                 </div>
                             </div>
                         </div>
-                       </div>
+                    </div>
                 </div>
             </div>
         }
     }
     
-    @if (Model.Partners.Any())
+    @if (Model.Partners.Any(s => !s.HideOnSponsoringPage))
     {
         <h4 class="mb-3">Partners</h4>
         RenderSponsors(Model.Partners);
     }
     
-    @if (Model.GoldSponsors.Any())
+    @if (Model.GoldSponsors.Any(s => !s.HideOnSponsoringPage))
     {
         <h4 class="mb-3">Gold Sponsors</h4>
         RenderSponsors(Model.GoldSponsors);
     }
 
-    @if (Model.SilverSponsors.Any())
+    @if (Model.SilverSponsors.Any(s => !s.HideOnSponsoringPage))
     {
         <h4 class="mb-3">Silver Sponsors</h4>
         RenderSponsors(Model.SilverSponsors);
     }
 
-    @if (Model.BronzeSponsors.Any())
+    @if (Model.BronzeSponsors.Any(s => !s.HideOnSponsoringPage))
     {
         <h4 class="mb-3">Bronze Sponsors</h4>
         RenderSponsors(Model.BronzeSponsors);
     }
 
-    @if (Model.PatronSponsors.Any())
+    @if (Model.PatronSponsors.Any(s => !s.HideOnSponsoringPage))
     {
         <h4 class="mb-3">Patron Sponsors</h4>
         RenderSponsors(Model.PatronSponsors);
