@@ -106,73 +106,75 @@
                 <h5>Author</h5>
                 <p>@Model.Challenge.Author</p>
                 <br/>
-                <h5>Submit Flag</h5>
-                @if (Model.Player != null)
-                {
-                    @if (Model.SubmissionResult.HasValue)
+                @if (!Model.HasEnded) {
+                    <h5>Submit Flag</h5>
+                    @if (Model.Player != null)
                     {
-                        switch (Model.SubmissionResult.Value)
+                        @if (Model.SubmissionResult.HasValue)
                         {
-                            case SubmissionResult.Accepted:
+                            switch (Model.SubmissionResult.Value)
+                            {
+                                case SubmissionResult.Accepted:
+                                    <div class="alert alert-success" role="alert">
+                                        Flag is correct.
+                                    </div>
+                                    break;
+                                case SubmissionResult.Rejected:
+                                    <div class="alert alert-warning" role="alert">
+                                        Flag is incorrect.
+                                    </div>
+                                    break;
+                                case SubmissionResult.RateLimited:
+                                    <div class="alert alert-danger" role="alert">
+                                        You are being rate-limited.
+                                    </div>
+                                    break;
+                                case SubmissionResult.AlreadySubmitted:
+                                    <div class="alert alert-warning" role="alert">
+                                        This flag has alreay been submitted.
+                                    </div>
+                                    break;
+                                case SubmissionResult.NotLoggedIn:
+                                    <div class="alert alert-danger" role="alert">
+                                        You are not logged in.
+                                    </div>
+                                    break;
+                                case SubmissionResult.CtfNotActive:
+                                    <div class="alert alert-danger" role="alert">
+                                        The CTF is not active at the moment.
+                                    </div>
+                                    break;
+                                default:
+                                    throw new ArgumentOutOfRangeException();
+                            }
+                        }
+                        if (Model.ScoredChallenge.Solves.Any(s => s.DiscordId == Model.Player.DiscordId))
+                        {
+                            if (Model.SubmissionResult is not SubmissionResult.Accepted)
+                            {
                                 <div class="alert alert-success" role="alert">
-                                    Flag is correct.
+                                    You have already solved this challenge.
                                 </div>
-                                break;
-                            case SubmissionResult.Rejected:
-                                <div class="alert alert-warning" role="alert">
-                                    Flag is incorrect.
-                                </div>
-                                break;
-                            case SubmissionResult.RateLimited:
-                                <div class="alert alert-danger" role="alert">
-                                    You are being rate-limited.
-                                </div>
-                                break;
-                            case SubmissionResult.AlreadySubmitted:
-                                <div class="alert alert-warning" role="alert">
-                                    This flag has alreay been submitted.
-                                </div>
-                                break;
-                            case SubmissionResult.NotLoggedIn:
-                                <div class="alert alert-danger" role="alert">
-                                    You are not logged in.
-                                </div>
-                                break;
-                            case SubmissionResult.CtfNotActive:
-                                <div class="alert alert-danger" role="alert">
-                                    The CTF is not active at the moment.
-                                </div>
-                                break;
-                            default:
-                                throw new ArgumentOutOfRangeException();
+                            }
+                    
                         }
-                    }
-                    if (Model.ScoredChallenge.Solves.Any(s => s.DiscordId == Model.Player.DiscordId))
-                    {
-                        if (Model.SubmissionResult is not SubmissionResult.Accepted)
+                        else
                         {
-                            <div class="alert alert-success" role="alert">
-                                You have already solved this challenge.
-                            </div>
+                            <form asp-controller="Challenge" asp-action="Submit" method="POST" class="row">
+                                <input type="text" name="challengeId" value="@Model.Challenge.Id" hidden="hidden">
+                                <div class="col-9">
+                                    <input type="text" name="flag" placeholder="shc2023{...}" class="form-control" required="required">
+                                </div>
+                                <div class="col-3 d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary">Submit</button>
+                                </div>
+                            </form>
                         }
-                
                     }
                     else
                     {
-                        <form asp-controller="Challenge" asp-action="Submit" method="POST" class="row">
-                            <input type="text" name="challengeId" value="@Model.Challenge.Id" hidden="hidden">
-                            <div class="col-9">
-                                <input type="text" name="flag" placeholder="shc2023{...}" class="form-control" required="required">
-                            </div>
-                            <div class="col-3 d-grid gap-2">
-                                <button type="submit" class="btn btn-primary">Submit</button>
-                            </div>
-                        </form>
+                        <p>You need to be logged in to submit flags.</p>
                     }
-                }
-                else
-                {
-                    <p>You need to be logged in to submit flags.</p>
                 }
             </div>
             @if (Model.Challenge.Sponsor != null)

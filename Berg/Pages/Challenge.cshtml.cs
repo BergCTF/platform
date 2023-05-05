@@ -15,6 +15,7 @@ public class ChallengeDetail : PageModel
 
     public new DTO.Challenge Challenge = null!;
     public CachedPlayer? Player;
+    public bool HasEnded = false;
     public ScoredChallenge ScoredChallenge = null!;
     public SubmissionResult? SubmissionResult;
 
@@ -31,8 +32,12 @@ public class ChallengeDetail : PageModel
         SubmissionResult? result = null)
     {
         var now = DateTime.Now;
-        if (!challengeId.HasValue || _ctfInfo.CtfStart > now || _ctfInfo.CtfEnd < now)
+        if (!challengeId.HasValue || _ctfInfo.CtfStart > now)
             return Redirect("/challenges");
+
+        if (_ctfInfo.CtfEnd < now) {
+            HasEnded = true;
+        }
 
         SubmissionResult = result;
         Player = HttpContext.GetCachedPlayerOrDefault();

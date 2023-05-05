@@ -41,8 +41,7 @@ public class Challenges : PageModel
         if (_ctfInfo.CtfEnd < now)
         {
             AlreadyEnded = true;
-            CtfEnd = _ctfInfo.CtfEnd;
-            return;  
+            CtfEnd = _ctfInfo.CtfEnd; 
         }
         ChallengesByCategory = (await _challengeService.GetChallenges(Player, cancellationToken))
             .GroupBy(c => c.Category)
