@@ -8,9 +8,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Berg", "Berg", "{427024F8-9
 		LICENSE = LICENSE
 		.github\workflows\docker-image.yml = .github\workflows\docker-image.yml
 		docker-compose.yml = docker-compose.yml
+		Berg.drawio = Berg.drawio
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Berg.DiscordIntegration", "Berg.DiscordIntegration\Berg.DiscordIntegration.csproj", "{6D09E7DC-6D0D-4678-8D78-E6C756DF84DB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Berg.Shared", "Berg.Shared\Berg.Shared.csproj", "{1949330B-24EC-46BC-B3A9-22D178347637}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Berg.ChallengeServer", "Berg.ChallengeServer\Berg.ChallengeServer.csproj", "{3C37C646-0AF6-4C80-A380-4065BB78F478}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,5 +31,13 @@ Global
 		{6D09E7DC-6D0D-4678-8D78-E6C756DF84DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6D09E7DC-6D0D-4678-8D78-E6C756DF84DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6D09E7DC-6D0D-4678-8D78-E6C756DF84DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1949330B-24EC-46BC-B3A9-22D178347637}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1949330B-24EC-46BC-B3A9-22D178347637}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1949330B-24EC-46BC-B3A9-22D178347637}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1949330B-24EC-46BC-B3A9-22D178347637}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C37C646-0AF6-4C80-A380-4065BB78F478}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C37C646-0AF6-4C80-A380-4065BB78F478}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C37C646-0AF6-4C80-A380-4065BB78F478}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C37C646-0AF6-4C80-A380-4065BB78F478}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

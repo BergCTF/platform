@@ -1,0 +1,74 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: challenges.berg.norelect.ch
+spec:
+  group: berg.norelect.ch
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                category:
+                  type: string
+                description:
+                  type: string
+                author:
+                  type: string
+                flag:
+                  type: string
+                hosting:
+                  type: string
+                  enum:
+                    - shared
+                    - private
+                containers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      image:
+                        type: string
+                      environment:
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
+                      ports:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            port:
+                              type: integer
+                            protocol:
+                              type: string
+                            app_protocol:
+                              type: string
+                            exposed:
+                              type: boolean
+                      disableResourceLimit:
+                        type: boolean
+                attachments:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      filename:
+                        type: string
+                      url:
+                        type: string
+  scope: Namespaced
+  names:
+    plural: challenges
+    singular: challenge
+    kind: Challenge
+    shortNames:
+      - chall
+---
