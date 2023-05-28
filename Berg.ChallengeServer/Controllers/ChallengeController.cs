@@ -103,7 +103,8 @@ public class ChallengeController : Controller
                 }
                 else if (port.Type == V1ChallengePortType.PublicVHost)
                 {
-                    var ingress = ingressList.Items.FirstOrDefault(i => i.Name() == $"vhost-{port.Port}");
+                    var ingress = ingressList.Items
+                        .FirstOrDefault(i => i.Name() == $"vhost-{container.Hostname}-{port.Port}");
                     service.Hostname = ingress?.Spec.Rules.FirstOrDefault()?.Host ?? "localhost";
                     service.Port = 443;
                     service.VHost = true;
@@ -369,7 +370,7 @@ public class ChallengeController : Controller
                 {
                     Metadata = new V1ObjectMeta
                     {
-                        Name = $"vhost-{vhostPort.Port}"
+                        Name = $"vhost-{container.Hostname}-{vhostPort.Port}"
                     },
                     Spec = new V1IngressSpec
                     {
@@ -403,7 +404,7 @@ public class ChallengeController : Controller
                             }
                         }
                     }
-                }, _namespace, cancellationToken: cancel);
+                }, ns.Name(), cancellationToken: cancel);
             }
         }
         
