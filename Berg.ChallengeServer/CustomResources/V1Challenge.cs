@@ -19,10 +19,7 @@ public class V1ChallengeSpec
     
     [JsonPropertyName("flag")]
     public string Flag { get; set; } = null!;
-    
-    [JsonPropertyName("hosting")]
-    public V1ChallengeHosting Hosting { get; set; } = V1ChallengeHosting.AlwaysOnline;
-    
+
     [JsonPropertyName("difficulty")]
     public V1ChallengeDifficulty Difficulty { get; set; } = V1ChallengeDifficulty.Baby;
 
@@ -34,12 +31,6 @@ public class V1ChallengeSpec
     
     [JsonPropertyName("attachments")]
     public List<V1ChallengeAttachment>? Attachments { get; set; }
-}
-
-public enum V1ChallengeHosting
-{
-    AlwaysOnline,
-    OnDemand,
 }
 
 public enum V1ChallengeDifficulty
@@ -76,8 +67,15 @@ public class V1ChallengePort
     [JsonPropertyName("appProtocol")]
     public string AppProtocol { get; set; } = null!;
     
-    [JsonPropertyName("exposed")]
-    public bool Exposed { get; set; } = true;
+    [JsonPropertyName("type")]
+    public V1ChallengePortType Type { get; set; } = V1ChallengePortType.Internal;
+}
+
+public enum V1ChallengePortType
+{
+    Internal,
+    PublicPort,
+    PublicVHost,
 }
 
 public class V1ChallengeAttachment
