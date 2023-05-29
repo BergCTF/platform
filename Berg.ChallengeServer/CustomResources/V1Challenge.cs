@@ -20,6 +20,9 @@ public class V1ChallengeSpec
     [JsonPropertyName("flag")]
     public string Flag { get; set; } = null!;
 
+    [JsonPropertyName("hideUntil")]
+    public DateTime? HideUntil { get; set; } = null;
+
     [JsonPropertyName("difficulty")]
     public V1ChallengeDifficulty Difficulty { get; set; } = V1ChallengeDifficulty.Baby;
 

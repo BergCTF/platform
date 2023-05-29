@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace Berg.ChallengeServer.Controllers;
 
 [ApiController]
-[Route("/api/v1/ctfs/{ctf}/challenges")]
 public class ChallengeController : Controller
 {
     private const string ManagedByLabel      = "app.kubernetes.io/managed-by";
@@ -33,16 +32,21 @@ public class ChallengeController : Controller
     }
 
     [HttpGet]
-    public async Task<IEnumerable<Challenge>> GetChallenges(string ctf, CancellationToken cancel)
+    [Route("/api/v1/challenges")]
+    public async Task<IEnumerable<Challenge>> GetChallenges(CancellationToken cancel)
     {
         var ctfList = await _ctfClient.ListNamespacedAsync<V1BergCustomResourceList<V1Challenge>>(_namespace, cancel);
-        return ctfList.Items.Where(c => c.Spec.Ctf == ctf)
-            .Select(c => new Challenge
+        var utcNow = DateTime.UtcNow;
+        return ctfList.Items.Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= utcNow).Select(c => new Challenge
             {
                 Name = c.Name(),
                 Author = c.Spec.Author,
                 Description = c.Spec.Description,
-                Attachments = new List<Attachment>() // TODO: Attachments
+                Attachments = c.Spec.Attachments?.Select(a => new Attachment
+                {
+                   FileName = a.FileName,
+                   DownloadUrl = a.DownloadUrl,
+                }).ToList() ?? new List<Attachment>(),
             })
             .ToList();
     }
@@ -140,6 +144,8 @@ public class ChallengeController : Controller
         
         var challengeConfig = await _ctfClient.ReadNamespacedAsync<V1Challenge>(_namespace, challenge, cancel);
         if (challengeConfig == null)
+            throw new ArgumentException("Invalid challenge!");
+        if(challengeConfig.Spec.HideUntil != null && DateTime.UtcNow < challengeConfig.Spec.HideUntil)
             throw new ArgumentException("Invalid challenge!");
         
         var ns = await _kubernetes.CreateNamespaceAsync(new V1Namespace

@@ -15,14 +15,15 @@ spec:
             spec:
               type: object
               properties:
-                ctf:
-                  type: string
                 author:
                   type: string
                 description:
                   type: string
                 flag:
                   type: string
+                hideUntil:
+                  type: string
+                  format: date-time
                 difficulty:
                   type: string
                   enum:
@@ -79,69 +80,3 @@ spec:
     kind: Challenge
     shortNames:
       - chall
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  name: ctfs.berg.norelect.ch
-spec:
-  group: berg.norelect.ch
-  versions:
-    - name: v1
-      served: true
-      storage: true
-      schema:
-        openAPIV3Schema:
-          type: object
-          properties:
-            spec:
-              type: object
-              properties:
-                start:
-                  type: string
-                  format: date-time
-                end:
-                  type: string
-                  format: date-time
-                scoring:
-                  type: object
-                  properties:
-                    maximumScore:
-                      type: integer
-                    minimalScore:
-                      type: integer
-                    solvesBeforeMinimum:
-                      type: integer
-                    freezeStart:
-                      type: string
-                      format: date-time
-                    freezeEnd:
-                      type: string
-                      format: date-time
-                    teams:
-                      type: boolean
-                    playerCategories:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          name:
-                            type: string
-                          description:
-                            type: string
-                    rateLimits:
-                      type: object
-                      properties:
-                        maxInvalidFlagSubmissionsPerMinute:
-                          type: integer
-                        maxInvalidFlagSubmissionsPerHour:
-                          type: integer
-                        maxInvalidFlagSubmissionsPerDay:
-                          type: integer
-  scope: Namespaced
-  names:
-    plural: ctfs
-    singular: ctf
-    kind: Ctf
-    shortNames:
-      - ctf
