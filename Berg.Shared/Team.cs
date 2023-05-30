@@ -1,0 +1,18 @@
+using System.Text.Json.Serialization;
+
+namespace Berg.Shared;
+
+public class Team
+{
+    [JsonPropertyName("id")]
+    public Guid Id { get; set; }
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = null!;
+    
+    [JsonPropertyName("joinToken")]
+    public string JoinToken { get; set; } = null!;
+
+    [JsonPropertyName("players")]
+    public List<Guid> Players { get; set; } = new();
+}

@@ -20,7 +20,7 @@ public class ChallengeController : Controller
     private const string ImagePullSecretName = "challenge-pull-secret";
 
     private readonly ILogger<ChallengeController> _logger;
-    private readonly GenericClient _ctfClient;
+    private readonly GenericClient _challengeClient;
     private readonly Kubernetes _kubernetes;
     private readonly string _namespace;
     private readonly CtfConfig _ctfConfig;
@@ -30,7 +30,7 @@ public class ChallengeController : Controller
         _logger = logger;
         _kubernetes = kubernetes;
         _ctfConfig = ctfConfig;
-        _ctfClient = new GenericClient(kubernetes, "berg.norelect.ch", "v1", "challenges", false);
+        _challengeClient = new GenericClient(kubernetes, "berg.norelect.ch", "v1", "challenges", false);
         _namespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
     }
 
@@ -38,7 +38,7 @@ public class ChallengeController : Controller
     [Route("/api/v1/challenges")]
     public async Task<IEnumerable<Challenge>> GetChallenges(CancellationToken cancel)
     {
-        var ctfList = await _ctfClient.ListNamespacedAsync<V1BergCustomResourceList<V1Challenge>>(_namespace, cancel);
+        var ctfList = await _challengeClient.ListNamespacedAsync<V1BergCustomResourceList<V1Challenge>>(_namespace, cancel);
         var utcNow = DateTime.UtcNow;
         return ctfList.Items.Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= utcNow).Select(c => new Challenge
             {
@@ -77,7 +77,7 @@ public class ChallengeController : Controller
         if (ns.Status.Phase == "Terminating")
             return new ChallengeStatus { Name = challengeName, State = ChallengeState.Terminating };
         
-        var challenge = await _ctfClient.ReadNamespacedAsync<V1Challenge>(_namespace, challengeName, cancel);
+        var challenge = await _challengeClient.ReadNamespacedAsync<V1Challenge>(_namespace, challengeName, cancel);
 
         var podList = await _kubernetes.ListNamespacedPodAsync(ns.Name(), cancellationToken: cancel);
         if (podList.Items.Any(p => p.Status.Phase != "Running"))
@@ -145,7 +145,7 @@ public class ChallengeController : Controller
         if (nsList.Items.Any())
             throw new ArgumentException("A challenge is already running!");
         
-        var challengeConfig = await _ctfClient.ReadNamespacedAsync<V1Challenge>(_namespace, challenge, cancel);
+        var challengeConfig = await _challengeClient.ReadNamespacedAsync<V1Challenge>(_namespace, challenge, cancel);
         if (challengeConfig == null)
             throw new ArgumentException("Invalid challenge!");
         if(challengeConfig.Spec.HideUntil != null && DateTime.UtcNow < challengeConfig.Spec.HideUntil)
@@ -469,6 +469,6 @@ public class ChallengeController : Controller
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
-        _ctfClient.Dispose();
+        _challengeClient.Dispose();
     }
 }
