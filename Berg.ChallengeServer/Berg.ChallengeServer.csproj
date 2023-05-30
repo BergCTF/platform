@@ -10,6 +10,7 @@
     <ItemGroup>
         <PackageReference Include="KubernetesClient" Version="11.0.21" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.5" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.5" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     </ItemGroup>
 
@@ -21,6 +22,12 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Berg.Shared\Berg.Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="Microsoft.EntityFrameworkCore">
+        <HintPath>..\..\..\..\.nuget\packages\microsoft.entityframeworkcore\7.0.3\lib\net6.0\Microsoft.EntityFrameworkCore.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
 </Project>

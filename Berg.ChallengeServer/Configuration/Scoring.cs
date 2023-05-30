@@ -14,8 +14,8 @@ public class Scoring
     public int NumSolvesBeforeMinimum { get; set; } = 45;
     
     [JsonPropertyName("freezeStart")]
-    public DateTime FreezeStart { get; set; }
+    public DateTime? FreezeStart { get; set; }
     
     [JsonPropertyName("freezeEnd")]
-    public DateTime FreezeEnd { get; set; }
+    public DateTime? FreezeEnd { get; set; }
 }

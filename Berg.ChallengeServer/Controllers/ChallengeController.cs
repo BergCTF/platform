@@ -1,4 +1,5 @@
 using System.Text;
+using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.CustomResources;
 using Berg.Shared;
 using k8s;
@@ -22,11 +23,13 @@ public class ChallengeController : Controller
     private readonly GenericClient _ctfClient;
     private readonly Kubernetes _kubernetes;
     private readonly string _namespace;
+    private readonly CtfConfig _ctfConfig;
 
-    public ChallengeController(ILogger<ChallengeController> logger, Kubernetes kubernetes)
+    public ChallengeController(ILogger<ChallengeController> logger, Kubernetes kubernetes, CtfConfig ctfConfig)
     {
         _logger = logger;
         _kubernetes = kubernetes;
+        _ctfConfig = ctfConfig;
         _ctfClient = new GenericClient(kubernetes, "berg.norelect.ch", "v1", "challenges", false);
         _namespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
     }
@@ -92,7 +95,7 @@ public class ChallengeController : Controller
                     continue;
                 var service = new Service
                 {
-                    Hostname = "todo", // TODO: Challenge Server hostname
+                    Hostname = _ctfConfig.ChallengeDomain,
                     AppProtocol = port.AppProtocol,
                     Protocol = port.Protocol,
                     Port = 443,
@@ -384,7 +387,7 @@ public class ChallengeController : Controller
                         {
                             new()
                             {
-                                Host = $"{Guid.NewGuid()}.{challenge}.todo", //TODO: Challenge Server hostname
+                                Host = $"{Guid.NewGuid()}.{challenge}.{_ctfConfig.ChallengeDomain}",
                                 Http = new V1HTTPIngressRuleValue
                                 {
                                     Paths = new List<V1HTTPIngressPath>
