@@ -2,19 +2,19 @@ using System.Text.Json.Serialization;
 
 namespace Berg.Shared;
 
-public class ChallengeStatus
+public class ChallengeInstanceStatus
 {
     [JsonPropertyName("name")]
     public string Name { get; set; } = null!;
     
     [JsonPropertyName("status")]
-    public ChallengeState State { get; set; } = ChallengeState.None;
+    public ChallengeInstanceState InstanceState { get; set; } = ChallengeInstanceState.None;
 
     [JsonPropertyName("services")]
     public List<Service> Services { get; set; } = new();
 }
 
-public enum ChallengeState
+public enum ChallengeInstanceState
 {
     None,
     Starting,

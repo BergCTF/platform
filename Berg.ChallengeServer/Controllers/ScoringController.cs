@@ -1,7 +1,6 @@
 using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.CustomResources;
 using Berg.ChallengeServer.Db;
-using Berg.Shared;
 using k8s;
 using k8s.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -24,7 +23,7 @@ public class ScoringController : Controller
         BergDbContext dbContext,
         Kubernetes kubernetes)
     {
-        _logger = logger; ;
+        _logger = logger;
         _challengeClient = new GenericClient(kubernetes, "berg.norelect.ch", "v1", "challenges", false);
         _ctfConfig = ctfConfig;
         _dbContext = dbContext;
@@ -33,36 +32,38 @@ public class ScoringController : Controller
     
     [HttpGet]
     [Route("/api/v1/flag")]
-    public async Task<SubmitFlagResult> SubmitFlag(string challenge, string flag, CancellationToken cancel)
+    public async Task<Shared.SubmitFlagResult> SubmitFlag(string challenge, string flag, CancellationToken cancel)
     {
         var playerId = GetPlayerId();
-        var player = await _dbContext.Players.FirstOrDefaultAsync(p => p.Id == playerId, cancel);
+        var player = await _dbContext.Players
+            .Include(p => p.Team)
+            .FirstOrDefaultAsync(p => p.Id == playerId, cancel);
         if (player == null)
             throw new ArgumentException("Invalid player");
-
+        
         var utcNow = DateTime.UtcNow;
         var yesterday = utcNow.Subtract(TimeSpan.FromDays(1));
         var latestFailedSubmissions = player.Submissions.Where(s => yesterday < s.SubmittedAt).ToList();
         if (latestFailedSubmissions.Count > _ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerDay)
         {
-            _logger.LogWarning("Player {} has surpassed the daily submission limit", playerId);
-            return SubmitFlagResult.RateLimited;
+            _logger.LogWarning("Player {} has reached the daily submission limit", playerId);
+            return Shared.SubmitFlagResult.RateLimited;
         }
 
         var oneHourAgo = utcNow.Subtract(TimeSpan.FromHours(1));
         var submissionCountHour = latestFailedSubmissions.Count(s => oneHourAgo < s.SubmittedAt);
         if (submissionCountHour > _ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerHour)
         {
-            _logger.LogWarning("Player {} has surpassed the hourly submission limit", playerId);
-            return SubmitFlagResult.RateLimited;
+            _logger.LogWarning("Player {} has reached the hourly submission limit", playerId);
+            return Shared.SubmitFlagResult.RateLimited;
         }
         
         var oneMinuteAgo = utcNow.Subtract(TimeSpan.FromMinutes(1));
         var submissionCountMinute = latestFailedSubmissions.Count(s => oneMinuteAgo < s.SubmittedAt);
         if (submissionCountMinute > _ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerMinute)
         {
-            _logger.LogWarning("Player {} has surpassed the minute submission limit", playerId);
-            return SubmitFlagResult.RateLimited;
+            _logger.LogWarning("Player {} has reached the minute submission limit", playerId);
+            return Shared.SubmitFlagResult.RateLimited;
         }
         
         var challengeConfig = await _challengeClient.ReadNamespacedAsync<V1Challenge>(_namespace, challenge, cancel);
@@ -89,7 +90,7 @@ public class ScoringController : Controller
             });
             await _dbContext.SaveChangesAsync(cancel);
             _logger.LogInformation("Player {} submitted an invalid flag for challenge {}", playerId, challengeName);
-            return SubmitFlagResult.Incorrect;
+            return Shared.SubmitFlagResult.Incorrect;
         }
 
         // Valid submission
@@ -102,7 +103,7 @@ public class ScoringController : Controller
         });
         await _dbContext.SaveChangesAsync(cancel);
         _logger.LogInformation("Player {} has solved challenge {}", playerId, challengeName);
-        return SubmitFlagResult.Correct;
+        return Shared.SubmitFlagResult.Correct;
     }
     
     [HttpGet]

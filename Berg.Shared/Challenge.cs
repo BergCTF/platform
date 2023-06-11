@@ -15,4 +15,10 @@ public class Challenge
 
     [JsonPropertyName("attachments")]
     public List<Attachment> Attachments { get; set; } = new();
+    
+    [JsonPropertyName("value")]
+    public int Value { get; set; }
+    
+    [JsonPropertyName("solves")]
+    public List<ChallengeSolve> Solves { get; set; } = new();
 }

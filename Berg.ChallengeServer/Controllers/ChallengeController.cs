@@ -38,9 +38,11 @@ public class ChallengeController : Controller
     [Route("/api/v1/challenges")]
     public async Task<IEnumerable<Challenge>> GetChallenges(CancellationToken cancel)
     {
-        var ctfList = await _challengeClient.ListNamespacedAsync<V1BergCustomResourceList<V1Challenge>>(_namespace, cancel);
+        var ctfList = await _challengeClient
+            .ListNamespacedAsync<V1BergCustomResourceList<V1Challenge>>(_namespace, cancel);
         var utcNow = DateTime.UtcNow;
-        return ctfList.Items.Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= utcNow).Select(c => new Challenge
+        return ctfList.Items.Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= utcNow)
+            .Select(c => new Challenge
             {
                 Name = c.Name(),
                 Author = c.Spec.Author,
@@ -56,7 +58,7 @@ public class ChallengeController : Controller
 
     [HttpGet]
     [Route("/api/v1/challengeInstance/status")]
-    public async Task<ChallengeStatus> GetChallengeInstance(CancellationToken cancel)
+    public async Task<ChallengeInstanceStatus> GetChallengeInstance(CancellationToken cancel)
     {
         var userId = GetUserId();
         
@@ -71,17 +73,17 @@ public class ChallengeController : Controller
             
         var ns = nsList.Items.FirstOrDefault();
         if (ns == null)
-            return new ChallengeStatus { State = ChallengeState.None };
+            return new ChallengeInstanceStatus { InstanceState = ChallengeInstanceState.None };
             
         var challengeName = ns.GetLabel(ChallengeLabel);
         if (ns.Status.Phase == "Terminating")
-            return new ChallengeStatus { Name = challengeName, State = ChallengeState.Terminating };
+            return new ChallengeInstanceStatus { Name = challengeName, InstanceState = ChallengeInstanceState.Terminating };
         
         var challenge = await _challengeClient.ReadNamespacedAsync<V1Challenge>(_namespace, challengeName, cancel);
 
         var podList = await _kubernetes.ListNamespacedPodAsync(ns.Name(), cancellationToken: cancel);
         if (podList.Items.Any(p => p.Status.Phase != "Running"))
-           return new ChallengeStatus { Name = challengeName, State = ChallengeState.Starting };
+           return new ChallengeInstanceStatus { Name = challengeName, InstanceState = ChallengeInstanceState.Starting };
         
         var serviceList = await _kubernetes.ListNamespacedServiceAsync(ns.Name(), cancellationToken: cancel);
         var ingressList = await _kubernetes.ListNamespacedIngressAsync(ns.Name(), cancellationToken: cancel);
@@ -120,17 +122,17 @@ public class ChallengeController : Controller
             }
         }
         
-        return new ChallengeStatus
+        return new ChallengeInstanceStatus
         {
             Name = challengeName,
-            State = ChallengeState.Running,
+            InstanceState = ChallengeInstanceState.Running,
             Services = services,
         };
     }
     
     [HttpPost]
     [Route("/api/v1/challengeInstance/start")]
-    public async Task<ChallengeStatus> StartChallengeInstance(string challenge, CancellationToken cancel)
+    public async Task<ChallengeInstanceStatus> StartChallengeInstance(string challenge, CancellationToken cancel)
     {
         var userId = GetUserId();
 
@@ -418,12 +420,12 @@ public class ChallengeController : Controller
         }
         
         _logger.LogInformation("Created instance of challenge: {}", challenge);
-        return new ChallengeStatus { Name = challenge, State = ChallengeState.Starting };
+        return new ChallengeInstanceStatus { Name = challenge, InstanceState = ChallengeInstanceState.Starting };
     }
     
     [HttpPost]
     [Route("/api/v1/challengeInstance/stop")]
-    public async Task<ChallengeStatus> StopChallengeInstance(CancellationToken cancel)
+    public async Task<ChallengeInstanceStatus> StopChallengeInstance(CancellationToken cancel)
     {
         var userId = GetUserId();
 
@@ -437,12 +439,12 @@ public class ChallengeController : Controller
             cancellationToken: cancel);
         var ns = nsList.Items.FirstOrDefault();
         if (ns == null)
-            return new ChallengeStatus { State = ChallengeState.None };
+            return new ChallengeInstanceStatus { InstanceState = ChallengeInstanceState.None };
 
         await _kubernetes.DeleteNamespaceAsync(ns.Name(), gracePeriodSeconds: 0, cancellationToken: cancel);
         var challengeName = ns.GetLabel(ChallengeLabel);
         _logger.LogInformation("Deleted instance of challenge: {}", challengeName);
-        return new ChallengeStatus { Name = challengeName, State = ChallengeState.Terminating };
+        return new ChallengeInstanceStatus { Name = challengeName, InstanceState = ChallengeInstanceState.Terminating };
     }
 
     private Guid GetUserId()

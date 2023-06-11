@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Berg.Shared;
 
-public class Ctf
+public class CtfResponse<T>
 {
     [JsonPropertyName("name")]
     public string Name { get; set; } = null!;
@@ -15,4 +15,10 @@ public class Ctf
     
     [JsonPropertyName("end")]
     public DateTime End { get; set; }
+
+    [JsonPropertyName("data")]
+    public T? Data { get; set; }
+    
+    [JsonPropertyName("teams")]
+    public bool Teams { get; set; }
 }
