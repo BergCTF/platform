@@ -73,7 +73,6 @@ public class ScoringController : Controller
             throw new ArgumentException("Invalid challenge");
         var challengeName = challengeConfig.Name();
         
-        // TODO: Make sure that challenges in the db always match the configuration in the cluster
         var dbChallenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Name == challengeName, cancel);
         if (dbChallenge == null)
             throw new ArgumentException("Invalid db challenge");

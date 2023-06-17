@@ -1,3 +1,4 @@
+using Berg.ChallengeServer.BackgroundServices;
 using Berg.ChallengeServer.Configuration;
 using k8s;
 
@@ -8,6 +9,7 @@ builder.Services.AddControllers();
 var ctfConfig = new CtfConfig();
 builder.Configuration.GetSection("ctf").Bind(ctfConfig);
 builder.Services.AddSingleton(ctfConfig);
+builder.Services.AddHostedService<ChallengeSyncService>();
 builder.Services.AddSingleton(s =>
     new Kubernetes(KubernetesClientConfiguration.BuildDefaultConfig()));
 

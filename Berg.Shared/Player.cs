@@ -14,7 +14,7 @@ public class Player
     public int Score { get; set; }
     
     [JsonPropertyName("categoryId")]
-    public Guid CategoryId { get; set; }
+    public Guid? CategoryId { get; set; }
     
     [JsonPropertyName("solves")]
     public List<PlayerSolve> Solves { get; set; } = new();
