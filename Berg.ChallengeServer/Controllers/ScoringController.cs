@@ -106,8 +106,15 @@ public class ScoringController : Controller
     }
     
     [HttpGet]
-    [Route("/api/v1/scoreboard")]
-    public async Task GetScoreboard(CancellationToken cancel)
+    [Route("/api/v1/scoreboard/teams")]
+    public async Task GetTeamsScoreboard(CancellationToken cancel)
+    {
+        await Task.CompletedTask;
+    }
+    
+    [HttpGet]
+    [Route("/api/v1/scoreboard/players")]
+    public async Task GetPlayersScoreboard(CancellationToken cancel)
     {
         await Task.CompletedTask;
     }

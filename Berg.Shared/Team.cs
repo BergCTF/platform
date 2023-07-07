@@ -13,9 +13,6 @@ public class Team
     [JsonPropertyName("joinToken")]
     public string? JoinToken { get; set; }
 
-    [JsonPropertyName("score")]
-    public int Score { get; set; }
-    
     [JsonPropertyName("players")]
-    public List<Player> Players { get; set; } = new();
+    public List<Guid> Players { get; set; } = new();
 }

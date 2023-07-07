@@ -26,14 +26,7 @@ public class TeamController : Controller
             Id = t.Id,
             Name = t.Name,
             JoinToken = null,
-            Players = t.Players.Select(p => new Shared.Player
-            {
-                Id = p.Id,
-                // Name = p.Name, // TODO: Assign player names
-                CategoryId = p.PlayerCategory.Id,
-                Score = 0, // TODO: Calculate player score
-            }).ToList(),
-            Score = 0, // TODO: Calculate team score
+            Players = t.Players.Select(p => p.Id).ToList()
         }).ToListAsync(cancel);
     }
     
