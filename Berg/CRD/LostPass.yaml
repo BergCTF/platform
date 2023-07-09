@@ -3,7 +3,9 @@ kind: Challenge
 metadata:
   name: lost-pass
 spec:
-  description: Looks like somebody lost his password.
+  description: |
+    Looks like somebody lost his password.
+    Can you help me <b>recover</b> it?
   flag: shc2023{ducks_like_2_sleep_quack}
   hosting: private
   containers:
