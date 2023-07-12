@@ -1,20 +1,27 @@
 using System.Security.Cryptography;
 using Berg.ChallengeServer.Db;
+using Berg.ChallengeServer.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Berg.ChallengeServer.Controllers;
 
 [ApiController]
-public class TeamController : Controller
+public class TeamController : ControllerBase
 {
     private readonly ILogger<TeamController> _logger;
     private readonly BergDbContext _dbContext;
+    private readonly PlayerService _playerService;
     
-    public TeamController(ILogger<TeamController> logger, BergDbContext dbContext)
+    public TeamController(
+        ILogger<TeamController> logger,
+        BergDbContext dbContext,
+        PlayerService playerService)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _playerService = playerService;
     }
     
     [HttpGet]
@@ -31,11 +38,16 @@ public class TeamController : Controller
     }
     
     [HttpPost]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/teams/create")]
     public async Task<Shared.Team> CreateTeam(Shared.Team team, CancellationToken cancel)
     {
-        var playerId = GetPlayerId();
-        var player = await _dbContext.Players.FirstOrDefaultAsync(p => p.Id == playerId, cancel);
+        var playerId = _playerService.GetPlayer(User).Id;
+        var player = await _dbContext.Players
+            .Include(p => p.Team)
+            .FirstOrDefaultAsync(p => p.Id == playerId, cancel);
         if (player == null)
             throw new ArgumentException("Invalid player");
 
@@ -70,7 +82,7 @@ public class TeamController : Controller
         Team? dbTeam;
         if (teamId == null)
         {
-            var playerId = GetPlayerId();
+            var playerId = _playerService.GetPlayer(User).Id;
             var player = await _dbContext.Players
                 .Include(p => p.Team)
                 .FirstOrDefaultAsync(p => p.Id == playerId, cancel);
@@ -103,16 +115,24 @@ public class TeamController : Controller
     }
 
     [HttpPost]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/teams/join")]
     public async Task<Shared.Team> JoinTeam(string joinToken, CancellationToken cancel)
     {
         joinToken = joinToken.Trim();
         
-        var playerId = GetPlayerId();
-        var player = await _dbContext.Players.FirstOrDefaultAsync(p => p.Id == playerId, cancel);
+        var playerId = _playerService.GetPlayer(User).Id;
+        var player = await _dbContext.Players
+            .Include(p => p.Team)
+            .FirstOrDefaultAsync(p => p.Id == playerId, cancel);
         if (player == null)
             throw new ArgumentException("Invalid player");
 
+        if (player.Team != null)
+            throw new ArgumentException("Player is already in a team");
+        
         var dbTeam = await _dbContext.Teams
             .Include(t => t.Players)
             .FirstOrDefaultAsync(t => t.JoinToken == joinToken, cancel);
@@ -144,10 +164,13 @@ public class TeamController : Controller
     }
 
     [HttpPost]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/teams/leave")]
     public async Task LeaveTeam(CancellationToken cancel)
     {
-        var playerId = GetPlayerId();
+        var playerId = _playerService.GetPlayer(User).Id;
         var player = await _dbContext.Players
             .Include(p => p.Team)
             .FirstOrDefaultAsync(p => p.Id == playerId, cancel);
@@ -170,10 +193,5 @@ public class TeamController : Controller
         var buf = new byte[32];
         Random.GetBytes(buf);
         return Convert.ToHexString(buf);
-    }
-
-    private static Guid GetPlayerId()
-    {
-        return Guid.Empty;
     }
 }

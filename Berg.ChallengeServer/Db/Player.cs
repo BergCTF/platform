@@ -4,6 +4,7 @@ public class Player
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = null!;
+    public string DiscordId { get; set; } = null!;
     public Guid? TeamId { get; set; }
     public Team? Team { get; set; }
     public PlayerCategory? PlayerCategory { get; set; }

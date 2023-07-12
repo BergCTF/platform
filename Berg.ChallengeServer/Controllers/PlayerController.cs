@@ -1,28 +1,26 @@
-using System.Security.Cryptography;
 using Berg.ChallengeServer.Db;
 using Berg.ChallengeServer.Services;
 using Berg.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Player = Berg.ChallengeServer.Db.Player;
 
 namespace Berg.ChallengeServer.Controllers;
 
 [ApiController]
-public class PlayerController : Controller
+public class PlayerController : ControllerBase
 {
-    private readonly ILogger<PlayerController> _logger;
     private readonly BergDbContext _dbContext;
     private readonly ScoringService _scoringService;
+    private readonly PlayerService _playerService;
     
     public PlayerController(
-        ILogger<PlayerController> logger,
         BergDbContext dbContext,
-        ScoringService scoringService)
+        ScoringService scoringService,
+        PlayerService playerService)
     {
-        _logger = logger;
         _dbContext = dbContext;
         _scoringService = scoringService;
+        _playerService = playerService;
     }
     
     [HttpGet]
@@ -40,7 +38,7 @@ public class PlayerController : Controller
     [Route("/api/v1/players/ranking")]
     public PlayerRanking GetPlayerRanking(Guid? playerId, CancellationToken cancel)
     {
-        var requestedPlayerId = playerId ?? GetPlayerId();
+        var requestedPlayerId = playerId ?? _playerService.GetPlayer(User).Id;
 
         var solves = _scoringService.GetPlayerSolves(requestedPlayerId);
         return new PlayerRanking
@@ -50,10 +48,5 @@ public class PlayerController : Controller
             Solves = solves,
             LastSolve = solves.Count > 0 ? solves.Select(s => s.SolvedAt).Max() : null
         };
-    }
-    
-    private static Guid GetPlayerId()
-    {
-        return Guid.Empty;
     }
 }

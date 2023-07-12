@@ -3,6 +3,7 @@ using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.Db;
 using Berg.ChallengeServer.Services;
 using k8s;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,13 +17,44 @@ builder.Services.AddSingleton(ctfConfig);
 builder.Services.AddSingleton(new Kubernetes(KubernetesClientConfiguration.BuildDefaultConfig()));
 builder.Services.AddSingleton<ScoringService>();
 builder.Services.AddSingleton<ChallengeService>();
+builder.Services.AddSingleton<PlayerService>();
 builder.Services.AddHostedService<RefreshService>();
+var discordConfig = new DiscordConfig();
+builder.Configuration.GetSection("discordConfig").Bind(discordConfig);
+builder.Services.AddSingleton(discordConfig);
+
+var joinUrl = $"https://discord.com/api/oauth2/authorize?client_id={discordConfig.ClientId}&permissions=2048&scope=bot";
+Console.WriteLine($"Add the discord bot to your server: {joinUrl}");
+
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = "Discord";
+    })
+    .AddDiscord(options =>
+    {
+        options.ClientId = discordConfig.ClientId;
+        options.ClientSecret = discordConfig.ClientSecret;
+        options.CorrelationCookie.Name = "berg-correlation.";
+        options.CallbackPath = "/api/v1/callback-discord";
+    })
+    .AddCookie(o =>
+    {
+        o.Cookie = new CookieBuilder
+        {
+            Name = "berg-auth",
+            SecurePolicy = CookieSecurePolicy.Always,
+            SameSite = SameSiteMode.Lax,
+            HttpOnly = true
+        };
+    });
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 if (builder.Environment.IsDevelopment())
 {
-    builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
-
     var connection = new SqliteConnection("DataSource=:memory:");
     connection.Open();
     builder.Services.AddDbContext<BergDbContext>(options =>
@@ -36,11 +68,8 @@ else
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -51,6 +80,7 @@ using (var scope = app.Services.CreateScope())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

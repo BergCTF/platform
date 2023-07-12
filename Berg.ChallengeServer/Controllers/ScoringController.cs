@@ -2,19 +2,21 @@ using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.Db;
 using Berg.ChallengeServer.Services;
 using Berg.Shared;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Berg.ChallengeServer.Controllers;
 
 [ApiController]
-public class ScoringController : Controller
+public class ScoringController : ControllerBase
 {
     private readonly ILogger<ScoringController> _logger;
     private readonly CtfConfig _ctfConfig;
     private readonly BergDbContext _dbContext;
     private readonly ChallengeService _challengeService;
     private readonly ScoringService _scoringService;
+    private readonly PlayerService _playerService;
     private readonly object _submitFlagLock = new();
     
     public ScoringController(
@@ -22,16 +24,21 @@ public class ScoringController : Controller
         CtfConfig ctfConfig,
         BergDbContext dbContext,
         ChallengeService challengeService,
-        ScoringService scoringService)
+        ScoringService scoringService,
+        PlayerService playerService)
     {
         _logger = logger;
         _challengeService = challengeService;
         _ctfConfig = ctfConfig;
         _dbContext = dbContext;
         _scoringService = scoringService;
+        _playerService = playerService;
     }
     
     [HttpGet]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/flag")]
     public SubmitFlagResult SubmitFlag(string challengeName, string flag)
     {
@@ -43,7 +50,7 @@ public class ScoringController : Controller
         
         lock (_submitFlagLock)
         {
-            var playerId = GetPlayerId();
+            var playerId = _playerService.GetPlayer(User).Id;
             var player = _dbContext.Players
                 .Include(p => p.Team)
                 .FirstOrDefault(p => p.Id == playerId);
@@ -123,10 +130,5 @@ public class ScoringController : Controller
     public List<PlayerRanking> GetPlayerScoreboard()
     {
         return _scoringService.GetPlayerScoreboard();
-    }
-
-    private static Guid GetPlayerId()
-    {
-        return Guid.Empty;
     }
 }

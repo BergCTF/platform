@@ -6,16 +6,17 @@ using Berg.Shared;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Berg.ChallengeServer.Controllers;
 
 [ApiController]
-public class ChallengeController : Controller
+public class ChallengeController : ControllerBase
 {
     private const string ManagedByLabel      = "app.kubernetes.io/managed-by";
     private const string ComponentLabel      = "app.kubernetes.io/component";
-    private const string UserIdLabel         = "berg.norelect.ch/userid";
+    private const string PlayerIdLabel         = "berg.norelect.ch/player-id";
     private const string ChallengeLabel      = "berg.norelect.ch/challenge";
     private const string ContainerLabel      = "berg.norelect.ch/container";
     private const string ImagePullSecretName = "challenge-pull-secret";
@@ -27,23 +28,38 @@ public class ChallengeController : Controller
     private readonly CtfConfig _ctfConfig;
     private readonly ChallengeService _challengeService;
     private readonly ScoringService _scoringService;
+    private readonly PlayerService _playerService;
 
     public ChallengeController(
         ILogger<ChallengeController> logger,
         Kubernetes kubernetes,
         CtfConfig ctfConfig,
         ScoringService scoringService,
-        ChallengeService challengeService)
+        ChallengeService challengeService,
+        PlayerService playerService)
     {
         _logger = logger;
         _kubernetes = kubernetes;
         _ctfConfig = ctfConfig;
         _scoringService = scoringService;
         _challengeService = challengeService;
+        _playerService = playerService;
         _challengeClient = new GenericClient(kubernetes, "berg.norelect.ch", "v1", "challenges", false);
         _namespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
     }
 
+    [HttpGet]
+    [Route("/api/v1/ctf")]
+    public CtfInfo GetCtfInfo()
+    {
+        return new CtfInfo
+        {
+            Start = _ctfConfig.Start,
+            End = _ctfConfig.End,
+            Teams = _ctfConfig.Teams
+        };
+    }
+    
     [HttpGet]
     [Route("/api/v1/challenges")]
     public List<Challenge> GetChallenges()
@@ -61,19 +77,22 @@ public class ChallengeController : Controller
     }
 
     [HttpGet]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/challengeInstance/status")]
     public async Task<ChallengeInstanceStatus> GetChallengeInstance(CancellationToken cancel)
     {
         var utcNow = DateTime.UtcNow;
         if (_ctfConfig.Start > utcNow)
             throw new ArgumentException("CTF has not started yet");
-        var userId = GetUserId();
+        var playerId = _playerService.GetPlayer(User).Id;
         
         var labelSelector = new Dictionary<string, string>
         {
             { ManagedByLabel, "berg" },
             { ComponentLabel, "challenge" },
-            { UserIdLabel, userId.ToString() },
+            { PlayerIdLabel, playerId.ToString() },
         };
         var nsList = await _kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(labelSelector),
             cancellationToken: cancel);
@@ -84,13 +103,21 @@ public class ChallengeController : Controller
             
         var challengeName = ns.GetLabel(ChallengeLabel);
         if (ns.Status.Phase == "Terminating")
-            return new ChallengeInstanceStatus { Name = challengeName, InstanceState = ChallengeInstanceState.Terminating };
+            return new ChallengeInstanceStatus
+            {
+                Name = challengeName, 
+                InstanceState = ChallengeInstanceState.Terminating
+            };
         
         var challenge = await _challengeClient.ReadNamespacedAsync<V1Challenge>(_namespace, challengeName, cancel);
 
         var podList = await _kubernetes.ListNamespacedPodAsync(ns.Name(), cancellationToken: cancel);
         if (podList.Items.Any(p => p.Status.Phase != "Running"))
-           return new ChallengeInstanceStatus { Name = challengeName, InstanceState = ChallengeInstanceState.Starting };
+           return new ChallengeInstanceStatus
+           {
+               Name = challengeName,
+               InstanceState = ChallengeInstanceState.Starting
+           };
         
         var serviceList = await _kubernetes.ListNamespacedServiceAsync(ns.Name(), cancellationToken: cancel);
         var ingressList = await _kubernetes.ListNamespacedIngressAsync(ns.Name(), cancellationToken: cancel);
@@ -138,19 +165,23 @@ public class ChallengeController : Controller
     }
     
     [HttpPost]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/challengeInstance/start")]
     public async Task<ChallengeInstanceStatus> StartChallengeInstance(string challenge, CancellationToken cancel)
     {
+        // TODO: Make sure that the challenge gets deleted after a configurable timeout has passed
         var utcNow = DateTime.UtcNow;
         if (_ctfConfig.Start > utcNow)
             throw new ArgumentException("CTF has not started yet");
-        var userId = GetUserId();
+        var playerId = _playerService.GetPlayer(User).Id;
 
         var labelSelector = new Dictionary<string, string>
         {
             { ManagedByLabel, "berg" },
             { ComponentLabel, "challenge" },
-            { UserIdLabel, userId.ToString() },
+            { PlayerIdLabel, playerId.ToString() },
         };
         var nsList = await _kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(labelSelector),
             cancellationToken: cancel);
@@ -167,13 +198,13 @@ public class ChallengeController : Controller
         {
             Metadata = new V1ObjectMeta
             {
-                Name = $"challenge-{userId}",
+                Name = $"challenge-{playerId}",
                 Labels = new Dictionary<string, string>
                 {
                     { ManagedByLabel, "berg" },
                     { ComponentLabel, "challenge" },
                     { ChallengeLabel, challenge },
-                    { UserIdLabel, userId.ToString() },
+                    { PlayerIdLabel, playerId.ToString() },
                 }
             }
         }, cancellationToken: cancel);
@@ -281,7 +312,7 @@ public class ChallengeController : Controller
                         { ManagedByLabel, "berg" },
                         { ComponentLabel, "challenge-container" },
                         { ChallengeLabel, challenge },
-                        { UserIdLabel, userId.ToString() },
+                        { PlayerIdLabel, playerId.ToString() },
                         { ContainerLabel, container.Hostname }
                     }
                 },
@@ -434,19 +465,22 @@ public class ChallengeController : Controller
     }
     
     [HttpPost]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/challengeInstance/stop")]
     public async Task<ChallengeInstanceStatus> StopChallengeInstance(CancellationToken cancel)
     {
         var utcNow = DateTime.UtcNow;
         if (_ctfConfig.Start > utcNow)
             throw new ArgumentException("CTF has not started yet");
-        var userId = GetUserId();
+        var playerId = _playerService.GetPlayer(User).Id;
 
         var labelSelector = new Dictionary<string, string>
         {
             { ManagedByLabel, "berg" },
             { ComponentLabel, "challenge" },
-            { UserIdLabel, userId.ToString() },
+            { PlayerIdLabel, playerId.ToString() },
         };
         var nsList = await _kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(labelSelector),
             cancellationToken: cancel);
@@ -460,12 +494,7 @@ public class ChallengeController : Controller
         return new ChallengeInstanceStatus { Name = challengeName, InstanceState = ChallengeInstanceState.Terminating };
     }
 
-    private Guid GetUserId()
-    {
-        return Guid.Empty;
-    }
-
-    private string ToLabelSelector(Dictionary<string, string> labelSelector)
+    private static string ToLabelSelector(Dictionary<string, string> labelSelector)
     {
         var sb = new StringBuilder();
         var pairs = labelSelector.ToArray();
@@ -479,11 +508,5 @@ public class ChallengeController : Controller
             sb.Append(pair.Value);
         }
         return sb.ToString();
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        base.Dispose(disposing);
-        _challengeClient.Dispose();
     }
 }
