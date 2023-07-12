@@ -19,6 +19,9 @@ public class Challenge
     [JsonPropertyName("value")]
     public int Value { get; set; }
     
-    [JsonPropertyName("solves")]
-    public List<ChallengeSolve> Solves { get; set; } = new();
+    [JsonPropertyName("playerSolves")]
+    public List<PlayerSolve> PlayerSolves { get; set; } = new();
+    
+    [JsonPropertyName("teamSolves")]
+    public List<TeamSolve> TeamSolves { get; set; } = new();
 }

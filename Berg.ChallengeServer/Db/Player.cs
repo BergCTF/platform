@@ -3,6 +3,8 @@ namespace Berg.ChallengeServer.Db;
 public class Player
 {
     public Guid Id { get; set; }
+    public string Name { get; set; } = null!;
+    public Guid? TeamId { get; set; }
     public Team? Team { get; set; }
     public PlayerCategory? PlayerCategory { get; set; }
     public List<Solve> Solves { get; set; } = null!;

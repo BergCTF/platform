@@ -1,6 +1,7 @@
 using System.Text;
 using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.CustomResources;
+using Berg.ChallengeServer.Services;
 using Berg.Shared;
 using k8s;
 using k8s.Autorest;
@@ -24,36 +25,36 @@ public class ChallengeController : Controller
     private readonly Kubernetes _kubernetes;
     private readonly string _namespace;
     private readonly CtfConfig _ctfConfig;
+    private readonly ChallengeService _challengeService;
+    private readonly ScoringService _scoringService;
 
-    public ChallengeController(ILogger<ChallengeController> logger, Kubernetes kubernetes, CtfConfig ctfConfig)
+    public ChallengeController(
+        ILogger<ChallengeController> logger,
+        Kubernetes kubernetes,
+        CtfConfig ctfConfig,
+        ScoringService scoringService,
+        ChallengeService challengeService)
     {
         _logger = logger;
         _kubernetes = kubernetes;
         _ctfConfig = ctfConfig;
+        _scoringService = scoringService;
+        _challengeService = challengeService;
         _challengeClient = new GenericClient(kubernetes, "berg.norelect.ch", "v1", "challenges", false);
         _namespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
     }
 
     [HttpGet]
     [Route("/api/v1/challenges")]
-    public async Task<IEnumerable<Challenge>> GetChallenges(CancellationToken cancel)
+    public List<Challenge> GetChallenges()
     {
-        var ctfList = await _challengeClient
-            .ListNamespacedAsync<V1BergCustomResourceList<V1Challenge>>(_namespace, cancel);
-        var utcNow = DateTime.UtcNow;
-        return ctfList.Items.Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= utcNow)
-            .Select(c => new Challenge
-            {
-                Name = c.Name(),
-                Author = c.Spec.Author,
-                Description = c.Spec.Description,
-                Attachments = c.Spec.Attachments?.Select(a => new Attachment
-                {
-                   FileName = a.FileName,
-                   DownloadUrl = a.DownloadUrl,
-                }).ToList() ?? new List<Attachment>(),
-            })
-            .ToList();
+        return _challengeService.GetChallenges().Select(c =>
+        {
+            c.Value = _scoringService.GetChallengeValue(c.Name);
+            c.TeamSolves = _scoringService.GetChallengeTeamSolves(c.Name);
+            c.PlayerSolves = _scoringService.GetChallengePlayerSolves(c.Name);
+            return c;
+        }).ToList();
     }
 
     [HttpGet]

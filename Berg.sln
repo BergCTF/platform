@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Berg.Shared", "Berg.Shared\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Berg.ChallengeServer", "Berg.ChallengeServer\Berg.ChallengeServer.csproj", "{3C37C646-0AF6-4C80-A380-4065BB78F478}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Berg.ChallengeServer.Test", "Berg.ChallengeServer.Test\Berg.ChallengeServer.Test.csproj", "{F3E63D32-7A9A-4A64-A06C-45D13580EA48}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,5 +41,9 @@ Global
 		{3C37C646-0AF6-4C80-A380-4065BB78F478}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C37C646-0AF6-4C80-A380-4065BB78F478}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3C37C646-0AF6-4C80-A380-4065BB78F478}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3E63D32-7A9A-4A64-A06C-45D13580EA48}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3E63D32-7A9A-4A64-A06C-45D13580EA48}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3E63D32-7A9A-4A64-A06C-45D13580EA48}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3E63D32-7A9A-4A64-A06C-45D13580EA48}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
