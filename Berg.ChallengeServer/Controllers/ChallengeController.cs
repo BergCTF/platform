@@ -48,6 +48,9 @@ public class ChallengeController : Controller
     [Route("/api/v1/challenges")]
     public List<Challenge> GetChallenges()
     {
+        var utcNow = DateTime.UtcNow;
+        if (_ctfConfig.Start > utcNow)
+            throw new ArgumentException("CTF has not started yet");
         return _challengeService.GetChallenges().Select(c =>
         {
             c.Value = _scoringService.GetChallengeValue(c.Name);
@@ -61,6 +64,9 @@ public class ChallengeController : Controller
     [Route("/api/v1/challengeInstance/status")]
     public async Task<ChallengeInstanceStatus> GetChallengeInstance(CancellationToken cancel)
     {
+        var utcNow = DateTime.UtcNow;
+        if (_ctfConfig.Start > utcNow)
+            throw new ArgumentException("CTF has not started yet");
         var userId = GetUserId();
         
         var labelSelector = new Dictionary<string, string>
@@ -135,6 +141,9 @@ public class ChallengeController : Controller
     [Route("/api/v1/challengeInstance/start")]
     public async Task<ChallengeInstanceStatus> StartChallengeInstance(string challenge, CancellationToken cancel)
     {
+        var utcNow = DateTime.UtcNow;
+        if (_ctfConfig.Start > utcNow)
+            throw new ArgumentException("CTF has not started yet");
         var userId = GetUserId();
 
         var labelSelector = new Dictionary<string, string>
@@ -428,6 +437,9 @@ public class ChallengeController : Controller
     [Route("/api/v1/challengeInstance/stop")]
     public async Task<ChallengeInstanceStatus> StopChallengeInstance(CancellationToken cancel)
     {
+        var utcNow = DateTime.UtcNow;
+        if (_ctfConfig.Start > utcNow)
+            throw new ArgumentException("CTF has not started yet");
         var userId = GetUserId();
 
         var labelSelector = new Dictionary<string, string>

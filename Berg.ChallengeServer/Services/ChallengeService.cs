@@ -51,6 +51,14 @@ public class ChallengeService
             .Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= utcNow)
             .Select(ToChallenge).ToList();
     }
+    
+    public V1Challenge? GetChallengeConfig(string challengeName)
+    {
+        var utcNow = DateTime.UtcNow;
+        return _challenges.Values
+            .Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= utcNow)
+            .FirstOrDefault(c => c.Name() == challengeName);
+    }
 
     private static Challenge ToChallenge(V1Challenge c)
     {
