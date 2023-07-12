@@ -16,7 +16,7 @@ public class ChallengeController : ControllerBase
 {
     private const string ManagedByLabel      = "app.kubernetes.io/managed-by";
     private const string ComponentLabel      = "app.kubernetes.io/component";
-    private const string PlayerIdLabel         = "berg.norelect.ch/player-id";
+    private const string PlayerIdLabel       = "berg.norelect.ch/player-id";
     private const string ChallengeLabel      = "berg.norelect.ch/challenge";
     private const string ContainerLabel      = "berg.norelect.ch/container";
     private const string ImagePullSecretName = "challenge-pull-secret";

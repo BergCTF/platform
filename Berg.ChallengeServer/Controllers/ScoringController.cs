@@ -105,6 +105,7 @@ public class ScoringController : ControllerBase
             }
 
             // Valid submission
+            // TODO: Send discord notification, send special message if it is a first blood.
             _dbContext.Solves.Add(new Solve
             {
                 Id = Guid.NewGuid(),
