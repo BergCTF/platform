@@ -67,6 +67,8 @@ public class ChallengeService
             Name = c.Name(),
             Author = c.Spec.Author,
             Description = c.Spec.Description,
+            Difficulty = c.Spec.Difficulty,
+            Categories = c.Spec.Categories,
             Attachments = c.Spec.Attachments?.Select(a => new Attachment
             {
                 FileName = a.FileName,

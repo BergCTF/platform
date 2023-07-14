@@ -26,11 +26,6 @@ spec:
                   format: date-time
                 difficulty:
                   type: string
-                  enum:
-                    - baby
-                    - easy
-                    - medium
-                    - hard
                 categories:
                   type: array
                   items:

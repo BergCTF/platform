@@ -24,24 +24,16 @@ public class V1ChallengeSpec
     public DateTime? HideUntil { get; set; } = null;
 
     [JsonPropertyName("difficulty")]
-    public V1ChallengeDifficulty Difficulty { get; set; } = V1ChallengeDifficulty.Baby;
+    public string Difficulty { get; set; } = null!;
 
     [JsonPropertyName("categories")]
-    public List<string>? Categories { get; set; }
+    public List<string> Categories { get; set; } = new();
     
     [JsonPropertyName("containers")]
     public List<V1ChallengeContainer>? Containers { get; set; }
     
     [JsonPropertyName("attachments")]
     public List<V1ChallengeAttachment>? Attachments { get; set; }
-}
-
-public enum V1ChallengeDifficulty
-{
-    Baby,
-    Easy,
-    Medium,
-    Hard
 }
 
 public class V1ChallengeContainer
