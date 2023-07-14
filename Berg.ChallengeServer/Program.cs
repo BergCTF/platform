@@ -4,6 +4,7 @@ using Berg.ChallengeServer.Db;
 using Berg.ChallengeServer.Services;
 using k8s;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,48 +33,35 @@ builder.Services.AddAuthentication(options =>
         options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = "Discord";
     })
-    .AddDiscord(options =>
-    {
-        options.ClientId = discordConfig.ClientId;
-        options.ClientSecret = discordConfig.ClientSecret;
-        options.CorrelationCookie.Name = "berg-correlation.";
-        options.CallbackPath = "/api/v1/callback-discord";
-    })
     .AddCookie(o =>
     {
-        o.Events = new()
-        {
-            OnRedirectToLogin = ctx =>
-            {
-                if (ctx.Request.Path.StartsWithSegments("/api"))
-                {
-                    ctx.Response.StatusCode = 401;
-                }
-                else
-                {
-                    ctx.Response.Redirect(ctx.RedirectUri);
-                }
-                return Task.CompletedTask;
-            },
-            OnRedirectToAccessDenied = ctx =>
-            {
-                if (ctx.Request.Path.StartsWithSegments("/api"))
-                {
-                    ctx.Response.StatusCode = 403;
-                }
-                else
-                {
-                    ctx.Response.Redirect(ctx.RedirectUri);
-                }
-                return Task.CompletedTask;
-            }
-        };
         o.Cookie = new CookieBuilder
         {
             Name = "berg-auth",
             SecurePolicy = CookieSecurePolicy.Always,
             SameSite = SameSiteMode.Lax,
             HttpOnly = true
+        };
+    })
+    .AddDiscord(options =>
+    {
+        options.ClientId = discordConfig.ClientId;
+        options.ClientSecret = discordConfig.ClientSecret;
+        options.CorrelationCookie.Name = "berg-correlation.";
+        options.CorrelationCookie.HttpOnly = true;
+        options.CallbackPath = "/api/v1/callback-discord";
+        options.Events.OnRedirectToAuthorizationEndpoint = ctx =>
+        {
+            if (!ctx.Request.Path.StartsWithSegments("/api/v1/login") &&
+                !ctx.Request.Path.StartsWithSegments("/api/v1/logout") )
+            {
+                ctx.Response.StatusCode = 401;
+            }
+            else
+            {
+                ctx.Response.Redirect(ctx.RedirectUri);
+            }
+            return Task.CompletedTask;
         };
     });
 
