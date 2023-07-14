@@ -19,7 +19,7 @@ public class ChallengeController : ControllerBase
     private const string PlayerIdLabel       = "berg.norelect.ch/player-id";
     private const string ChallengeLabel      = "berg.norelect.ch/challenge";
     private const string ContainerLabel      = "berg.norelect.ch/container";
-    private const string ImagePullSecretName = "challenge-pull-secret";
+    private const string ImagePullSecretName = "berg-pull-secret";
 
     private readonly ILogger<ChallengeController> _logger;
     private readonly GenericClient _challengeClient;
