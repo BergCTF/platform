@@ -6,11 +6,10 @@ services:
       context: .
       dockerfile: Berg.ChallengeServer/Dockerfile
     environment:
-      - "ASPNETCORE_URLS=http://0.0.0.0:5000"
       - "ASPNETCORE_ENVIRONMENT=Development"
       - "KUBECONFIG=/app/kube-config.yaml"
     ports:
-      - "127.0.0.1:5000:5000"
+      - "127.0.0.1:5000:80"
     volumes:
       - "./Berg.ChallengeServer/kube-config.yaml:/app/kube-config.yaml:ro"
       - "./Berg.ChallengeServer/appsettings.Development.json:/app/appsettings.json:ro"

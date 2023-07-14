@@ -16,5 +16,6 @@ RUN dotnet publish "Berg.ChallengeServer.csproj" -c Release -o /app/publish /p:U
 
 FROM base AS final
 WORKDIR /app
+ENV ASPNETCORE_URLS="http://0.0.0.0:80"
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Berg.ChallengeServer.dll"]
