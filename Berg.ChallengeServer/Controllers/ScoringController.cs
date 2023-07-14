@@ -35,7 +35,7 @@ public class ScoringController : ControllerBase
         _playerService = playerService;
     }
     
-    [HttpGet]
+    [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

@@ -2,55 +2,26 @@ name: Docker Image CI
 on:
   push:
     branches: [ "main" ]
-
     tags:
       - v*
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-
       - name: "Checkout repository"
         uses: actions/checkout@v3
-
       - name: "Login to registry"
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
-
-      - name: "Build berg image"
-        run: docker build . --file Berg/Dockerfile --tag berg --label "runnumber=${GITHUB_RUN_ID}"
-
-      - name: "Push berg image"
+      - name: "Build berg-challenge-server image"
+        run: docker build . --file Berg.ChallengeServer/Dockerfile --tag berg-challenge-server --label "runnumber=${GITHUB_RUN_ID}"
+      - name: "Push berg-challenge-server image"
         run: |
-          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/berg
-          # Change all uppercase to lowercase
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/berg-challenge-server
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-          # Strip git ref prefix from version
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          # Strip "v" prefix from tag name
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          # Use Docker `latest` tag convention
           [ "$VERSION" == "main" ] && VERSION=latest
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
-          docker tag berg $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:$VERSION
-
-      - name: "Build berg-discord-integration image"
-        run: docker build . --file Berg.DiscordIntegration/Dockerfile --tag berg-discord-integration --label "runnumber=${GITHUB_RUN_ID}"
-
-      - name: "Push berg-discord-integration image"
-        run: |
-          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/berg-discord-integration
-          # Change all uppercase to lowercase
-          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-          # Strip git ref prefix from version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          # Strip "v" prefix from tag name
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          # Use Docker `latest` tag convention
-          [ "$VERSION" == "main" ] && VERSION=latest
-          echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
-          docker tag berg-discord-integration $IMAGE_ID:$VERSION
+          docker tag berg-challenge-server $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
