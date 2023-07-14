@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.Db;
 using Berg.ChallengeServer.Services;
@@ -34,14 +35,28 @@ public class ScoringController : ControllerBase
         _scoringService = scoringService;
         _playerService = playerService;
     }
+
+    public class SubmitFlagRequest
+    {
+        [JsonPropertyName("challenge")]
+        public string? Challenge { get; set; }
+        
+        [JsonPropertyName("flag")]
+        public string? Flag { get; set; }
+    }
     
     [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/flag")]
-    public SubmitFlagResult SubmitFlag(string challengeName, string flag)
+    public SubmitFlagResult SubmitFlag([FromBody] SubmitFlagRequest flagRequest)
     {
+        var challenge = flagRequest.Challenge;
+        var flag = flagRequest.Flag;
+        if (challenge == null || flag == null)
+            throw new ArgumentException("Values can't be null");
+        
         var utcNow = DateTime.UtcNow;
         if (_ctfConfig.Start > utcNow)
             throw new ArgumentException("CTF has not started yet");
@@ -81,11 +96,11 @@ public class ScoringController : ControllerBase
                 return SubmitFlagResult.RateLimited;
             }
 
-            var challengeConfig = _challengeService.GetChallengeConfig(challengeName);
+            var challengeConfig = _challengeService.GetChallengeConfig(challenge);
             if (challengeConfig == null)
                 throw new ArgumentException("Invalid challenge");
 
-            var dbChallenge = _dbContext.Challenges.FirstOrDefault(c => c.Name == challengeName);
+            var dbChallenge = _dbContext.Challenges.FirstOrDefault(c => c.Name == challenge);
             if (dbChallenge == null)
                 throw new ArgumentException("Invalid db challenge");
 
@@ -100,7 +115,7 @@ public class ScoringController : ControllerBase
                     Player = player,
                 });
                 _dbContext.SaveChanges();
-                _logger.LogInformation("Player {} submitted an invalid flag for challenge {}", playerId, challengeName);
+                _logger.LogInformation("Player {} submitted an invalid flag for challenge {}", playerId, challenge);
                 return SubmitFlagResult.Incorrect;
             }
 
@@ -114,7 +129,7 @@ public class ScoringController : ControllerBase
                 Player = player,
             });
             _dbContext.SaveChanges();
-            _logger.LogInformation("Player {} has solved challenge {}", playerId, challengeName);
+            _logger.LogInformation("Player {} has solved challenge {}", playerId, challenge);
             return SubmitFlagResult.Correct;
         }
     }

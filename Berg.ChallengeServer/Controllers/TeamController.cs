@@ -42,7 +42,7 @@ public class TeamController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/teams/create")]
-    public async Task<Shared.Team> CreateTeam(Shared.Team team, CancellationToken cancel)
+    public async Task<Shared.Team> CreateTeam([FromBody] Shared.Team team, CancellationToken cancel)
     {
         var playerId = _playerService.GetPlayer(User).Id;
         var player = await _dbContext.Players
@@ -119,7 +119,7 @@ public class TeamController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/teams/join")]
-    public async Task<Shared.Team> JoinTeam(string joinToken, CancellationToken cancel)
+    public async Task<Shared.Team> JoinTeam([FromBody] string joinToken, CancellationToken cancel)
     {
         joinToken = joinToken.Trim();
         

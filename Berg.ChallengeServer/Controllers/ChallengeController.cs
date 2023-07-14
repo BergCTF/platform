@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.CustomResources;
 using Berg.ChallengeServer.Services;
@@ -164,13 +165,23 @@ public class ChallengeController : ControllerBase
         };
     }
     
+    public class ChallengeStartRequest
+    {
+        [JsonPropertyName("challenge")]
+        public string? Challenge { get; set; }
+    }
+    
     [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/challengeInstance/start")]
-    public async Task<ChallengeInstanceStatus> StartChallengeInstance(string challenge, CancellationToken cancel)
+    public async Task<ChallengeInstanceStatus> StartChallengeInstance([FromBody] ChallengeStartRequest startRequest,
+        CancellationToken cancel)
     {
+        var challenge = startRequest.Challenge;
+        if (challenge == null)
+            throw new ArgumentException("Challenge can't be null");
         // TODO: Make sure that the challenge gets deleted after a configurable timeout has passed
         var utcNow = DateTime.UtcNow;
         if (_ctfConfig.Start > utcNow)
