@@ -41,6 +41,33 @@ builder.Services.AddAuthentication(options =>
     })
     .AddCookie(o =>
     {
+        o.Events = new()
+        {
+            OnRedirectToLogin = ctx =>
+            {
+                if (ctx.Request.Path.StartsWithSegments("/api"))
+                {
+                    ctx.Response.StatusCode = 401;
+                }
+                else
+                {
+                    ctx.Response.Redirect(ctx.RedirectUri);
+                }
+                return Task.CompletedTask;
+            },
+            OnRedirectToAccessDenied = ctx =>
+            {
+                if (ctx.Request.Path.StartsWithSegments("/api"))
+                {
+                    ctx.Response.StatusCode = 403;
+                }
+                else
+                {
+                    ctx.Response.Redirect(ctx.RedirectUri);
+                }
+                return Task.CompletedTask;
+            }
+        };
         o.Cookie = new CookieBuilder
         {
             Name = "berg-auth",
