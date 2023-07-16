@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: handouts
+  namespace: berg
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: handouts
+  template:
+    metadata:
+      labels:
+        app: handouts
+    spec:
+      containers:
+        - name: handouts
+          image: ghcr.io/swisshackingchallenge/shc2023-finals/handouts:latest
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 80
+          resources:
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+            requests:
+              cpu: "1"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: handouts
+  namespace: berg
+spec:
+  selector:
+    app: handouts
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
