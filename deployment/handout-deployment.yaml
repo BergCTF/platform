@@ -14,6 +14,8 @@ spec:
       labels:
         app: handouts
     spec:
+      imagePullSecrets:
+        - name: berg-pull-secret
       containers:
         - name: handouts
           image: ghcr.io/swisshackingchallenge/shc2023-finals/handouts:latest
@@ -25,8 +27,8 @@ spec:
               cpu: "2"
               memory: "2Gi"
             requests:
-              cpu: "1"
-              memory: "1Gi"
+              cpu: "0.1"
+              memory: "10Mi"
 ---
 apiVersion: v1
 kind: Service
