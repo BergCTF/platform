@@ -412,7 +412,7 @@ public class ChallengeService
                 .ToList() ?? new List<V1ChallengePort>();
             if (publicPorts.Any())
             {
-                var svc = new V1Service
+                await _kubernetes.CreateNamespacedServiceAsync(new V1Service
                 {
                     Metadata = new V1ObjectMeta
                     {
@@ -427,15 +427,14 @@ public class ChallengeService
                         Type = "NodePort",
                         Ports = publicPorts.Select(p => new V1ServicePort
                         {
+                            Name = $"port-{p.Port}",
                             AppProtocol = p.AppProtocol,
                             Port = p.Port,
                             TargetPort = p.Port,
                             Protocol = p.Protocol.ToUpperInvariant(),
                         }).ToList(),
                     }
-                };
-                _logger.LogInformation(KubernetesYaml.Serialize(svc));
-                await _kubernetes.CreateNamespacedServiceAsync(svc, ns.Name(), cancellationToken: cancel);
+                }, ns.Name(), cancellationToken: cancel);
             }
             
             var vhostPorts = container.Ports?
