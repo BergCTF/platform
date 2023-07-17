@@ -359,14 +359,14 @@ public class ChallengeService
                             Name = container.Hostname,
                             Image = container.Image,
                             ImagePullPolicy = "IfNotPresent",
-                            Resources = new V1ResourceRequirements
-                            {
-                                Limits = new Dictionary<string, ResourceQuantity>
-                                {
-                                    { "cpu", new ResourceQuantity("100m") },
-                                    { "memory", new ResourceQuantity("500Mi") }
-                                }
-                            },
+                            // Resources = new V1ResourceRequirements
+                            // {
+                            //     Limits = new Dictionary<string, ResourceQuantity>
+                            //     {
+                            //         { "cpu", new ResourceQuantity("100m") },
+                            //         { "memory", new ResourceQuantity("500Mi") }
+                            //     }
+                            // },
                             Env = container.Environment?
                                 .Select(e => new V1EnvVar(e.Key, e.Value))
                                 .ToList(),
