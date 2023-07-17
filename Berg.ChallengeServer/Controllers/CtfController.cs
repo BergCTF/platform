@@ -1,0 +1,68 @@
+using System.Text.Json.Serialization;
+using Berg.ChallengeServer.Configuration;
+using Berg.ChallengeServer.Db;
+using Berg.ChallengeServer.Services;
+using Berg.Shared;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace Berg.ChallengeServer.Controllers;
+
+[ApiController]
+public class CtfController : ControllerBase
+{
+    private readonly CtfConfig _ctfConfig;
+    private readonly ChallengeService _challengeService;
+    private readonly ScoringService _scoringService;
+    private readonly BergDbContext _dbContext;
+
+    public CtfController(
+        CtfConfig ctfConfig,
+        ScoringService scoringService,
+        ChallengeService challengeService,
+        BergDbContext dbContext)
+    {
+        _ctfConfig = ctfConfig;
+        _scoringService = scoringService;
+        _challengeService = challengeService;
+        _dbContext = dbContext;
+    }
+
+    [HttpGet]
+    [Route("/api/v1/ctf")]
+    public CtfChallenges GetCtfChallenges()
+    {
+        var ctf = new CtfChallenges
+        {
+            Start = _ctfConfig.Start,
+            End = _ctfConfig.End,
+            Teams = _ctfConfig.Teams
+        };
+        var utcNow = DateTime.UtcNow;
+        if (_ctfConfig.Start <= utcNow)
+        {
+            ctf.Challenges = _challengeService.GetChallenges().Select(c =>
+            {
+                c.Value = _scoringService.GetChallengeValue(c.Name);
+                c.TeamSolves = _scoringService.GetChallengeTeamSolves(c.Name);
+                c.PlayerSolves = _scoringService.GetChallengePlayerSolves(c.Name);
+                return c;
+            }).ToList();
+        }
+        return ctf;
+    }
+    
+    [HttpGet]
+    [Route("/api/v1/players")]
+    public async Task<List<Shared.Player>> ListPlayers(CancellationToken cancel)
+    {
+        return await _dbContext.Players.Select(t => new Shared.Player
+        {
+            Id = t.Id,
+            Name = t.Name,
+            DiscordId = t.DiscordId
+        }).ToListAsync(cancel);
+    }
+
+}

@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Berg.Shared;
 
-public class CtfInfo
+public class CtfChallenges
 {
     [JsonPropertyName("start")]
     public DateTime Start { get; set; }
@@ -12,4 +12,7 @@ public class CtfInfo
 
     [JsonPropertyName("teams")]
     public bool Teams { get; set; }
+
+    [JsonPropertyName("challenges")]
+    public List<Challenge> Challenges { get; set; } = new();
 }
