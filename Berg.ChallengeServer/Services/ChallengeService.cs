@@ -69,6 +69,7 @@ public class ChallengeService
             Description = c.Spec.Description,
             Difficulty = c.Spec.Difficulty,
             Categories = c.Spec.Categories,
+            Instantiatable = c.Spec.Containers?.Any() ?? false,
             Attachments = c.Spec.Attachments?.Select(a => new Attachment
             {
                 FileName = a.FileName,

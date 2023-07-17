@@ -204,6 +204,9 @@ public class ChallengeController : ControllerBase
             throw new ArgumentException("Invalid challenge!");
         if(challengeConfig.Spec.HideUntil != null && DateTime.UtcNow < challengeConfig.Spec.HideUntil)
             throw new ArgumentException("Invalid challenge!");
+
+        if ((challengeConfig.Spec.Containers?.Count ?? 0) == 0)
+            throw new ArgumentException("Challenge can't be instantiated");
         
         var ns = await _kubernetes.CreateNamespaceAsync(new V1Namespace
         {

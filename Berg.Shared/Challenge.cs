@@ -24,6 +24,9 @@ public class Challenge
     
     [JsonPropertyName("value")]
     public int Value { get; set; }
+
+    [JsonPropertyName("instantiatable")]
+    public bool Instantiatable { get; set; }
     
     [JsonPropertyName("playerSolves")]
     public List<PlayerSolve> PlayerSolves { get; set; } = new();
