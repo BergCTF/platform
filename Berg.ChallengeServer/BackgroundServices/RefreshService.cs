@@ -37,7 +37,9 @@ public class RefreshService : BackgroundService
                 _challengeService.RefreshChallenges(dbContext);
                 _scoringService.RefreshScores(dbContext);
             }
-            await Task.Delay(_ctfConfig.ConfigDbSyncInterval, stoppingToken);
+            await _challengeService.CheckChallengeInstanceTimout(stoppingToken);
+            
+            await Task.Delay(_ctfConfig.RefreshInterval, stoppingToken);
         }
         _logger.LogInformation("RefreshService stopped");
     }

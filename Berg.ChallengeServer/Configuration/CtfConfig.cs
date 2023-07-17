@@ -25,6 +25,9 @@ public class CtfConfig
     [JsonPropertyName("rateLimits")]
     public RateLimits RateLimits { get; set; } = new();
     
-    [JsonPropertyName("configDbSyncInterval")]
-    public TimeSpan ConfigDbSyncInterval { get; set; } = TimeSpan.FromSeconds(15);
+    [JsonPropertyName("refreshInterval")]
+    public TimeSpan RefreshInterval { get; set; } = TimeSpan.FromSeconds(15);
+    
+    [JsonPropertyName("challengeInstanceTimeout")]
+    public TimeSpan ChallengeInstanceTimeout { get; set; } = TimeSpan.FromHours(1);
 }
