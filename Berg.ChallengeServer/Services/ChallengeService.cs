@@ -226,8 +226,15 @@ public class ChallengeService
         {
             var imagePullSecret =
                 await _kubernetes.ReadNamespacedSecretAsync(ImagePullSecretName, _namespace, cancellationToken: cancel);
-            imagePullSecret.Metadata.NamespaceProperty = ns.Name();
-            await _kubernetes.CreateNamespacedSecretAsync(imagePullSecret, ns.Name(), cancellationToken: cancel);
+            await _kubernetes.CreateNamespacedSecretAsync(new V1Secret
+            {
+                Metadata = new V1ObjectMeta
+                {
+                    Name = ImagePullSecretName,
+                },
+                Type = "kubernetes.io/dockerconfigjson",
+                Data = imagePullSecret.Data
+            }, ns.Name(), cancellationToken: cancel);
         }
         catch (HttpOperationException ex)
         {
