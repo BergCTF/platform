@@ -30,7 +30,8 @@ public class PlayerController : ControllerBase
         return await _dbContext.Players.Select(t => new Shared.Player
         {
             Id = t.Id,
-            Name = t.Name
+            Name = t.Name,
+            DiscordId = t.DiscordId
         }).ToListAsync(cancel);
     }
     

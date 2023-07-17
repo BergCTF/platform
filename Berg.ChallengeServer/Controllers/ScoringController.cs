@@ -3,9 +3,12 @@ using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.Db;
 using Berg.ChallengeServer.Services;
 using Berg.Shared;
+using Discord;
+using Discord.Rest;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using DiscordConfig = Berg.ChallengeServer.Configuration.DiscordConfig;
 
 namespace Berg.ChallengeServer.Controllers;
 
@@ -14,15 +17,17 @@ public class ScoringController : ControllerBase
 {
     private readonly ILogger<ScoringController> _logger;
     private readonly CtfConfig _ctfConfig;
+    private readonly DiscordConfig _discordConfig;
     private readonly BergDbContext _dbContext;
     private readonly ChallengeService _challengeService;
     private readonly ScoringService _scoringService;
     private readonly PlayerService _playerService;
     private readonly object _submitFlagLock = new();
-    
+
     public ScoringController(
         ILogger<ScoringController> logger,
         CtfConfig ctfConfig,
+        DiscordConfig discordConfig,
         BergDbContext dbContext,
         ChallengeService challengeService,
         ScoringService scoringService,
@@ -31,6 +36,7 @@ public class ScoringController : ControllerBase
         _logger = logger;
         _challengeService = challengeService;
         _ctfConfig = ctfConfig;
+        _discordConfig = discordConfig;
         _dbContext = dbContext;
         _scoringService = scoringService;
         _playerService = playerService;
@@ -38,13 +44,11 @@ public class ScoringController : ControllerBase
 
     public class SubmitFlagRequest
     {
-        [JsonPropertyName("challenge")]
-        public string? Challenge { get; set; }
-        
-        [JsonPropertyName("flag")]
-        public string? Flag { get; set; }
+        [JsonPropertyName("challenge")] public string? Challenge { get; set; }
+
+        [JsonPropertyName("flag")] public string? Flag { get; set; }
     }
-    
+
     [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -56,13 +60,13 @@ public class ScoringController : ControllerBase
         var flag = flagRequest.Flag;
         if (challenge == null || flag == null)
             throw new ArgumentException("Values can't be null");
-        
+
         var utcNow = DateTime.UtcNow;
         if (_ctfConfig.Start > utcNow)
             throw new ArgumentException("CTF has not started yet");
         if (_ctfConfig.End < utcNow)
             throw new ArgumentException("CTF has ended, no more flags accepted");
-        
+
         lock (_submitFlagLock)
         {
             var playerId = _playerService.GetPlayer(User).Id;
@@ -76,7 +80,10 @@ public class ScoringController : ControllerBase
 
             if (player.Solves.Any(s => s.ChallengeId == challenge))
                 return SubmitFlagResult.AlreadySolved;
-            
+
+            if (_dbContext.Solves.Where(s => s.Player.TeamId == player.TeamId).Any(s => s.ChallengeId == challenge))
+                return SubmitFlagResult.AlreadySolved;
+
             var yesterday = utcNow.Subtract(TimeSpan.FromDays(1));
             var latestFailedSubmissions = player.Submissions.Where(s => yesterday < s.SubmittedAt).ToList();
             if (latestFailedSubmissions.Count > _ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerDay)
@@ -92,7 +99,7 @@ public class ScoringController : ControllerBase
                 _logger.LogWarning("Player {} has reached the hourly submission limit", playerId);
                 return SubmitFlagResult.RateLimited;
             }
-            
+
             var oneMinuteAgo = utcNow.Subtract(TimeSpan.FromMinutes(1));
             var submissionCountMinute = latestFailedSubmissions.Count(s => oneMinuteAgo < s.SubmittedAt);
             if (submissionCountMinute > _ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerMinute)
@@ -124,8 +131,12 @@ public class ScoringController : ControllerBase
                 return SubmitFlagResult.Incorrect;
             }
 
-            // Valid submission
-            // TODO: Send discord notification, send special message if it is a first blood.
+            var firstBlood = !_dbContext.Solves.Any(s => s.ChallengeId == challenge);
+
+            // Its a valid solve!
+            SendDiscordNotification(player.DiscordId, player.Name, player.Team?.Name, challenge, firstBlood)
+                .Wait();
+
             _dbContext.Solves.Add(new Solve
             {
                 Id = Guid.NewGuid(),
@@ -136,6 +147,54 @@ public class ScoringController : ControllerBase
             _dbContext.SaveChanges();
             _logger.LogInformation("Player {} has solved challenge {}", playerId, challenge);
             return SubmitFlagResult.Correct;
+        }
+    }
+
+    private async Task SendDiscordNotification(
+        string solverDiscordId,
+        string solverDiscordUsername,
+        string? solverTeamName,
+        string solvedChallenge,
+        bool firstBlood)
+    {
+        try
+        {
+            var client = new DiscordRestClient();
+            await client.LoginAsync(TokenType.Bot, _discordConfig.BotToken);
+
+            var channel = await client.GetChannelAsync(_discordConfig.NotificationChannelId) as IMessageChannel;
+            if (_discordConfig.NotificationChannelId == 0 || channel == null)
+            {
+                _logger.LogError("No or invalid channel id configured, did not send notification.");
+                return;
+            }
+
+            var guild = await client.GetGuildAsync(_discordConfig.NotificationGuildId);
+            if (_discordConfig.NotificationGuildId == 0 || guild == null)
+            {
+                _logger.LogError("No or guild id configured, did not send notification.");
+                return;
+            }
+
+            if (solverTeamName != null)
+                solverTeamName = $" ({solverTeamName})";
+
+            var user = await guild.GetUserAsync(ulong.Parse(solverDiscordId));
+            var username = user == null ? solverDiscordUsername : user.Mention;
+            if (firstBlood)
+            {
+                await channel.SendMessageAsync(
+                    $"{username}{solverTeamName} got first blood on challenge `{solvedChallenge}` :drop_of_blood:");
+            }
+            else
+            {
+                await channel.SendMessageAsync(
+                    $"{username}{solverTeamName} solved challenge `{solvedChallenge}` :triangular_flag_on_post:");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Error while trying to send a notification: {}", ex);
         }
     }
     

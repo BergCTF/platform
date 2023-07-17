@@ -10,6 +10,6 @@ public class Player
     [JsonPropertyName("name")]
     public string Name { get; set; } = null!;
 
-    [JsonPropertyName("categoryId")]
-    public Guid? CategoryId { get; set; }
+    [JsonPropertyName("discordId")]
+    public string DiscordId { get; set; } = null!;
 }
