@@ -46,7 +46,7 @@ public class PlayerController : ControllerBase
     [Route("/api/v1/self")]
     public async Task<PlayerSelf> GetPlayerSelf(CancellationToken cancel)
     {
-        if (User.Identity?.IsAuthenticated ?? false)
+        if (!(User.Identity?.IsAuthenticated ?? false))
             return new PlayerSelf();
         
         var player = _playerService.GetPlayer(User);
