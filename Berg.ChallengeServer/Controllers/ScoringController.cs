@@ -67,10 +67,15 @@ public class ScoringController : ControllerBase
         {
             var playerId = _playerService.GetPlayer(User).Id;
             var player = _dbContext.Players
+                .Include(p => p.Submissions)
+                .Include(p => p.Solves)
                 .Include(p => p.Team)
                 .FirstOrDefault(p => p.Id == playerId);
             if (player == null)
                 throw new ArgumentException("Invalid player");
+
+            if (player.Solves.Any(s => s.ChallengeId == challenge))
+                return SubmitFlagResult.AlreadySolved;
             
             var yesterday = utcNow.Subtract(TimeSpan.FromDays(1));
             var latestFailedSubmissions = player.Submissions.Where(s => yesterday < s.SubmittedAt).ToList();
@@ -146,5 +151,22 @@ public class ScoringController : ControllerBase
     public List<PlayerRanking> GetPlayerScoreboard()
     {
         return _scoringService.GetPlayerScoreboard();
+    }
+    
+    [HttpGet]
+    [Route("/api/v1/activity")]
+    public List<ActivityEntry> GetActivity()
+    {
+        return _dbContext.Solves
+            .Include(s => s.Player)
+            .OrderBy(s => s.SolvedAt)
+            .Select(s => new ActivityEntry
+            {
+                PlayerId = s.PlayerId,
+                SolvedAt = s.SolvedAt,
+                ChallengeName = s.ChallengeId,
+                TeamId = s.Player.TeamId
+            })
+            .ToList();
     }
 }

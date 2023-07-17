@@ -25,7 +25,7 @@ public class PlayerController : ControllerBase
     
     [HttpGet]
     [Route("/api/v1/players")]
-    public async Task<List<Shared.Player>> ListTeams(CancellationToken cancel)
+    public async Task<List<Shared.Player>> ListPlayers(CancellationToken cancel)
     {
         return await _dbContext.Players.Select(t => new Shared.Player
         {

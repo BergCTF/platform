@@ -4,5 +4,6 @@ public enum SubmitFlagResult
 {
     Correct,
     Incorrect,
-    RateLimited
+    RateLimited,
+    AlreadySolved
 }
