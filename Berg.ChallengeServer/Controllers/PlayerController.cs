@@ -52,7 +52,7 @@ public class PlayerController : ControllerBase
         var player = _playerService.GetPlayer(User);
         return new PlayerSelf
         {
-            Player = new Shared.Player()
+            Player = new Player
             {
                 Id = player.Id,
                 Name = player.Name,

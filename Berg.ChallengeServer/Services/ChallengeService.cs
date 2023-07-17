@@ -226,11 +226,13 @@ public class ChallengeService
         {
             var imagePullSecret =
                 await _kubernetes.ReadNamespacedSecretAsync(ImagePullSecretName, _namespace, cancellationToken: cancel);
+            imagePullSecret.Metadata.NamespaceProperty = ns.Name();
             await _kubernetes.CreateNamespacedSecretAsync(imagePullSecret, ns.Name(), cancellationToken: cancel);
         }
-        catch (HttpOperationException)
+        catch (HttpOperationException ex)
         {
-            _logger.LogWarning("Image pull secret 'challenge-pull-secret' not found in namespace '{}'", _namespace);
+            _logger.LogWarning("Image pull secret '{}' not found in namespace '{}'", ImagePullSecretName, _namespace);
+            _logger.LogWarning("Detailed exception for pull secret copy operations: {}", ex);
         }
 
         await _kubernetes.CreateNamespacedNetworkPolicyAsync(new V1NetworkPolicy
