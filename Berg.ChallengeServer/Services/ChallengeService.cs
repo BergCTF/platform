@@ -155,7 +155,8 @@ public class ChallengeService
 
                 if (port.Type == V1ChallengePortType.PublicPort)
                 {
-                    var infraService = serviceList.Items.FirstOrDefault(s => s.Name() == container.Hostname);
+                    var serviceName = $"{container.Hostname}-node-port";
+                    var infraService = serviceList.Items.FirstOrDefault(s => s.Name() == serviceName);
                     var infraPort = infraService?.Spec.Ports.FirstOrDefault(p => p.Port == port.Port);
                     service.Port = infraPort?.NodePort ?? 0;
                 }
