@@ -1,6 +1,5 @@
 using System.Text.Json.Serialization;
 using Berg.ChallengeServer.Configuration;
-using Berg.ChallengeServer.Db;
 using Berg.ChallengeServer.Services;
 using Berg.Shared;
 using Microsoft.AspNetCore.Authentication;
