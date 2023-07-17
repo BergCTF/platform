@@ -13,6 +13,6 @@ public class CtfChallenges
     [JsonPropertyName("teams")]
     public bool Teams { get; set; }
 
-    [JsonPropertyName("challenges")]
-    public List<Challenge> Challenges { get; set; } = new();
+    [JsonPropertyName("challengesByCategory")]
+    public Dictionary<string, List<Challenge>> Challenges { get; set; } = new();
 }

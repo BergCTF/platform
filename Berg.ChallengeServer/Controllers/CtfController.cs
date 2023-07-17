@@ -1,9 +1,7 @@
-using System.Text.Json.Serialization;
 using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.Db;
 using Berg.ChallengeServer.Services;
 using Berg.Shared;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -48,7 +46,12 @@ public class CtfController : ControllerBase
                 c.TeamSolves = _scoringService.GetChallengeTeamSolves(c.Name);
                 c.PlayerSolves = _scoringService.GetChallengePlayerSolves(c.Name);
                 return c;
-            }).ToList();
+            }).ToList()
+                .GroupBy(c => c.Categories.FirstOrDefault() ?? "misc")
+                .ToDictionary(c => c.Key, c => c
+                    .OrderBy(c2 => c2.Value)
+                    .ThenBy(c2 => c2.Name)
+                    .ToList());
         }
         return ctf;
     }
