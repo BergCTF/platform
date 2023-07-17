@@ -176,6 +176,7 @@ public class ChallengeService
             Name = challengeName,
             InstanceState = ChallengeInstanceState.Running,
             Services = services,
+            InstanceTimeout = ns.CreationTimestamp()?.Subtract(_ctfConfig.ChallengeInstanceTimeout)
         };
     }
     

@@ -12,6 +12,9 @@ public class ChallengeInstanceStatus
 
     [JsonPropertyName("services")]
     public List<Service> Services { get; set; } = new();
+
+    [JsonPropertyName("instanceTimeout")]
+    public DateTime? InstanceTimeout { get; set; }
 }
 
 public enum ChallengeInstanceState
