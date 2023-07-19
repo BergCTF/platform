@@ -19,15 +19,15 @@ public class PlayerService
         lock (_playerUpdateLock)
         {
             var dbPlayers = dbContext.Players.ToList()
-                .ToDictionary(c => c.DiscordId, c => c);
-            foreach (var entry in _playerCache)
+                .ToDictionary(p => p.DiscordId, p => p);
+            foreach (var entry in dbPlayers)
             {
-                _playerCache[entry.Key] = dbPlayers[entry.Key];
+                _playerCache[entry.Key] = entry.Value;
             }
         }
     }
 
-    private void UpdatePlayerInfo(ClaimsPrincipal user)
+    private void CreatePlayer(ClaimsPrincipal user)
     {
         lock (_playerUpdateLock)
         {
@@ -40,20 +40,10 @@ public class PlayerService
             var discordName = user.FindFirstValue(ClaimTypes.Name);
             if (discordName == null)
                 throw new ArgumentException("Name Claim missing in user identity.");
-        
-            var player = dbContext.Players.FirstOrDefault(p => p.DiscordId == discordId);
-            if (player != null)
-            {
-                if (player.Name == discordName)
-                    return;
             
-                // Handle discord username changes
-                player.Name = discordName;
-                dbContext.SaveChanges();
-                _playerCache[discordId] = player;
+            if (dbContext.Players.Any(p => p.DiscordId == discordId))
                 return;
-            }
-
+            
             var newPlayer = new Player
             {
                 Id = Guid.NewGuid(),
@@ -75,7 +65,7 @@ public class PlayerService
 
         if (_playerCache.TryGetValue(discordId, out var player))
             return player;
-        UpdatePlayerInfo(user);
+        CreatePlayer(user);
         return _playerCache[discordId];
     }
 }
