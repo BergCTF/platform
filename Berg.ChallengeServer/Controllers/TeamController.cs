@@ -54,7 +54,7 @@ public class TeamController : ControllerBase
         if (player.Team != null)
             throw new ArgumentException("Player is already in a team");
 
-        if(_dbContext.Teams.Any(t => t.Name.ToLowerInvariant() == team.Name.ToLowerInvariant()))
+        if(_dbContext.Teams.Any(t => t.Name == team.Name))
             throw new ArgumentException("Name is already taken");
             
         // Create team
