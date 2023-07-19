@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.Services;
 using Berg.Shared;
 using Microsoft.AspNetCore.Authentication;
@@ -11,16 +10,13 @@ namespace Berg.ChallengeServer.Controllers;
 [ApiController]
 public class PlayerController : ControllerBase
 {
-    private readonly CtfConfig _ctfConfig;
     private readonly ChallengeService _challengeService;
     private readonly PlayerService _playerService;
     
     public PlayerController(
-        CtfConfig ctfConfig,
         ChallengeService challengeService,
         PlayerService playerService)
     {
-        _ctfConfig = ctfConfig;
         _challengeService = challengeService;
         _playerService = playerService;
     }
