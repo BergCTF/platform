@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text.Json.Serialization;
 using Berg.ChallengeServer.Db;
 using Berg.ChallengeServer.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -48,13 +49,19 @@ public class TeamController : ControllerBase
             })
             .ToList();
     }
+
+    public class TeamCreateRequest
+    {
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
+    }
     
     [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/teams/create")]
-    public async Task<Shared.Team> CreateTeam([FromBody] Shared.Team team, CancellationToken cancel)
+    public async Task<Shared.Team> CreateTeam([FromBody] TeamCreateRequest team, CancellationToken cancel)
     {
         var playerId = _playerService.GetPlayer(User).Id;
         var player = await _dbContext.Players
@@ -62,6 +69,8 @@ public class TeamController : ControllerBase
             .FirstOrDefaultAsync(p => p.Id == playerId, cancel);
         if (player == null)
             throw new ArgumentException("Invalid player");
+        if (team.Name == null)
+            throw new ArgumentException("Team name must be set");
 
         if (player.Team != null)
             throw new ArgumentException("Player is already in a team");
@@ -85,10 +94,18 @@ public class TeamController : ControllerBase
         _scoringService.RefreshScores(_dbContext);
         _logger.LogInformation("Player {} created team: {}", playerId, dbTeam.Id);
 
-        team.Id = dbTeam.Id;
-        team.JoinToken = dbTeam.JoinToken;
-        team.Players = new List<Guid> { playerId };
-        return team;
+        return new Shared.Team
+        {
+            Id = dbTeam.Id,
+            JoinToken = dbTeam.JoinToken,
+            Players = new List<Guid> { playerId }
+        };
+    }
+
+    public class JoinTeamRequest
+    {
+        [JsonPropertyName("joinToken")]
+        public string? JoinToken { get; set; }
     }
 
     [HttpPost]
@@ -96,9 +113,11 @@ public class TeamController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/teams/join")]
-    public async Task<Shared.Team> JoinTeam([FromBody] string joinToken, CancellationToken cancel)
+    public async Task<Shared.Team> JoinTeam([FromBody] JoinTeamRequest req, CancellationToken cancel)
     {
-        joinToken = joinToken.Trim();
+        if(req.JoinToken == null)
+            throw new ArgumentException("Join token can't be null");
+        var joinToken = req.JoinToken.Trim();
         
         var playerId = _playerService.GetPlayer(User).Id;
         var player = await _dbContext.Players
