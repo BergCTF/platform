@@ -31,13 +31,22 @@ public class TeamController : ControllerBase
     [Route("/api/v1/teams")]
     public async Task<List<Shared.Team>> ListTeams(CancellationToken cancel)
     {
-        return await _dbContext.Teams.Select(t => new Shared.Team
+        var player = (User.Identity?.IsAuthenticated ?? false) ? _playerService.GetPlayer(User) : null;
+        var teamId = player?.TeamId;
+        return (await _dbContext.Teams.Select(t => new Shared.Team
         {
             Id = t.Id,
             Name = t.Name,
-            JoinToken = null,
+            JoinToken = t.JoinToken,
             Players = t.Players.Select(p => p.Id).ToList()
-        }).ToListAsync(cancel);
+        }).ToListAsync(cancel))
+            .Select(t =>
+            {
+                if (teamId == null || t.Id != teamId.Value)
+                    t.JoinToken = null;
+                return t;
+            })
+            .ToList();
     }
     
     [HttpPost]
@@ -79,45 +88,6 @@ public class TeamController : ControllerBase
         team.Id = dbTeam.Id;
         team.JoinToken = dbTeam.JoinToken;
         team.Players = new List<Guid> { playerId };
-        return team;
-    }
-    
-    [HttpGet]
-    [Route("/api/v1/teams/info")]
-    public async Task<Shared.Team?> GetTeam(Guid? teamId, CancellationToken cancel)
-    {
-        Team? dbTeam;
-        if (teamId == null)
-        {
-            var playerId = _playerService.GetPlayer(User).Id;
-            var player = await _dbContext.Players
-                .Include(p => p.Team)
-                .FirstOrDefaultAsync(p => p.Id == playerId, cancel);
-            if (player == null)
-                throw new ArgumentException("Invalid player");
-            
-            dbTeam = player.Team;
-        }
-        else
-        {
-            dbTeam = await _dbContext.Teams
-                .Include(t => t.Players)
-                .FirstOrDefaultAsync(t => t.Id == teamId, cancel);
-            if (dbTeam == null)
-                throw new ArgumentException("Invalid team id");
-        }
-
-        if (dbTeam == null)
-            return null;
-        
-        var playerIds = dbTeam.Players.Select(p => p.Id).ToList();
-        var team = new Shared.Team
-        {
-            Id = dbTeam.Id,
-            Name = dbTeam.Name,
-            JoinToken = dbTeam.JoinToken,
-            Players = playerIds,
-        };
         return team;
     }
 
