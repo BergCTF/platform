@@ -5,11 +5,6 @@ metadata:
   name: berg-ingress
   namespace: berg
 spec:
-  defaultBackend:
-    service:
-      name: berg-frontend
-      port:
-        number: 80
   rules:
   - host: ctf.k8s.personal.horizon.lan
     http:

@@ -40,9 +40,9 @@ public class CtfController : ControllerBase
             End = _ctfConfig.End,
             Teams = _ctfConfig.Teams
         };
-        var utcNow = DateTime.UtcNow;
+        var now = DateTime.Now;
         var player = (User.Identity?.IsAuthenticated ?? false) ? _playerService.GetPlayer(User) : null;
-        if (_ctfConfig.Start <= utcNow)
+        if (_ctfConfig.Start <= now)
         {
             ctf.Challenges = _challengeService.GetChallenges(player?.Id, player?.TeamId).Select(c =>
             {

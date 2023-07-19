@@ -61,10 +61,10 @@ public class ScoringController : ControllerBase
         if (challenge == null || flag == null)
             throw new ArgumentException("Values can't be null");
 
-        var utcNow = DateTime.UtcNow;
-        if (_ctfConfig.Start > utcNow)
+        var now = DateTime.Now;
+        if (_ctfConfig.Start > now)
             throw new ArgumentException("CTF has not started yet");
-        if (_ctfConfig.End < utcNow)
+        if (_ctfConfig.End < now)
             throw new ArgumentException("CTF has ended, no more flags accepted");
 
         lock (_submitFlagLock)
@@ -84,7 +84,7 @@ public class ScoringController : ControllerBase
             if (_dbContext.Solves.Where(s => s.Player.TeamId == player.TeamId).Any(s => s.ChallengeId == challenge))
                 return SubmitFlagResult.AlreadySolved;
 
-            var yesterday = utcNow.Subtract(TimeSpan.FromDays(1));
+            var yesterday = now.Subtract(TimeSpan.FromDays(1));
             var latestFailedSubmissions = player.Submissions.Where(s => yesterday < s.SubmittedAt).ToList();
             if (latestFailedSubmissions.Count > _ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerDay)
             {
@@ -92,7 +92,7 @@ public class ScoringController : ControllerBase
                 return SubmitFlagResult.RateLimited;
             }
 
-            var oneHourAgo = utcNow.Subtract(TimeSpan.FromHours(1));
+            var oneHourAgo = now.Subtract(TimeSpan.FromHours(1));
             var submissionCountHour = latestFailedSubmissions.Count(s => oneHourAgo < s.SubmittedAt);
             if (submissionCountHour > _ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerHour)
             {
@@ -100,7 +100,7 @@ public class ScoringController : ControllerBase
                 return SubmitFlagResult.RateLimited;
             }
 
-            var oneMinuteAgo = utcNow.Subtract(TimeSpan.FromMinutes(1));
+            var oneMinuteAgo = now.Subtract(TimeSpan.FromMinutes(1));
             var submissionCountMinute = latestFailedSubmissions.Count(s => oneMinuteAgo < s.SubmittedAt);
             if (submissionCountMinute > _ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerMinute)
             {
@@ -123,7 +123,7 @@ public class ScoringController : ControllerBase
                 {
                     Id = Guid.NewGuid(),
                     Challenge = dbChallenge,
-                    SubmittedAt = utcNow,
+                    SubmittedAt = now,
                     Player = player,
                 });
                 _dbContext.SaveChanges();
@@ -141,7 +141,7 @@ public class ScoringController : ControllerBase
             {
                 Id = Guid.NewGuid(),
                 Challenge = dbChallenge,
-                SolvedAt = utcNow,
+                SolvedAt = now,
                 Player = player,
             });
             _dbContext.SaveChanges();
