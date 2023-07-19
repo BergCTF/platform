@@ -4,7 +4,6 @@ using Berg.ChallengeServer.Db;
 using Berg.ChallengeServer.Services;
 using k8s;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -83,15 +82,21 @@ else
 
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
-
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<BergDbContext>();
-    // TODO: Switch to migrations
-    dbContext.Database.EnsureCreated();
+    dbContext.Database.Migrate();
 }
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.Use(next => context => {
+    // Hack to make dotnet think that the request came in over https, to make sure that redirect urls are
+    // being created with a https:// prefix. Necessary because the ingress controller handles TLS termination for us.
+    context.Request.Scheme = "https";
+    return next(context);
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

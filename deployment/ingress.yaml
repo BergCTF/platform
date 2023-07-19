@@ -2,9 +2,14 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: berg-challenge-server
+  name: berg-ingress
   namespace: berg
 spec:
+  defaultBackend:
+    service:
+      name: berg-frontend
+      port:
+        number: 80
   rules:
   - host: ctf.k8s.personal.horizon.lan
     http:
@@ -28,5 +33,12 @@ spec:
         backend:
           service:
             name: handouts
+            port:
+              number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: berg-frontend
             port:
               number: 80
