@@ -7,8 +7,9 @@ namespace Berg.ChallengeServer.BackgroundServices;
 public class RefreshService : BackgroundService
 {
     private readonly ILogger<RefreshService> _logger;
-    private readonly ChallengeService _challengeService;
     private readonly ScoringService _scoringService;
+    private readonly ChallengeService _challengeService;
+    private readonly PlayerService _playerService;
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly CtfConfig _ctfConfig;
 
@@ -16,6 +17,7 @@ public class RefreshService : BackgroundService
         ILogger<RefreshService> logger,
         ScoringService scoringService,
         ChallengeService challengeService,
+        PlayerService playerService,
         IServiceScopeFactory serviceScopeFactory,
         CtfConfig ctfConfig)
     {
@@ -23,6 +25,7 @@ public class RefreshService : BackgroundService
         _serviceScopeFactory = serviceScopeFactory;
         _scoringService = scoringService;
         _challengeService = challengeService;
+        _playerService = playerService;
         _ctfConfig = ctfConfig;
     }
     
@@ -36,6 +39,7 @@ public class RefreshService : BackgroundService
             {
                 _challengeService.RefreshChallenges(dbContext);
                 _scoringService.RefreshScores(dbContext);
+                _playerService.RefreshPlayerInfo(dbContext);
             }
             await _challengeService.CheckChallengeInstanceTimout(stoppingToken);
             

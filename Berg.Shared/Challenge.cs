@@ -24,7 +24,13 @@ public class Challenge
     
     [JsonPropertyName("value")]
     public int Value { get; set; }
+    
+    [JsonPropertyName("solvedByTeam")]
+    public bool SolvedByTeam { get; set; }
 
+    [JsonPropertyName("solvedByPlayer")]
+    public bool SolvedByPlayer { get; set; }
+    
     [JsonPropertyName("instantiatable")]
     public bool Instantiatable { get; set; }
     

@@ -148,6 +148,22 @@ public class ScoringService
             .ToList();
     }
 
+    public bool HasPlayerSolvedChallenge(Guid? playerId, string challengeName)
+    {
+        if (playerId == null)
+            return false;
+        return _playerSolvedChallenges.TryGetValue(playerId.Value, out var solves) &&
+               solves.Any(s => s.ChallengeName == challengeName);
+    }
+    
+    public bool HasTeamSolvedChallenge(Guid? teamId, string challengeName)
+    {
+        if (teamId == null)
+            return false;
+        return _teamSolvedChallenges.TryGetValue(teamId.Value, out var solves) &&
+               solves.Any(s => s.ChallengeName == challengeName);
+    }
+
     public List<TeamRanking> GetTeamScoreboard()
     {
         return _teamScoreboard;

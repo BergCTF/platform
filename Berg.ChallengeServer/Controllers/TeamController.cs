@@ -69,7 +69,7 @@ public class TeamController : ControllerBase
         // Add player to team
         player.Team = dbTeam;
         await _dbContext.SaveChangesAsync(cancel);
-        
+        _playerService.RefreshPlayerInfo(_dbContext);
         _logger.LogInformation("Player {} created team: {}", playerId, dbTeam.Id);
 
         team.Id = dbTeam.Id;
@@ -148,8 +148,9 @@ public class TeamController : ControllerBase
         // Assign the player to the team
         player.Team = dbTeam;
         await _dbContext.SaveChangesAsync(cancel);
+        _playerService.RefreshPlayerInfo(_dbContext);
         _logger.LogInformation("Player {} joined team: {}", playerId, dbTeam.Id);
-
+        
         // Add our new player to the list of players as we fetched the db information
         // before assigning the user to the team.
         var playerIds = dbTeam.Players.Select(p => p.Id).ToList();
@@ -186,6 +187,7 @@ public class TeamController : ControllerBase
         var previousTeamId = player.Team.Id;
         player.Team = null;
         await _dbContext.SaveChangesAsync(cancel);
+        _playerService.RefreshPlayerInfo(_dbContext);
         _logger.LogInformation("Player {} left team {}", playerId, previousTeamId);
     }
 

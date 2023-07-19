@@ -13,17 +13,20 @@ public class CtfController : ControllerBase
     private readonly CtfConfig _ctfConfig;
     private readonly ChallengeService _challengeService;
     private readonly ScoringService _scoringService;
+    private readonly PlayerService _playerService;
     private readonly BergDbContext _dbContext;
 
     public CtfController(
         CtfConfig ctfConfig,
         ScoringService scoringService,
         ChallengeService challengeService,
+        PlayerService playerService,
         BergDbContext dbContext)
     {
         _ctfConfig = ctfConfig;
         _scoringService = scoringService;
         _challengeService = challengeService;
+        _playerService = playerService;
         _dbContext = dbContext;
     }
 
@@ -38,9 +41,10 @@ public class CtfController : ControllerBase
             Teams = _ctfConfig.Teams
         };
         var utcNow = DateTime.UtcNow;
+        var player = (User.Identity?.IsAuthenticated ?? false) ? _playerService.GetPlayer(User) : null;
         if (_ctfConfig.Start <= utcNow)
         {
-            ctf.Challenges = _challengeService.GetChallenges().Select(c =>
+            ctf.Challenges = _challengeService.GetChallenges(player?.Id, player?.TeamId).Select(c =>
             {
                 c.Value = _scoringService.GetChallengeValue(c.Name);
                 c.TeamSolves = _scoringService.GetChallengeTeamSolves(c.Name);

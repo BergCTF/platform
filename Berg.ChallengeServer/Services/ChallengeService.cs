@@ -66,12 +66,12 @@ public class ChallengeService
         }
     }
 
-    public List<Challenge> GetChallenges()
+    public List<Challenge> GetChallenges(Guid? playerId, Guid? teamId)
     {
         var utcNow = DateTime.UtcNow;
         return _challenges.Values
             .Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= utcNow)
-            .Select(ToChallenge).ToList();
+            .Select(c => ToChallenge(c, playerId, teamId)).ToList();
     }
     
     public V1Challenge? GetChallengeConfig(string challengeName)
@@ -532,7 +532,7 @@ public class ChallengeService
         return sb.ToString();
     }
 
-    private Challenge ToChallenge(V1Challenge c)
+    private Challenge ToChallenge(V1Challenge c, Guid? playerId, Guid? teamId)
     {
         return new Challenge
         {
@@ -542,6 +542,8 @@ public class ChallengeService
             Difficulty = c.Spec.Difficulty,
             Categories = c.Spec.Categories,
             Instantiatable = c.Spec.Containers?.Any() ?? false,
+            SolvedByPlayer = _scoringService.HasPlayerSolvedChallenge(playerId, c.Name()),
+            SolvedByTeam = _scoringService.HasTeamSolvedChallenge(teamId, c.Name()),
             TeamSolves = _scoringService.GetChallengeTeamSolves(c.Name()),
             PlayerSolves = _scoringService.GetChallengePlayerSolves(c.Name()),
             Attachments = c.Spec.Attachments?.Select(a => new Attachment
