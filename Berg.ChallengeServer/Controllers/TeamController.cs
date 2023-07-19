@@ -13,15 +13,18 @@ public class TeamController : ControllerBase
     private readonly ILogger<TeamController> _logger;
     private readonly BergDbContext _dbContext;
     private readonly PlayerService _playerService;
+    private readonly ScoringService _scoringService;
     
     public TeamController(
         ILogger<TeamController> logger,
         BergDbContext dbContext,
-        PlayerService playerService)
+        PlayerService playerService,
+        ScoringService scoringService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _playerService = playerService;
+        _scoringService = scoringService;
     }
     
     [HttpGet]
@@ -70,6 +73,7 @@ public class TeamController : ControllerBase
         player.Team = dbTeam;
         await _dbContext.SaveChangesAsync(cancel);
         _playerService.RefreshPlayerInfo(_dbContext);
+        _scoringService.RefreshScores(_dbContext);
         _logger.LogInformation("Player {} created team: {}", playerId, dbTeam.Id);
 
         team.Id = dbTeam.Id;
@@ -149,6 +153,7 @@ public class TeamController : ControllerBase
         player.Team = dbTeam;
         await _dbContext.SaveChangesAsync(cancel);
         _playerService.RefreshPlayerInfo(_dbContext);
+        _scoringService.RefreshScores(_dbContext);
         _logger.LogInformation("Player {} joined team: {}", playerId, dbTeam.Id);
         
         // Add our new player to the list of players as we fetched the db information
@@ -188,6 +193,7 @@ public class TeamController : ControllerBase
         player.Team = null;
         await _dbContext.SaveChangesAsync(cancel);
         _playerService.RefreshPlayerInfo(_dbContext);
+        _scoringService.RefreshScores(_dbContext);
         _logger.LogInformation("Player {} left team {}", playerId, previousTeamId);
     }
 
