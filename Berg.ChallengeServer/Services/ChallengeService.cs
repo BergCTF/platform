@@ -24,6 +24,7 @@ public class ChallengeService
     private readonly GenericClient _challengeClient;
     private readonly string _namespace;
     private readonly CtfConfig _ctfConfig;
+    private readonly ScoringService _scoringService;
 
     private readonly object _refreshLock = new();
     private Dictionary<string, V1Challenge> _challenges = new();
@@ -31,10 +32,12 @@ public class ChallengeService
     public ChallengeService(
         ILogger<ChallengeService> logger,
         Kubernetes kubernetes, 
-        CtfConfig ctfConfig)
+        CtfConfig ctfConfig,
+        ScoringService scoringService)
     {
         _logger = logger;
         _kubernetes = kubernetes;
+        _scoringService = scoringService;
         _challengeClient = new GenericClient(kubernetes, "berg.norelect.ch", "v1", "challenges", false);
         _ctfConfig = ctfConfig;
         _namespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
@@ -529,7 +532,7 @@ public class ChallengeService
         return sb.ToString();
     }
 
-    private static Challenge ToChallenge(V1Challenge c)
+    private Challenge ToChallenge(V1Challenge c)
     {
         return new Challenge
         {
@@ -539,6 +542,8 @@ public class ChallengeService
             Difficulty = c.Spec.Difficulty,
             Categories = c.Spec.Categories,
             Instantiatable = c.Spec.Containers?.Any() ?? false,
+            TeamSolves = _scoringService.GetChallengeTeamSolves(c.Name()),
+            PlayerSolves = _scoringService.GetChallengePlayerSolves(c.Name()),
             Attachments = c.Spec.Attachments?.Select(a => new Attachment
             {
                 FileName = a.FileName,

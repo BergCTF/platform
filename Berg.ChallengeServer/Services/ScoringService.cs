@@ -89,6 +89,7 @@ public class ScoringService
                     {
                         ChallengeName = s.ChallengeName,
                         SolvedAt = s.Solve.SolvedAt,
+                        TeamId = g.Key,
                         PlayerId = s.Solve.PlayerId
                     }).ToList()
                 );
