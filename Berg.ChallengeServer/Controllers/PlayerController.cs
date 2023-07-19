@@ -72,15 +72,12 @@ public class PlayerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/challengeInstance/start")]
-    public async Task<ChallengeInstanceStatus> StartChallengeInstance([FromBody] ChallengeStartRequest startRequest,
+    public async Task<ChallengeInstanceStatus?> StartChallengeInstance([FromBody] ChallengeStartRequest startRequest,
         CancellationToken cancel)
     {
         var challenge = startRequest.Challenge;
         if (challenge == null)
             throw new ArgumentException("Challenge can't be null");
-        var utcNow = DateTime.UtcNow;
-        if (_ctfConfig.Start > utcNow)
-            throw new ArgumentException("CTF has not started yet");
         var playerId = _playerService.GetPlayer(User).Id;
         return await _challengeService.StartChallengeInstance(playerId, challenge, cancel);
     }

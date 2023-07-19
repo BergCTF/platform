@@ -104,7 +104,7 @@ public class ChallengeService
     {
         var utcNow = DateTime.UtcNow;
         if (_ctfConfig.Start > utcNow)
-            throw new ArgumentException("CTF has not started yet");
+            return new ChallengeInstanceStatus();
 
         var labelSelector = new Dictionary<string, string>
         {
@@ -189,7 +189,7 @@ public class ChallengeService
     {
         var utcNow = DateTime.UtcNow;
         if (_ctfConfig.Start > utcNow)
-            throw new ArgumentException("CTF has not started yet");
+            return new ChallengeInstanceStatus();
 
         var labelSelector = new Dictionary<string, string>
         {
@@ -493,11 +493,6 @@ public class ChallengeService
     
     public async Task<ChallengeInstanceStatus> StopChallengeInstance(Guid playerId, CancellationToken cancel)
     {
-        var utcNow = DateTime.UtcNow;
-        if (_ctfConfig.Start > utcNow)
-            throw new ArgumentException("CTF has not started yet");
-        
-
         var labelSelector = new Dictionary<string, string>
         {
             { ManagedByLabel, "berg" },
