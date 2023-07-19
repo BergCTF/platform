@@ -4,7 +4,6 @@ using Berg.ChallengeServer.Db;
 using Berg.ChallengeServer.Services;
 using k8s;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -67,18 +66,8 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-if (builder.Environment.IsDevelopment())
-{
-    var connection = new SqliteConnection("DataSource=:memory:");
-    connection.Open();
-    builder.Services.AddDbContext<BergDbContext>(options =>
-        options.UseSqlite(connection));
-}
-else
-{
-    builder.Services.AddDbContext<BergDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("BergDbConnection")));
-}
+builder.Services.AddDbContext<BergDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("BergDbConnection")));
 
 var app = builder.Build();
 
