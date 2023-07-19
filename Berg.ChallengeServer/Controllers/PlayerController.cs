@@ -40,9 +40,7 @@ public class PlayerController : ControllerBase
     }
     
     [HttpGet]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/self")]
     public async Task<PlayerSelf> GetPlayerSelf(CancellationToken cancel)
     {
