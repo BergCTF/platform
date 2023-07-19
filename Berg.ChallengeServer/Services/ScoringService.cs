@@ -65,6 +65,7 @@ public class ScoringService
                     p.Id,
                     Solves = p.Solves.Select(s => new PlayerSolve
                     {
+                        PlayerId = p.Id,
                         ChallengeName = s.Challenge.Name,
                         SolvedAt = s.SolvedAt
                     }).OrderByDescending(s => s.SolvedAt).ToList()

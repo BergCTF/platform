@@ -4,6 +4,9 @@ namespace Berg.Shared;
 
 public class PlayerSolve
 {
+    [JsonPropertyName("playerId")]
+    public Guid PlayerId { get; set; }
+    
     [JsonPropertyName("solvedAt")]
     public DateTime SolvedAt { get; set; }
 
