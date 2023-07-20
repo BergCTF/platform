@@ -18,6 +18,7 @@ public class ChallengeService
     private const string ChallengeLabel      = "berg.norelect.ch/challenge";
     private const string ContainerLabel      = "berg.norelect.ch/container";
     private const string ImagePullSecretName = "berg-pull-secret";
+    private const string TlsSecretName       = "berg-tls-secret";
 
     private readonly ILogger<ChallengeService> _logger;
     private readonly Kubernetes _kubernetes;
@@ -453,6 +454,13 @@ public class ChallengeService
                     },
                     Spec = new V1IngressSpec
                     {
+                        Tls = new List<V1IngressTLS>{
+                           new()
+                           {
+                               Hosts = new List<string>{ $"{Guid.NewGuid()}.{challenge}.{_ctfConfig.ChallengeDomain}" },
+                               SecretName = TlsSecretName
+                           }
+                        },
                         Rules = new List<V1IngressRule>
                         {
                             new()
