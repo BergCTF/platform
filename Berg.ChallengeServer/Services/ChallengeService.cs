@@ -246,26 +246,6 @@ public class ChallengeService
             _logger.LogWarning("Image pull secret '{}' not found in namespace '{}'", ImagePullSecretName, _namespace);
             _logger.LogWarning("Detailed exception for pull secret copy operations: {}", ex);
         }
-        
-        try
-        {
-            var tlsSecret =
-                await _kubernetes.ReadNamespacedSecretAsync(TlsSecretName, _namespace, cancellationToken: cancel);
-            await _kubernetes.CreateNamespacedSecretAsync(new V1Secret
-            {
-                Metadata = new V1ObjectMeta
-                {
-                    Name = TlsSecretName,
-                },
-                Type = "kubernetes.io/tls",
-                Data = tlsSecret.Data
-            }, ns.Name(), cancellationToken: cancel);
-        }
-        catch (HttpOperationException ex)
-        {
-            _logger.LogWarning("TLS secret '{}' not found in namespace '{}'", TlsSecretName, _namespace);
-            _logger.LogWarning("Detailed exception for tls secret copy operations: {}", ex);
-        }
 
         await _kubernetes.CreateNamespacedNetworkPolicyAsync(new V1NetworkPolicy
         {
@@ -475,18 +455,11 @@ public class ChallengeService
                     },
                     Spec = new V1IngressSpec
                     {
-                        Tls = new List<V1IngressTLS>{
-                           new()
-                           {
-                               Hosts = new List<string>{ $"{serviceGuid}.{challenge}.{_ctfConfig.ChallengeDomain}" },
-                               SecretName = TlsSecretName
-                           }
-                        },
                         Rules = new List<V1IngressRule>
                         {
                             new()
                             {
-                                Host = $"{serviceGuid}.{challenge}.{_ctfConfig.ChallengeDomain}",
+                                Host = $"{serviceGuid}.{_ctfConfig.ChallengeDomain}",
                                 Http = new V1HTTPIngressRuleValue
                                 {
                                     Paths = new List<V1HTTPIngressPath>
