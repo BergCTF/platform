@@ -466,6 +466,7 @@ public class ChallengeService
                 .ToList() ?? new List<V1ChallengePort>();
             foreach (var vhostPort in vhostPorts)
             {
+                var serviceGuid = Guid.NewGuid();
                 await _kubernetes.CreateNamespacedIngressAsync(new V1Ingress
                 {
                     Metadata = new V1ObjectMeta
@@ -477,7 +478,7 @@ public class ChallengeService
                         Tls = new List<V1IngressTLS>{
                            new()
                            {
-                               Hosts = new List<string>{ $"{Guid.NewGuid()}.{challenge}.{_ctfConfig.ChallengeDomain}" },
+                               Hosts = new List<string>{ $"{serviceGuid}.{challenge}.{_ctfConfig.ChallengeDomain}" },
                                SecretName = TlsSecretName
                            }
                         },
@@ -485,7 +486,7 @@ public class ChallengeService
                         {
                             new()
                             {
-                                Host = $"{Guid.NewGuid()}.{challenge}.{_ctfConfig.ChallengeDomain}",
+                                Host = $"{serviceGuid}.{challenge}.{_ctfConfig.ChallengeDomain}",
                                 Http = new V1HTTPIngressRuleValue
                                 {
                                     Paths = new List<V1HTTPIngressPath>
