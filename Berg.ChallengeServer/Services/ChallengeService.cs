@@ -246,6 +246,26 @@ public class ChallengeService
             _logger.LogWarning("Image pull secret '{}' not found in namespace '{}'", ImagePullSecretName, _namespace);
             _logger.LogWarning("Detailed exception for pull secret copy operations: {}", ex);
         }
+        
+        try
+        {
+            var tlsSecret =
+                await _kubernetes.ReadNamespacedSecretAsync(TlsSecretName, _namespace, cancellationToken: cancel);
+            await _kubernetes.CreateNamespacedSecretAsync(new V1Secret
+            {
+                Metadata = new V1ObjectMeta
+                {
+                    Name = ImagePullSecretName,
+                },
+                Type = "kubernetes.io/tls",
+                Data = tlsSecret.Data
+            }, ns.Name(), cancellationToken: cancel);
+        }
+        catch (HttpOperationException ex)
+        {
+            _logger.LogWarning("TLS secret '{}' not found in namespace '{}'", TlsSecretName, _namespace);
+            _logger.LogWarning("Detailed exception for tls secret copy operations: {}", ex);
+        }
 
         await _kubernetes.CreateNamespacedNetworkPolicyAsync(new V1NetworkPolicy
         {
