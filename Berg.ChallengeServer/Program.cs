@@ -12,7 +12,7 @@ builder.WebHost.ConfigureKestrel(o => o.AddServerHeader = false);
 
 builder.Services.AddControllers();
 var ctfConfig = new CtfConfig();
-builder.Configuration.GetSection("ctf").Bind(ctfConfig);
+builder.Configuration.GetSection("Ctf").Bind(ctfConfig);
 builder.Services.AddSingleton(ctfConfig);
 builder.Services.AddSingleton(new Kubernetes(KubernetesClientConfiguration.BuildDefaultConfig()));
 builder.Services.AddSingleton<ScoringService>();
@@ -20,7 +20,7 @@ builder.Services.AddSingleton<ChallengeService>();
 builder.Services.AddSingleton<PlayerService>();
 builder.Services.AddHostedService<RefreshService>();
 var discordConfig = new DiscordConfig();
-builder.Configuration.GetSection("discordConfig").Bind(discordConfig);
+builder.Configuration.GetSection("DiscordConfig").Bind(discordConfig);
 builder.Services.AddSingleton(discordConfig);
 
 Console.WriteLine($"Ctf Configuration: {JsonSerializer.Serialize(ctfConfig)}");
