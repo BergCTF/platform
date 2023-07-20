@@ -40,7 +40,7 @@ public class CtfController : ControllerBase
             End = _ctfConfig.End,
             Teams = _ctfConfig.Teams
         };
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
         var player = (User.Identity?.IsAuthenticated ?? false) ? _playerService.GetPlayer(User) : null;
         if (_ctfConfig.Start <= now)
         {

@@ -79,28 +79,28 @@ public class BergDbContextFactory : IDisposable
             Id = Guid.NewGuid(),
             Challenge = challenge1,
             Player = team1Player1,
-            SolvedAt = DateTime.Now
+            SolvedAt = DateTime.UtcNow
         });
         dbContext.Solves.Add(new Solve
         {
             Id = Guid.NewGuid(),
             Challenge = challenge1,
             Player = team1Player2,
-            SolvedAt =  DateTime.Now.AddHours(-1)
+            SolvedAt =  DateTime.UtcNow.AddHours(-1)
         });
         dbContext.Solves.Add(new Solve
         {
             Id = Guid.NewGuid(),
             Challenge = challenge1,
             Player = team2Player1,
-            SolvedAt = DateTime.Now
+            SolvedAt = DateTime.UtcNow
         });
         dbContext.Solves.Add(new Solve
         {
             Id = Guid.NewGuid(),
             Challenge = challenge2,
             Player = team2Player1,
-            SolvedAt = DateTime.Now
+            SolvedAt = DateTime.UtcNow
         });
         dbContext.SaveChanges();
     }

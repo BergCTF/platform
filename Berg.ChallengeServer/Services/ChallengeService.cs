@@ -69,7 +69,7 @@ public class ChallengeService
 
     public List<Challenge> GetChallenges(Guid? playerId, Guid? teamId)
     {
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
         return _challenges.Values
             .Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= now)
             .Select(c => ToChallenge(c, playerId, teamId)).ToList();
@@ -77,7 +77,7 @@ public class ChallengeService
     
     public V1Challenge? GetChallengeConfig(string challengeName)
     {
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
         return _challenges.Values
             .Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= now)
             .FirstOrDefault(c => c.Name() == challengeName);
@@ -93,7 +93,7 @@ public class ChallengeService
         var nsList = await _kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(labelSelector),
             cancellationToken: cancel);
 
-        var maxAge = DateTime.Now.Subtract(_ctfConfig.ChallengeInstanceTimeout);
+        var maxAge = DateTime.UtcNow.Subtract(_ctfConfig.ChallengeInstanceTimeout);
         foreach (var ns in nsList.Items.Where(n => n.Metadata.CreationTimestamp < maxAge))
         {
             _logger.LogInformation("Removing {} because it reached the instance timeout", ns.Name());
@@ -103,7 +103,7 @@ public class ChallengeService
 
     public async Task<ChallengeInstanceStatus> GetChallengeInstance(Guid playerId, CancellationToken cancel)
     {
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
         if (_ctfConfig.Start > now)
             return new ChallengeInstanceStatus();
 
@@ -188,7 +188,7 @@ public class ChallengeService
     public async Task<ChallengeInstanceStatus> StartChallengeInstance(Guid playerId, string challenge,
         CancellationToken cancel)
     {
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
         if (_ctfConfig.Start > now)
             return new ChallengeInstanceStatus();
 
@@ -206,7 +206,7 @@ public class ChallengeService
         var challengeConfig = await _challengeClient.ReadNamespacedAsync<V1Challenge>(_namespace, challenge, cancel);
         if (challengeConfig == null)
             throw new ArgumentException("Invalid challenge!");
-        if(challengeConfig.Spec.HideUntil != null && DateTime.Now < challengeConfig.Spec.HideUntil)
+        if(challengeConfig.Spec.HideUntil != null && DateTime.UtcNow < challengeConfig.Spec.HideUntil)
             throw new ArgumentException("Invalid challenge!");
 
         if ((challengeConfig.Spec.Containers?.Count ?? 0) == 0)

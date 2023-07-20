@@ -61,7 +61,7 @@ public class ScoringController : ControllerBase
         if (challenge == null || flag == null)
             throw new ArgumentException("Values can't be null");
 
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
         if (_ctfConfig.Start > now)
             throw new ArgumentException("CTF has not started yet");
         if (_ctfConfig.End < now)
