@@ -255,7 +255,7 @@ public class ChallengeService
             {
                 Metadata = new V1ObjectMeta
                 {
-                    Name = ImagePullSecretName,
+                    Name = TlsSecretName,
                 },
                 Type = "kubernetes.io/tls",
                 Data = tlsSecret.Data
