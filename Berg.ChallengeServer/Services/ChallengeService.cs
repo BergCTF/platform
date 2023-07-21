@@ -18,14 +18,12 @@ public class ChallengeService
     private const string ChallengeLabel      = "berg.norelect.ch/challenge";
     private const string ContainerLabel      = "berg.norelect.ch/container";
     private const string ImagePullSecretName = "berg-pull-secret";
-    private const string TlsSecretName       = "berg-tls-secret";
 
     private readonly ILogger<ChallengeService> _logger;
     private readonly Kubernetes _kubernetes;
     private readonly GenericClient _challengeClient;
     private readonly string _namespace;
     private readonly CtfConfig _ctfConfig;
-    private readonly ScoringService _scoringService;
 
     private readonly object _refreshLock = new();
     private Dictionary<string, V1Challenge> _challenges = new();
@@ -33,12 +31,10 @@ public class ChallengeService
     public ChallengeService(
         ILogger<ChallengeService> logger,
         Kubernetes kubernetes, 
-        CtfConfig ctfConfig,
-        ScoringService scoringService)
+        CtfConfig ctfConfig)
     {
         _logger = logger;
         _kubernetes = kubernetes;
-        _scoringService = scoringService;
         _challengeClient = new GenericClient(kubernetes, "berg.norelect.ch", "v1", "challenges", false);
         _ctfConfig = ctfConfig;
         _namespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
@@ -67,20 +63,14 @@ public class ChallengeService
         }
     }
 
-    public List<Challenge> GetChallenges(Guid? playerId, Guid? teamId)
+    public List<V1Challenge> GetChallenges()
     {
         var now = DateTime.UtcNow;
         return _challenges.Values
             .Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= now)
-            .Select(c => ToChallenge(c, playerId, teamId)).ToList();
+            .ToList();
     }
-    
-    public List<V1Challenge> GetChallengeConfigs()
-    {
-        var now = DateTime.UtcNow;
-        return _challenges.Values.Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= now).ToList();
-    }
-    
+
     public V1Challenge? GetChallengeConfig(string challengeName)
     {
         var now = DateTime.UtcNow;
@@ -535,26 +525,4 @@ public class ChallengeService
         return sb.ToString();
     }
 
-    private Challenge ToChallenge(V1Challenge c, Guid? playerId, Guid? teamId)
-    {
-        return new Challenge
-        {
-            Name = c.Name(),
-            Author = c.Spec.Author,
-            Description = c.Spec.Description,
-            Difficulty = c.Spec.Difficulty,
-            Categories = c.Spec.Categories,
-            Instantiatable = c.Spec.Containers?.Any() ?? false,
-            SolvedByPlayer = _scoringService.HasPlayerSolvedChallenge(playerId, c.Name()),
-            SolvedByTeam = _scoringService.HasTeamSolvedChallenge(teamId, c.Name()),
-            TeamSolves = _scoringService.GetChallengeTeamSolves(c.Name()),
-            PlayerSolves = _scoringService.GetChallengePlayerSolves(c.Name()),
-            Attachments = c.Spec.Attachments?.Select(a => new Attachment
-            {
-                FileName = a.FileName,
-                DownloadUrl = a.DownloadUrl,
-            }).ToList() ?? new List<Attachment>(),
-        };
-    }
-    
 }

@@ -61,7 +61,7 @@ public class ScoringService
             _challengeValues = _challengeSolves.ToDictionary(s => s.Key, s => 
                 (int)Math.Max(minimumScore, Math.Ceiling(factor * Math.Pow(s.Value, 2) + maximumScore)));
 
-            var staticValueChallengeConfigs = _challengeService.GetChallengeConfigs()
+            var staticValueChallengeConfigs = _challengeService.GetChallenges()
                 .Where(c => c.Spec.StaticValue != null);
             foreach (var config in staticValueChallengeConfigs)
             {
