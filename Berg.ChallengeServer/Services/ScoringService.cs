@@ -62,7 +62,7 @@ public class ScoringService
                 (int)Math.Max(minimumScore, Math.Ceiling(factor * Math.Pow(s.Value, 2) + maximumScore)));
 
             var staticValueChallengeConfigs = _challengeService.GetChallenges()
-                .Where(c => c.Spec.StaticValue != null);
+                .Where(c => c.Spec.StaticValue != null && c.Spec.StaticValue != 0);
             foreach (var config in staticValueChallengeConfigs)
             {
                 _challengeValues[config.Name()] = config.Spec.StaticValue!.Value;
