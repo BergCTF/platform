@@ -1,6 +1,7 @@
 using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.Db;
 using Berg.Shared;
+using k8s.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Berg.ChallengeServer.Services;
@@ -10,6 +11,7 @@ public class ScoringService
     private static readonly object CacheUpdateLock = new();
     
     private readonly CtfConfig _ctfConfig;
+    private readonly ChallengeService _challengeService;
     
     private Dictionary<string, int> _challengeSolves = new();
     private Dictionary<string, int> _challengeValues = new();
@@ -20,9 +22,10 @@ public class ScoringService
     private List<TeamRanking> _teamScoreboard = new();
     private List<PlayerRanking> _playerScoreboard = new();
 
-    public ScoringService(CtfConfig ctfConfig)
+    public ScoringService(CtfConfig ctfConfig, ChallengeService challengeService)
     {
         _ctfConfig = ctfConfig;
+        _challengeService = challengeService;
     }
 
     public void RefreshScores(BergDbContext dbContext)
@@ -57,6 +60,13 @@ public class ScoringService
             
             _challengeValues = _challengeSolves.ToDictionary(s => s.Key, s => 
                 (int)Math.Max(minimumScore, Math.Ceiling(factor * Math.Pow(s.Value, 2) + maximumScore)));
+
+            var staticValueChallengeConfigs = _challengeService.GetChallengeConfigs()
+                .Where(c => c.Spec.StaticValue != null);
+            foreach (var config in staticValueChallengeConfigs)
+            {
+                _challengeValues[config.Name()] = config.Spec.StaticValue!.Value;
+            }
             
             // Now that the values of each challenge are set, we can calculate the individual and team scores
             _playerSolvedChallenges = dbContext.Players

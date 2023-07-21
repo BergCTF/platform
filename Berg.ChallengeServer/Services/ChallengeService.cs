@@ -75,6 +75,12 @@ public class ChallengeService
             .Select(c => ToChallenge(c, playerId, teamId)).ToList();
     }
     
+    public List<V1Challenge> GetChallengeConfigs()
+    {
+        var now = DateTime.UtcNow;
+        return _challenges.Values.Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= now).ToList();
+    }
+    
     public V1Challenge? GetChallengeConfig(string challengeName)
     {
         var now = DateTime.UtcNow;

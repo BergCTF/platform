@@ -26,6 +26,9 @@ spec:
                   format: date-time
                 difficulty:
                   type: string
+                staticValue:
+                  type: number
+                  nullable: true
                 categories:
                   type: array
                   items:

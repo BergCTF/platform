@@ -22,7 +22,7 @@ public class ScoringServiceTest
             }
         };
 
-        var scoringService = new ScoringService(config);
+        var scoringService = new ScoringService(config, null);
         scoringService.RefreshScores(db);
         Assert.Multiple(() =>
         {
@@ -66,7 +66,7 @@ public class ScoringServiceTest
             }
         };
 
-        var scoringService = new ScoringService(config);
+        var scoringService = new ScoringService(config, null);
         scoringService.RefreshScores(db);
         Assert.Multiple(() =>
         {
