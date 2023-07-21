@@ -61,18 +61,20 @@ public class CtfController : ControllerBase
     
     private Challenge ToChallenge(V1Challenge c, Guid? playerId, Guid? teamId)
     {
+        var challengeName = c.Name();
         return new Challenge
         {
-            Name = c.Name(),
+            Name = challengeName,
             Author = c.Spec.Author,
             Description = c.Spec.Description,
             Difficulty = c.Spec.Difficulty,
             Categories = c.Spec.Categories,
             Instantiatable = c.Spec.Containers?.Any() ?? false,
-            SolvedByPlayer = _scoringService.HasPlayerSolvedChallenge(playerId, c.Name()),
-            SolvedByTeam = _scoringService.HasTeamSolvedChallenge(teamId, c.Name()),
-            TeamSolves = _scoringService.GetChallengeTeamSolves(c.Name()),
-            PlayerSolves = _scoringService.GetChallengePlayerSolves(c.Name()),
+            Value = _scoringService.GetChallengeValue(challengeName),
+            SolvedByPlayer = _scoringService.HasPlayerSolvedChallenge(playerId, challengeName),
+            SolvedByTeam = _scoringService.HasTeamSolvedChallenge(teamId, challengeName),
+            TeamSolves = _scoringService.GetChallengeTeamSolves(challengeName),
+            PlayerSolves = _scoringService.GetChallengePlayerSolves(challengeName),
             Attachments = c.Spec.Attachments?.Select(a => new Attachment
             {
                 FileName = a.FileName,
