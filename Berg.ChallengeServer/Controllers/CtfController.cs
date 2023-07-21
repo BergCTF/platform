@@ -53,12 +53,25 @@ public class CtfController : ControllerBase
                 .GroupBy(c => c.Categories.FirstOrDefault() ?? "misc")
                 .ToDictionary(c => c.Key, c => c
                     .OrderBy(c2 => c2.Value)
+                    .ThenBy(c2 => DifficultyToNumber(c2.Difficulty))
                     .ThenBy(c2 => c2.Name)
                     .ToList());
         }
         return ctf;
     }
-    
+
+    private static int DifficultyToNumber(string val)
+    {
+        var mappings = new Dictionary<string, int>()
+        {
+            { "baby", 1 },
+            { "easy", 2 },
+            { "medium", 3 },
+            { "hard", 4 },
+        };
+        return mappings.TryGetValue(val, out var result) ? result : 5;
+    }
+
     private Challenge ToChallenge(V1Challenge c, Guid? playerId, Guid? teamId)
     {
         var challengeName = c.Name();
