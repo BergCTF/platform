@@ -358,7 +358,7 @@ public class ChallengeService
                             },
                             Name = container.Hostname,
                             Image = container.Image,
-                            ImagePullPolicy = "IfNotPresent",
+                            ImagePullPolicy = "Always",
                             // Resources = new V1ResourceRequirements
                             // {
                             //     Limits = new Dictionary<string, ResourceQuantity>
