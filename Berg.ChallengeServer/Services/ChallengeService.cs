@@ -45,7 +45,7 @@ public class ChallengeService
         lock (_refreshLock)
         {
             var challengeList = _challengeClient
-                .ListNamespacedAsync<V1BergCustomResourceList<V1Challenge>>(_namespace).Result;
+                .ListNamespacedAsync<CustomResourceList<V1Challenge>>(_namespace).Result;
 
             _challenges = challengeList.Items
                 .ToDictionary(c => c.Name(), c => c);

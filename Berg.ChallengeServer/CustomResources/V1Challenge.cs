@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Berg.ChallengeServer.CustomResources;
 
-public class V1Challenge : V1BergCustomResource<V1ChallengeSpec>
+public class V1Challenge : CustomResource<V1ChallengeSpec>
 {
 }
 
