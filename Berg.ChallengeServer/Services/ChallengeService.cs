@@ -6,22 +6,25 @@ using Berg.Shared;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
-using Challenge = Berg.Shared.Challenge;
 
 namespace Berg.ChallengeServer.Services;
 
 public class ChallengeService
 {
+    private const string BergGroup           = "berg.norelect.ch";
+    private const string TraefikGroup        = "traefik.containo.us";
     private const string ManagedByLabel      = "app.kubernetes.io/managed-by";
     private const string ComponentLabel      = "app.kubernetes.io/component";
     private const string PlayerIdLabel       = "berg.norelect.ch/player-id";
     private const string ChallengeLabel      = "berg.norelect.ch/challenge";
     private const string ContainerLabel      = "berg.norelect.ch/container";
+    private const string HostnameLabel       = "berg.norelect.ch/hostname";
     private const string ImagePullSecretName = "berg-pull-secret";
 
     private readonly ILogger<ChallengeService> _logger;
     private readonly Kubernetes _kubernetes;
     private readonly GenericClient _challengeClient;
+    private readonly GenericClient _ingressRouteTcpClient;
     private readonly string _namespace;
     private readonly CtfConfig _ctfConfig;
 
@@ -35,7 +38,8 @@ public class ChallengeService
     {
         _logger = logger;
         _kubernetes = kubernetes;
-        _challengeClient = new GenericClient(kubernetes, "berg.norelect.ch", "v1", "challenges", false);
+        _challengeClient = new GenericClient(kubernetes, BergGroup, "v1", "challenges", false);
+        _ingressRouteTcpClient = new GenericClient(kubernetes, TraefikGroup, "v1alpha1", "ingressroutetcps", false);
         _ctfConfig = ctfConfig;
         _namespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
     }
@@ -135,7 +139,8 @@ public class ChallengeService
            };
         
         var serviceList = await _kubernetes.ListNamespacedServiceAsync(ns.Name(), cancellationToken: cancel);
-        var ingressList = await _kubernetes.ListNamespacedIngressAsync(ns.Name(), cancellationToken: cancel);
+        var traefikIngressRouteTcpList = await _ingressRouteTcpClient
+            .ListNamespacedAsync<CustomResourceList<V1TraefikIngressRouteTcp>>(ns.Name(), cancel);
         
         var services = new List<Service>();
         foreach (var container in challenge.Spec.Containers ?? new List<V1ChallengeContainer>())
@@ -162,9 +167,9 @@ public class ChallengeService
                 }
                 else if (port.Type == V1ChallengePortType.PublicVHost)
                 {
-                    var ingress = ingressList.Items
+                    var ingress = traefikIngressRouteTcpList.Items
                         .FirstOrDefault(i => i.Name() == $"vhost-{container.Hostname}-{port.Port}");
-                    service.Hostname = ingress?.Spec.Rules.FirstOrDefault()?.Host ?? "localhost";
+                    service.Hostname = ingress?.GetLabel(HostnameLabel) ?? "<loading>";
                     service.Port = 443;
                     service.VHost = true;
                 }
@@ -443,45 +448,38 @@ public class ChallengeService
             foreach (var vhostPort in vhostPorts)
             {
                 var serviceGuid = Guid.NewGuid();
-                await _kubernetes.CreateNamespacedIngressAsync(new V1Ingress
+                await _ingressRouteTcpClient.CreateNamespacedAsync(new V1TraefikIngressRouteTcp
                 {
                     Metadata = new V1ObjectMeta
                     {
-                        Name = $"vhost-{container.Hostname}-{vhostPort.Port}"
-                    },
-                    Spec = new V1IngressSpec
-                    {
-                        Rules = new List<V1IngressRule>
+                        Name = $"vhost-{container.Hostname}-{vhostPort.Port}",
+                        Labels = new Dictionary<string, string>()
                         {
-                            new()
+                            { ManagedByLabel, "berg" },
+                            { ComponentLabel, "ingress" },
+                            { HostnameLabel, $"{serviceGuid}.{_ctfConfig.ChallengeDomain}" }
+                        }
+                    },
+                    Spec = new V1TraefikIngressRouteTcpSpec
+                    {
+                        Routes = new List<V1TraefikRoute>
+                        {
+                            new ()
                             {
-                                Host = $"{serviceGuid}.{_ctfConfig.ChallengeDomain}",
-                                Http = new V1HTTPIngressRuleValue
+                                Match = $"Host(`{serviceGuid}.{_ctfConfig.ChallengeDomain}`)",
+                                Services = new List<V1TraefikService>
                                 {
-                                    Paths = new List<V1HTTPIngressPath>
+                                    new ()
                                     {
-                                        new ()
-                                        {
-                                            Path = "/",
-                                            Backend = new V1IngressBackend
-                                            {
-                                                Service = new V1IngressServiceBackend
-                                                {
-                                                    Name = container.Hostname,
-                                                    Port = new V1ServiceBackendPort
-                                                    {
-                                                        Number = vhostPort.Port
-                                                    },
-                                                }
-                                            },
-                                            PathType = "Prefix",
-                                        }
+                                        Name = container.Hostname,
+                                        Port = vhostPort.Port
                                     }
                                 }
                             }
-                        }
+                        },
+                        Tls = new Dictionary<string, string>()
                     }
-                }, ns.Name(), cancellationToken: cancel);
+                }, ns.Name(), cancel: cancel);
             }
         }
         
