@@ -448,7 +448,7 @@ public class ChallengeService
             foreach (var vhostPort in vhostPorts)
             {
                 var serviceGuid = Guid.NewGuid();
-                await _ingressRouteTcpClient.CreateNamespacedAsync(new V1TraefikIngressRouteTcp
+                var ingressRoute = new V1TraefikIngressRouteTcp
                 {
                     Metadata = new V1ObjectMeta
                     {
@@ -464,12 +464,12 @@ public class ChallengeService
                     {
                         Routes = new List<V1TraefikRoute>
                         {
-                            new ()
+                            new()
                             {
                                 Match = $"Host(`{serviceGuid}.{_ctfConfig.ChallengeDomain}`)",
                                 Services = new List<V1TraefikService>
                                 {
-                                    new ()
+                                    new()
                                     {
                                         Name = container.Hostname,
                                         Port = vhostPort.Port
@@ -479,7 +479,16 @@ public class ChallengeService
                         },
                         Tls = new Dictionary<string, string>()
                     }
-                }, ns.Name(), cancel: cancel);
+                };
+                try
+                {
+                    await _ingressRouteTcpClient.CreateNamespacedAsync(ingressRoute, ns.Name(), cancel: cancel);
+                }
+                catch (HttpOperationException ex)
+                {
+                    _logger.LogError("Got exception while creating IngressRouteTCP: {}", ex);
+                    _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(ingressRoute));
+                }
             }
         }
         
