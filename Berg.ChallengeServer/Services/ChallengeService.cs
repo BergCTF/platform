@@ -466,7 +466,7 @@ public class ChallengeService
                         {
                             new()
                             {
-                                Match = $"Host(`{serviceGuid}.{_ctfConfig.ChallengeDomain}`)",
+                                Match = $"HostSNI(`{serviceGuid}.{_ctfConfig.ChallengeDomain}`)",
                                 Services = new List<V1TraefikService>
                                 {
                                     new()
