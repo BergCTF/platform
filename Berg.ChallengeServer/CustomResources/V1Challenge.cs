@@ -73,7 +73,8 @@ public enum V1ChallengePortType
 {
     Internal,
     PublicPort,
-    PublicVHost,
+    PublicIngressRoute,
+    PublicIngressRouteTcp,
 }
 
 public class V1ChallengeAttachment
