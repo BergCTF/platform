@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Berg.ChallengeServer.BackgroundServices;
 using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.Db;
@@ -23,7 +22,6 @@ var discordConfig = new DiscordConfig();
 builder.Configuration.GetSection("DiscordConfig").Bind(discordConfig);
 builder.Services.AddSingleton(discordConfig);
 
-Console.WriteLine($"Ctf Configuration: {JsonSerializer.Serialize(ctfConfig)}");
 var joinUrl = $"https://discord.com/api/oauth2/authorize?client_id={discordConfig.ClientId}&permissions=2048&scope=bot";
 Console.WriteLine($"Add the discord bot to your server: {joinUrl}");
 

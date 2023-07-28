@@ -465,6 +465,7 @@ public class ChallengeService
                     Metadata = new V1ObjectMeta
                     {
                         Name = $"ir-{container.Hostname}-{ingressRoutePort.Port}",
+                        NamespaceProperty = ns.Name(),
                         Labels = new Dictionary<string, string>()
                         {
                             { ManagedByLabel, "berg" },
@@ -498,10 +499,6 @@ public class ChallengeService
                 }
                 catch (HttpOperationException ex)
                 {
-                    var resp = await _kubernetes.CustomObjects
-                        .CreateNamespacedCustomObjectWithHttpMessagesAsync(ingressRoute, TraefikGroup, "v1alpha1", ns.Name(), "ingressroutes", cancellationToken: cancel)
-                        .ConfigureAwait(false);
-                    _logger.LogError(resp.Body.ToString());
                     _logger.LogError("Got exception while creating IngressRoute: {}", ex);
                     _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(ingressRoute));
                 }
@@ -518,6 +515,7 @@ public class ChallengeService
                     Metadata = new V1ObjectMeta
                     {
                         Name = $"ir-tcp-{container.Hostname}-{ingressRoutePort.Port}",
+                        NamespaceProperty = ns.Name(),
                         Labels = new Dictionary<string, string>()
                         {
                             { ManagedByLabel, "berg" },
