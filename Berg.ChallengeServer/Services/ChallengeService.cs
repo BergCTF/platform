@@ -510,16 +510,16 @@ public class ChallengeService
             var ingressRouteTcpPorts = container.Ports?
                 .Where(p => p.Type is V1ChallengePortType.PublicIngressRouteTcp)
                 .ToList() ?? new List<V1ChallengePort>();
-            foreach (var ingressRoutePort in ingressRouteTcpPorts)
+            foreach (var ingressRouteTcpPort in ingressRouteTcpPorts)
             {
                 var serviceGuid = Guid.NewGuid();
                 var ingressRouteTcp = new V1TraefikIngressRouteTcp
                 {
-                    Kind = "IngressRoute",
+                    Kind = "IngressRouteTCP",
                     ApiVersion = TraefikGroup+"/v1alpha1",
                     Metadata = new V1ObjectMeta
                     {
-                        Name = $"ir-tcp-{container.Hostname}-{ingressRoutePort.Port}",
+                        Name = $"ir-tcp-{container.Hostname}-{ingressRouteTcpPort.Port}",
                         NamespaceProperty = ns.Name(),
                         Labels = new Dictionary<string, string>()
                         {
@@ -540,7 +540,7 @@ public class ChallengeService
                                     new()
                                     {
                                         Name = container.Hostname,
-                                        Port = ingressRoutePort.Port
+                                        Port = ingressRouteTcpPort.Port
                                     }
                                 }
                             }
