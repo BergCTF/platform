@@ -61,7 +61,8 @@ spec:
                               enum:
                                 - internal
                                 - publicPort
-                                - publicVHost
+                                - publicIngressRoute
+                                - publicIngressRouteTcp
                 attachments:
                   type: array
                   items:
