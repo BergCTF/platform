@@ -462,6 +462,8 @@ public class ChallengeService
                 var serviceGuid = Guid.NewGuid();
                 var ingressRoute = new V1TraefikIngressRoute
                 {
+                    Kind = "IngressRoute",
+                    ApiVersion = TraefikGroup+"/v1alpha1",
                     Metadata = new V1ObjectMeta
                     {
                         Name = $"ir-{container.Hostname}-{ingressRoutePort.Port}",
@@ -500,7 +502,6 @@ public class ChallengeService
                 catch (HttpOperationException ex)
                 {
                     _logger.LogError("Got exception while creating IngressRoute: {}", ex);
-                    _logger.LogError("Body: {}", ex.Body);
                     _logger.LogError("Response.Content: {}", ex.Response.Content);
                     _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(ingressRoute));
                 }
@@ -514,6 +515,8 @@ public class ChallengeService
                 var serviceGuid = Guid.NewGuid();
                 var ingressRouteTcp = new V1TraefikIngressRouteTcp
                 {
+                    Kind = "IngressRoute",
+                    ApiVersion = TraefikGroup+"/v1alpha1",
                     Metadata = new V1ObjectMeta
                     {
                         Name = $"ir-tcp-{container.Hostname}-{ingressRoutePort.Port}",
@@ -552,7 +555,6 @@ public class ChallengeService
                 catch (HttpOperationException ex)
                 {
                     _logger.LogError("Got exception while creating IngressRouteTCP: {}", ex);
-                    _logger.LogError("Body: {}", ex.Body);
                     _logger.LogError("Response.Content: {}", ex.Response.Content);
                     _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(ingressRouteTcp));
                 }
