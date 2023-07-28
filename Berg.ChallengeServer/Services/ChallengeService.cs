@@ -395,9 +395,7 @@ public class ChallengeService
                 }
             }, ns.Name(), cancellationToken: cancel);
 
-            var internalPorts = container.Ports?
-                .Where(p => p.Type is V1ChallengePortType.Internal or V1ChallengePortType.PublicIngressRoute)
-                .ToList() ?? new List<V1ChallengePort>();
+            var internalPorts = container.Ports ?? new List<V1ChallengePort>();
             if (internalPorts.Any())
             {
                 await _kubernetes.CreateNamespacedServiceAsync(new V1Service
