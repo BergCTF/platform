@@ -498,6 +498,10 @@ public class ChallengeService
                 }
                 catch (HttpOperationException ex)
                 {
+                    var resp = await _kubernetes.CustomObjects
+                        .CreateNamespacedCustomObjectWithHttpMessagesAsync(ingressRoute, TraefikGroup, "v1alpha1", ns.Name(), "ingressroutes", cancellationToken: cancel)
+                        .ConfigureAwait(false);
+                    _logger.LogError(resp.Body.ToString());
                     _logger.LogError("Got exception while creating IngressRoute: {}", ex);
                     _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(ingressRoute));
                 }
