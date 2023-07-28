@@ -501,6 +501,7 @@ public class ChallengeService
                 {
                     _logger.LogError("Got exception while creating IngressRoute: {}", ex);
                     _logger.LogError("Body: {}", ex.Body);
+                    _logger.LogError("Response.Content: {}", ex.Response.Content);
                     _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(ingressRoute));
                 }
             }
@@ -552,6 +553,7 @@ public class ChallengeService
                 {
                     _logger.LogError("Got exception while creating IngressRouteTCP: {}", ex);
                     _logger.LogError("Body: {}", ex.Body);
+                    _logger.LogError("Response.Content: {}", ex.Response.Content);
                     _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(ingressRouteTcp));
                 }
             }
