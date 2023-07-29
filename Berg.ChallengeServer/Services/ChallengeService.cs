@@ -182,7 +182,7 @@ public class ChallengeService
                     var ingress = traefikIngressRouteTcpList.Items
                         .FirstOrDefault(i => i.Name() == $"ir-tcp-{container.Hostname}-{port.Port}");
                     service.Hostname = ingress?.GetLabel(HostnameLabel) ?? "<loading>";
-                    service.Port = 443;
+                    service.Port = 1337;
                     service.VHost = true;
                 }
                 services.Add(service);
