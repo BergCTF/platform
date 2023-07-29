@@ -158,7 +158,7 @@ public class ChallengeService
                     Hostname = _ctfConfig.ChallengeDomain,
                     AppProtocol = port.AppProtocol,
                     Protocol = port.Protocol,
-                    Port = 443,
+                    Port = 1337,
                     VHost = false,
                 };
 
@@ -174,7 +174,6 @@ public class ChallengeService
                     var ingress = traefikIngressRouteList.Items
                         .FirstOrDefault(i => i.Name() == $"ir-{container.Hostname}-{port.Port}");
                     service.Hostname = ingress?.GetLabel(HostnameLabel) ?? "<loading>";
-                    service.Port = 443;
                     service.VHost = true;
                 }
                 else if (port.Type == V1ChallengePortType.PublicIngressRouteTcp)
@@ -182,7 +181,6 @@ public class ChallengeService
                     var ingress = traefikIngressRouteTcpList.Items
                         .FirstOrDefault(i => i.Name() == $"ir-tcp-{container.Hostname}-{port.Port}");
                     service.Hostname = ingress?.GetLabel(HostnameLabel) ?? "<loading>";
-                    service.Port = 1337;
                     service.VHost = true;
                 }
                 services.Add(service);
