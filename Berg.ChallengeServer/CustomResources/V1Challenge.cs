@@ -29,6 +29,9 @@ public class V1ChallengeSpec
     [JsonPropertyName("difficulty")]
     public string Difficulty { get; set; } = null!;
 
+    [JsonPropertyName("allowOutboundTraffic")]
+    public bool AllowOutboundTraffic { get; set; } = false;
+
     [JsonPropertyName("categories")]
     public List<string> Categories { get; set; } = new();
     

@@ -207,7 +207,7 @@ public class ChallengeService
         {
             { ManagedByLabel, "berg" },
             { ComponentLabel, "challenge" },
-            { PlayerIdLabel, playerId.ToString() },
+            { PlayerIdLabel, playerId.ToString() }
         };
         var nsList = await _kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(labelSelector),
             cancellationToken: cancel);
@@ -301,12 +301,12 @@ public class ChallengeService
                             {
                                 Port = "53",
                                 Protocol = "TCP",
-                            },
+                            }
                         }
                     },
                     new()
                     {
-                        To = new List<V1NetworkPolicyPeer>
+                        To = challengeConfig.Spec.AllowOutboundTraffic ? new List<V1NetworkPolicyPeer>
                         {
                             new()
                             {
@@ -328,6 +328,18 @@ public class ChallengeService
                                         "10.0.0.0/8",
                                         "172.16.0.0/12",
                                         "192.168.0.0/16",
+                                    }
+                                }
+                            }
+                        } : new List<V1NetworkPolicyPeer>
+                        {
+                            new()
+                            {
+                                NamespaceSelector = new V1LabelSelector
+                                {
+                                    MatchLabels = new Dictionary<string, string>
+                                    {
+                                        { "kubernetes.io/metadata.name", ns.Name() }
                                     }
                                 }
                             }

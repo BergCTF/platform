@@ -33,6 +33,8 @@ spec:
                   type: array
                   items:
                     type: string
+                allowOutboundTraffic:
+                  type: boolean
                 containers:
                   type: array
                   items:
