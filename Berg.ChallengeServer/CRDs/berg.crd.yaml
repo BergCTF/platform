@@ -47,6 +47,13 @@ spec:
                       environment:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
+                      resourceLimits:
+                        type: object
+                        properties:
+                          cpu:
+                            type: string
+                          memory:
+                            type: string
                       ports:
                         type: array
                         items:

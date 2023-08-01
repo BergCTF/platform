@@ -14,6 +14,11 @@ spec:
   containers:
     - hostname: nginx
       image: nginx:latest
+      environment:
+        WHATEVER: Value
+      resourceLimits:
+        cpu: "1"
+        memory: "100mi"
       ports:
         - port: 80
           protocol: tcp

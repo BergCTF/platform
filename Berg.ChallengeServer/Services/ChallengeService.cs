@@ -386,16 +386,13 @@ public class ChallengeService
                             Name = container.Hostname,
                             Image = container.Image,
                             ImagePullPolicy = "Always",
-                            // Resources = new V1ResourceRequirements
-                            // {
-                            //     Limits = new Dictionary<string, ResourceQuantity>
-                            //     {
-                            //         { "cpu", new ResourceQuantity("100m") },
-                            //         { "memory", new ResourceQuantity("500Mi") }
-                            //     }
-                            // },
+                            Resources = container.ResourceLimits != null ? new V1ResourceRequirements
+                            {
+                                Limits = container.ResourceLimits
+                                    .ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value))
+                            } : null,
                             Env = container.Environment?
-                                .Select(e => new V1EnvVar(e.Key, e.Value))
+                                .Select(e => new V1EnvVar(e.Key, e.Value.ToString()))
                                 .ToList(),
                             Ports = container.Ports?
                                 .Select(p => new V1ContainerPort(p.Port, protocol: p.Protocol.ToUpperInvariant()))
@@ -608,5 +605,4 @@ public class ChallengeService
         }
         return sb.ToString();
     }
-
 }
