@@ -9,5 +9,7 @@ public class CtfConfig
     public Scoring Scoring { get; set; } = new();
     public RateLimits RateLimits { get; set; } = new();
     public TimeSpan RefreshInterval { get; set; } = TimeSpan.FromSeconds(15);
+    public int ChallengeInstanceEntryPointPort { get; set; } = 1337;
+    public string ChallengeInstanceEntryPointName { get; set; } = "services";
     public TimeSpan ChallengeInstanceTimeout { get; set; } = TimeSpan.FromHours(1);
 }

@@ -158,7 +158,7 @@ public class ChallengeService
                     Hostname = _ctfConfig.ChallengeDomain,
                     AppProtocol = port.AppProtocol,
                     Protocol = port.Protocol,
-                    Port = 1337,
+                    Port = _ctfConfig.ChallengeInstanceEntryPointPort,
                     VHost = false,
                 };
 
@@ -482,6 +482,7 @@ public class ChallengeService
                     },
                     Spec = new V1TraefikIngressRouteSpec
                     {
+                        EntryPoints = new List<string> { _ctfConfig.ChallengeInstanceEntryPointName },
                         Routes = new List<V1TraefikIngressRouteEntry>
                         {
                             new()
@@ -526,7 +527,7 @@ public class ChallengeService
                     {
                         Name = $"ir-tcp-{container.Hostname}-{ingressRouteTcpPort.Port}",
                         NamespaceProperty = ns.Name(),
-                        Labels = new Dictionary<string, string>()
+                        Labels = new Dictionary<string, string>
                         {
                             { ManagedByLabel, "berg" },
                             { ComponentLabel, "ingress" },
@@ -535,6 +536,7 @@ public class ChallengeService
                     },
                     Spec = new V1TraefikIngressRouteTcpSpec
                     {
+                        EntryPoints = new List<string> { _ctfConfig.ChallengeInstanceEntryPointName },
                         Routes = new List<V1TraefikIngressRouteTcpEntry>
                         {
                             new()
