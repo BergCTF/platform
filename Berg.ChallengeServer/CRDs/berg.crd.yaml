@@ -21,6 +21,8 @@ spec:
                   type: string
                 flag:
                   type: string
+                flagFormat:
+                  type: string
                 hideUntil:
                   type: string
                   format: date-time

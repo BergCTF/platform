@@ -19,6 +19,9 @@ public class V1ChallengeSpec
     
     [JsonPropertyName("flag")]
     public string Flag { get; set; } = null!;
+    
+    [JsonPropertyName("flagFormat")]
+    public string FlagFormat { get; set; } = "flag{...}";
 
     [JsonPropertyName("hideUntil")]
     public DateTime? HideUntil { get; set; } = null;

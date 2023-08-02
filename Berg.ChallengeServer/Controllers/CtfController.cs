@@ -62,7 +62,7 @@ public class CtfController : ControllerBase
 
     private static int DifficultyToNumber(string val)
     {
-        var mappings = new Dictionary<string, int>()
+        var mappings = new Dictionary<string, int>
         {
             { "baby", 1 },
             { "easy", 2 },
@@ -81,6 +81,7 @@ public class CtfController : ControllerBase
             Author = c.Spec.Author,
             Description = c.Spec.Description,
             Difficulty = c.Spec.Difficulty,
+            FlagFormat = c.Spec.FlagFormat,
             Categories = c.Spec.Categories,
             Instantiatable = c.Spec.Containers?.Any() ?? false,
             Value = _scoringService.GetChallengeValue(challengeName),

@@ -19,6 +19,9 @@ public class Challenge
     [JsonPropertyName("difficulty")]
     public string Difficulty { get; set; } = null!;
     
+    [JsonPropertyName("flagFormat")]
+    public string FlagFormat { get; set; } = null!;
+    
     [JsonPropertyName("attachments")]
     public List<Attachment> Attachments { get; set; } = new();
     
