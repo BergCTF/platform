@@ -106,7 +106,8 @@ public class CtfController : ControllerBase
             Id = t.Id,
             Name = t.Name,
             TeamId = t.TeamId,
-            DiscordId = t.DiscordId
+            DiscordId = t.DiscordId,
+            Labels = t.Labels
         }).ToListAsync(cancel);
     }
 

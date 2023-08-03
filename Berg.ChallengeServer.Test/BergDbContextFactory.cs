@@ -12,7 +12,6 @@ public class BergDbContextFactory : IDisposable
     public static readonly Guid Team1Id = Guid.NewGuid();
     public static readonly Guid Team2Id = Guid.NewGuid();
     public static readonly Guid Team3Id = Guid.NewGuid();
-    public static readonly Guid CategoryId = Guid.NewGuid();
     public static readonly string Challenge1Id = "challenge-1";
     public static readonly string Challenge2Id = "challenge-2";
     public static readonly string Challenge3Id = "challenge-3";
@@ -36,10 +35,6 @@ public class BergDbContextFactory : IDisposable
         dbContext.Challenges.Add(challenge3);
         dbContext.SaveChanges();
 
-        var playerCategory = new PlayerCategory { Id = CategoryId };
-        dbContext.PlayerCategories.Add(playerCategory);
-        dbContext.SaveChanges();
-        
         var team1 = new Team { Id = Team1Id, Name = "Team 1", JoinToken = "join-token-1" };
         var team2 = new Team { Id = Team2Id, Name = "Team 2", JoinToken = "join-token-2" };
         var team3 = new Team { Id = Team3Id, Name = "Team 3", JoinToken = "join-token-3" };
@@ -52,21 +47,18 @@ public class BergDbContextFactory : IDisposable
         {
             Id = Team1Player1Id,
             Name = "Team 1 Player 1",
-            PlayerCategory = playerCategory,
             Team = team1,
         };
         var team1Player2 = new Player
         {
             Id = Team1Player2Id,
             Name = "Team 1 Player 2",
-            PlayerCategory = playerCategory,
             Team = team1,
         };
         var team2Player1 = new Player
         {
             Id = Team2Player1Id,
             Name = "Team 2 Player 1",
-            PlayerCategory = playerCategory,
             Team = team2,
         };
         dbContext.Players.Add(team1Player1);

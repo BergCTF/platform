@@ -40,21 +40,33 @@ public class PlayerService
             var discordName = user.FindFirstValue(ClaimTypes.Name);
             if (discordName == null)
                 throw new ArgumentException("Name Claim missing in user identity.");
-            
-            if (dbContext.Players.Any(p => p.DiscordId == discordId))
+            var email = user.FindFirstValue(ClaimTypes.Email);
+            if (email == null)
+                throw new ArgumentException("Email Claim missing in user identity.");
+
+            var existingPlayer = dbContext.Players.FirstOrDefault(p => p.DiscordId == discordId);
+            if (existingPlayer != null)
+            {
+                // Update properties on login
+                existingPlayer.Name = discordName;
+                existingPlayer.Email = email;
+                dbContext.SaveChanges();
+                _playerCache[discordId] = existingPlayer;
                 return;
+            }
             
             var newPlayer = new Player
             {
                 Id = Guid.NewGuid(),
                 DiscordId = discordId,
-                Name = discordName
+                Name = discordName,
+                CreatedAt = DateTime.UtcNow,
+                Email = email
             };
             dbContext.Players.Add(newPlayer);
             dbContext.SaveChanges();
             _playerCache[discordId] = newPlayer;
         }
-        
     }
 
     public Player GetPlayer(ClaimsPrincipal user)

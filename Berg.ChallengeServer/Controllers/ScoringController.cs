@@ -116,7 +116,8 @@ public class ScoringController : ControllerBase
             if (dbChallenge == null)
                 throw new ArgumentException("Invalid db challenge");
 
-            if (challengeConfig.Spec.Flag != flag.Trim())
+            var trimmedFlag = flag.Trim();
+            if (challengeConfig.Spec.Flag != trimmedFlag)
             {
                 // Invalid submission
                 _dbContext.Submissions.Add(new Submission
@@ -125,6 +126,7 @@ public class ScoringController : ControllerBase
                     Challenge = dbChallenge,
                     SubmittedAt = now,
                     Player = player,
+                    Value = trimmedFlag
                 });
                 _dbContext.SaveChanges();
                 _logger.LogInformation("Player {} submitted an invalid flag for challenge {}", playerId, challenge);
@@ -191,6 +193,8 @@ public class ScoringController : ControllerBase
                 await channel.SendMessageAsync(
                     $"{username}{solverTeamName} solved challenge `{solvedChallenge}` :triangular_flag_on_post:");
             }
+
+            await client.LogoutAsync();
         }
         catch (Exception ex)
         {

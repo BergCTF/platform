@@ -15,4 +15,7 @@ public class Player
 
     [JsonPropertyName("discordId")]
     public string DiscordId { get; set; } = null!;
+
+    [JsonPropertyName("labels")]
+    public List<string> Labels { get; set; } = new();
 }

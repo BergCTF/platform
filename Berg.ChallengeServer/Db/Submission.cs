@@ -6,4 +6,5 @@ public class Submission
     public DateTime SubmittedAt { get; set; }
     public Player Player { get; set; }
     public Challenge Challenge { get; set; }
+    public string Value { get; set; }
 }

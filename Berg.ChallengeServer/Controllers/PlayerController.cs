@@ -51,7 +51,8 @@ public class PlayerController : ControllerBase
                 Id = player.Id,
                 Name = player.Name,
                 TeamId = player.TeamId,
-                DiscordId = player.DiscordId
+                DiscordId = player.DiscordId,
+                Labels = player.Labels
             },
             ChallengeInstance = await _challengeService.GetChallengeInstance(player.Id, cancel)
         };
