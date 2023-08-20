@@ -47,6 +47,8 @@ builder.Services.AddAuthentication(options =>
         options.ClientSecret = discordConfig.ClientSecret;
         options.CorrelationCookie.Name = "berg-correlation.";
         options.CorrelationCookie.HttpOnly = true;
+        options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.CorrelationCookie.SameSite = SameSiteMode.Lax;
         options.CallbackPath = "/api/v1/callback-discord";
         options.Scope.Add("email");
         options.Events.OnRedirectToAuthorizationEndpoint = ctx =>
