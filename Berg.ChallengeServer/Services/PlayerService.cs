@@ -27,57 +27,62 @@ public class PlayerService
         }
     }
 
-    private void CreatePlayer(ClaimsPrincipal user)
-    {
-        lock (_playerUpdateLock)
-        {
-            using var scope = _serviceScopeFactory.CreateScope();
-            using var dbContext = scope.ServiceProvider.GetRequiredService<BergDbContext>();
-
-            var discordId = user.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (discordId == null)
-                throw new ArgumentException("NameIdentifier Claim missing in user identity.");
-            var discordName = user.FindFirstValue(ClaimTypes.Name);
-            if (discordName == null)
-                throw new ArgumentException("Name Claim missing in user identity.");
-            var email = user.FindFirstValue(ClaimTypes.Email);
-            if (email == null)
-                throw new ArgumentException("Email Claim missing in user identity.");
-
-            var existingPlayer = dbContext.Players.FirstOrDefault(p => p.DiscordId == discordId);
-            if (existingPlayer != null)
-            {
-                // Update properties on login
-                existingPlayer.Name = discordName;
-                existingPlayer.Email = email;
-                dbContext.SaveChanges();
-                _playerCache[discordId] = existingPlayer;
-                return;
-            }
-            
-            var newPlayer = new Player
-            {
-                Id = Guid.NewGuid(),
-                DiscordId = discordId,
-                Name = discordName,
-                CreatedAt = DateTime.UtcNow,
-                Email = email
-            };
-            dbContext.Players.Add(newPlayer);
-            dbContext.SaveChanges();
-            _playerCache[discordId] = newPlayer;
-        }
-    }
-
     public Player GetPlayer(ClaimsPrincipal user)
     {
         var discordId = user.FindFirstValue(ClaimTypes.NameIdentifier);
         if (discordId == null)
             throw new ArgumentException("NameIdentifier Claim missing in user identity.");
+        var discordName = user.FindFirstValue(ClaimTypes.Name);
+        if (discordName == null)
+            throw new ArgumentException("Name Claim missing in user identity.");
+        var email = user.FindFirstValue(ClaimTypes.Email);
+        if (email == null)
+            throw new ArgumentException("Email Claim missing in user identity.");
+        
+        lock (_playerUpdateLock)
+        {
+            if (_playerCache.TryGetValue(discordId, out var player))
+            {
+                if (player.Name != discordName || player.Email != email)
+                    UpdatePlayer(discordId, discordName, email);
+                return player;
+            }
+            CreatePlayer(discordId, discordName, email);
+            return _playerCache[discordId];
+        }
+    }
 
-        if (_playerCache.TryGetValue(discordId, out var player))
-            return player;
-        CreatePlayer(user);
-        return _playerCache[discordId];
+    private void CreatePlayer(string discordId, string discordName, string email)
+    {
+        using var scope = _serviceScopeFactory.CreateScope();
+        using var dbContext = scope.ServiceProvider.GetRequiredService<BergDbContext>();
+        
+        var newPlayer = new Player
+        {
+            Id = Guid.NewGuid(),
+            DiscordId = discordId,
+            Name = discordName,
+            CreatedAt = DateTime.UtcNow,
+            Email = email
+        };
+        dbContext.Players.Add(newPlayer);
+        dbContext.SaveChanges();
+        _playerCache[discordId] = newPlayer;
+    }
+
+    private void UpdatePlayer(string discordId, string discordName, string email)
+    {
+        using var scope = _serviceScopeFactory.CreateScope();
+        using var dbContext = scope.ServiceProvider.GetRequiredService<BergDbContext>();
+        
+        var existingPlayer = dbContext.Players.FirstOrDefault(p => p.DiscordId == discordId);
+        if (existingPlayer == null)
+            throw new ArgumentException("Player can't be updated since there is no player with this id.");
+            
+        // Update properties on login
+        existingPlayer.Name = discordName;
+        existingPlayer.Email = email;
+        dbContext.SaveChanges();
+        _playerCache[discordId] = existingPlayer;
     }
 }
