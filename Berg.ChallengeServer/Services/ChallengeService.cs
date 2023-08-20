@@ -445,6 +445,7 @@ public class ChallengeService
                         Type = "ClusterIP",
                         Ports = internalPorts.Select(p => new V1ServicePort
                         {
+                            Name = $"port-{p.Port}",
                             AppProtocol = p.AppProtocol,
                             Port = p.Port,
                             TargetPort = p.Port,
