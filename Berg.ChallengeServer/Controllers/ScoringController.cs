@@ -135,10 +135,6 @@ public class ScoringController : ControllerBase
 
             var firstBlood = !_dbContext.Solves.Any(s => s.ChallengeId == challenge);
 
-            // Its a valid solve!
-            SendDiscordNotification(player.DiscordId, player.Name, player.Team?.Name, challenge, firstBlood)
-                .Wait();
-
             _dbContext.Solves.Add(new Solve
             {
                 Id = Guid.NewGuid(),
@@ -148,6 +144,10 @@ public class ScoringController : ControllerBase
             });
             _dbContext.SaveChanges();
             _logger.LogInformation("Player {} has solved challenge {}", playerId, challenge);
+            
+            // Its a valid solve!
+            SendDiscordNotification(player.DiscordId, player.Name, player.Team?.Name, challenge, firstBlood)
+                .Wait();
             return SubmitFlagResult.Correct;
         }
     }
@@ -159,22 +159,27 @@ public class ScoringController : ControllerBase
         string solvedChallenge,
         bool firstBlood)
     {
+        if (_discordConfig.NotificationChannelId == 0 || _discordConfig.NotificationGuildId == 0)
+        {
+            _logger.LogError("No channel id or guild id configured, did not send notification.");
+            return;
+        }
+
         try
         {
             var client = new DiscordRestClient();
             await client.LoginAsync(TokenType.Bot, _discordConfig.BotToken);
 
             var channel = await client.GetChannelAsync(_discordConfig.NotificationChannelId) as IMessageChannel;
-            if (_discordConfig.NotificationChannelId == 0 || channel == null)
+            if (channel == null)
             {
-                _logger.LogError("No or invalid channel id configured, did not send notification.");
+                _logger.LogError("Invalid channel id configured, did not send notification.");
                 return;
             }
-
             var guild = await client.GetGuildAsync(_discordConfig.NotificationGuildId);
-            if (_discordConfig.NotificationGuildId == 0 || guild == null)
+            if (guild == null)
             {
-                _logger.LogError("No or guild id configured, did not send notification.");
+                _logger.LogError("Invalid guild id configured, did not send notification.");
                 return;
             }
 
