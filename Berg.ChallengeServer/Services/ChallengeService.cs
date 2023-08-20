@@ -258,7 +258,7 @@ public class ChallengeService
             _logger.LogWarning("Detailed exception for pull secret copy operations: {}", ex);
         }
 
-        await _kubernetes.CreateNamespacedNetworkPolicyAsync(new V1NetworkPolicy
+        var networkPolicy = new V1NetworkPolicy
         {
             Metadata = new V1ObjectMeta
             {
@@ -278,14 +278,14 @@ public class ChallengeService
                                 {
                                     MatchLabels = new Dictionary<string, string>
                                     {
-                                        {"kubernetes.io/metadata.name", "kube-system"}
+                                        { "kubernetes.io/metadata.name", "kube-system" }
                                     }
                                 },
                                 PodSelector = new V1LabelSelector
                                 {
                                     MatchLabels = new Dictionary<string, string>
                                     {
-                                        {"k8s-app", "kube-dns"}
+                                        { "k8s-app", "kube-dns" }
                                     }
                                 }
                             }
@@ -306,53 +306,66 @@ public class ChallengeService
                     },
                     new()
                     {
-                        To = challengeConfig.Spec.AllowOutboundTraffic ? new List<V1NetworkPolicyPeer>
-                        {
-                            new()
+                        To = challengeConfig.Spec.AllowOutboundTraffic
+                            ? new List<V1NetworkPolicyPeer>
                             {
-                                NamespaceSelector = new V1LabelSelector
+                                new()
                                 {
-                                    MatchLabels = new Dictionary<string, string>
+                                    NamespaceSelector = new V1LabelSelector
                                     {
-                                        { "kubernetes.io/metadata.name", ns.Name() }
+                                        MatchLabels = new Dictionary<string, string>
+                                        {
+                                            { "kubernetes.io/metadata.name", ns.Name() }
+                                        }
                                     }
-                                }
-                            },
-                            new()
-                            {
-                                IpBlock = new V1IPBlock
+                                },
+                                new()
                                 {
-                                    Cidr = "0.0.0.0/0",
-                                    Except = new List<string>
+                                    IpBlock = new V1IPBlock
                                     {
-                                        "10.0.0.0/8",
-                                        "172.16.0.0/12",
-                                        "192.168.0.0/16",
-                                    }
-                                }
-                            }
-                        } : new List<V1NetworkPolicyPeer>
-                        {
-                            new()
-                            {
-                                NamespaceSelector = new V1LabelSelector
-                                {
-                                    MatchLabels = new Dictionary<string, string>
-                                    {
-                                        { "kubernetes.io/metadata.name", ns.Name() }
+                                        Cidr = "0.0.0.0/0",
+                                        Except = new List<string>
+                                        {
+                                            "10.0.0.0/8",
+                                            "172.16.0.0/12",
+                                            "192.168.0.0/16",
+                                        }
                                     }
                                 }
                             }
-                        }
+                            : new List<V1NetworkPolicyPeer>
+                            {
+                                new()
+                                {
+                                    NamespaceSelector = new V1LabelSelector
+                                    {
+                                        MatchLabels = new Dictionary<string, string>
+                                        {
+                                            { "kubernetes.io/metadata.name", ns.Name() }
+                                        }
+                                    }
+                                }
+                            }
                     }
                 },
                 PolicyTypes = new List<string> { "Egress" }
             }
-        }, ns.Name(), cancellationToken: cancel);
+        };
         
+        try
+        {
+            await _kubernetes.CreateNamespacedNetworkPolicyAsync(networkPolicy, ns.Name(), cancellationToken: cancel);
+        }
+        catch (HttpOperationException ex)
+        {
+            _logger.LogError("Got exception while creating NetworkPolicy: {}", ex);
+            _logger.LogError("Response.Content: {}", ex.Response.Content);
+            _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(networkPolicy));
+        }
+
         foreach (var container in challengeConfig.Spec.Containers ?? new List<V1ChallengeContainer>())
         {
-            await _kubernetes.CreateNamespacedPodAsync(new V1Pod
+            var pod = new V1Pod
             {
                 Metadata = new V1ObjectMeta
                 {
@@ -386,11 +399,13 @@ public class ChallengeService
                             Name = container.Hostname,
                             Image = container.Image,
                             ImagePullPolicy = "Always",
-                            Resources = container.ResourceLimits != null ? new V1ResourceRequirements
-                            {
-                                Limits = container.ResourceLimits
-                                    .ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value))
-                            } : null,
+                            Resources = container.ResourceLimits != null
+                                ? new V1ResourceRequirements
+                                {
+                                    Limits = container.ResourceLimits
+                                        .ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value))
+                                }
+                                : null,
                             Env = container.Environment?
                                 .Select(e => new V1EnvVar(e.Key, e.Value.ToString()))
                                 .ToList(),
@@ -400,12 +415,22 @@ public class ChallengeService
                         }
                     },
                 }
-            }, ns.Name(), cancellationToken: cancel);
+            };
+            try
+            {
+                await _kubernetes.CreateNamespacedPodAsync(pod, ns.Name(), cancellationToken: cancel);
+            }
+            catch (HttpOperationException ex)
+            {
+                _logger.LogError("Got exception while creating Pod: {}", ex);
+                _logger.LogError("Response.Content: {}", ex.Response.Content);
+                _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(pod));
+            }
 
             var internalPorts = container.Ports ?? new List<V1ChallengePort>();
             if (internalPorts.Any())
             {
-                await _kubernetes.CreateNamespacedServiceAsync(new V1Service
+                var service = new V1Service
                 {
                     Metadata = new V1ObjectMeta
                     {
@@ -426,7 +451,17 @@ public class ChallengeService
                             Protocol = p.Protocol.ToUpperInvariant(),
                         }).ToList(),
                     }
-                }, ns.Name(), cancellationToken: cancel);
+                };
+                try
+                {
+                    await _kubernetes.CreateNamespacedServiceAsync(service, ns.Name(), cancellationToken: cancel);
+                }
+                catch (HttpOperationException ex)
+                {
+                    _logger.LogError("Got exception while creating Service: {}", ex);
+                    _logger.LogError("Response.Content: {}", ex.Response.Content);
+                    _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(service));
+                }
             }
             
             var publicPorts = container.Ports?
@@ -434,7 +469,7 @@ public class ChallengeService
                 .ToList() ?? new List<V1ChallengePort>();
             if (publicPorts.Any())
             {
-                await _kubernetes.CreateNamespacedServiceAsync(new V1Service
+                var service = new V1Service
                 {
                     Metadata = new V1ObjectMeta
                     {
@@ -456,7 +491,17 @@ public class ChallengeService
                             Protocol = p.Protocol.ToUpperInvariant(),
                         }).ToList(),
                     }
-                }, ns.Name(), cancellationToken: cancel);
+                };
+                try
+                {
+                    await _kubernetes.CreateNamespacedServiceAsync(service, ns.Name(), cancellationToken: cancel);
+                }
+                catch (HttpOperationException ex)
+                {
+                    _logger.LogError("Got exception while creating Service: {}", ex);
+                    _logger.LogError("Response.Content: {}", ex.Response.Content);
+                    _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(service));
+                }
             }
             
             var ingressRoutePorts = container.Ports?
