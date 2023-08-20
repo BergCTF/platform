@@ -48,6 +48,7 @@ builder.Services.AddAuthentication(options =>
         options.CorrelationCookie.Name = "berg-correlation.";
         options.CorrelationCookie.HttpOnly = true;
         options.CallbackPath = "/api/v1/callback-discord";
+        options.Scope.Add("email");
         options.Events.OnRedirectToAuthorizationEndpoint = ctx =>
         {
             if (!ctx.Request.Path.StartsWithSegments("/api/v1/login") &&
