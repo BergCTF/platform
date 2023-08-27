@@ -81,7 +81,9 @@ public class ScoringController : ControllerBase
             if (player.Solves.Any(s => s.ChallengeId == challenge))
                 return SubmitFlagResult.AlreadySolved;
 
-            if (_dbContext.Solves.Where(s => s.Player.TeamId == player.TeamId).Any(s => s.ChallengeId == challenge))
+            // Prevent submission if the team has already solved the challenge
+            if (_ctfConfig.Teams &&
+                _dbContext.Solves.Where(s => s.Player.TeamId == player.TeamId).Any(s => s.ChallengeId == challenge))
                 return SubmitFlagResult.AlreadySolved;
 
             var yesterday = now.Subtract(TimeSpan.FromDays(1));
