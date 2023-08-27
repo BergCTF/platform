@@ -30,9 +30,16 @@ public class ScoringService
 
     public void RefreshScores(BergDbContext dbContext)
     {
-        // TODO: Take Freeze Start / End Time into account when calculating the scores.
         lock (CacheUpdateLock)
         {
+            var freezeStart = DateTime.MinValue;
+            var freezeEnd = DateTime.MinValue.AddSeconds(1);
+            if (_ctfConfig.Scoring is { FreezeStart: not null, FreezeEnd: not null })
+            {
+                freezeStart = _ctfConfig.Scoring.FreezeStart.Value;
+                freezeEnd = _ctfConfig.Scoring.FreezeEnd.Value;
+            }
+
             // Calculate the solves and value that a single challenge has
             // This is different if this is a team based or a single player ctf.
             if (_ctfConfig.Teams)
@@ -41,7 +48,9 @@ public class ScoringService
                     .Select(c => new
                     {
                         c.Name,
-                        Count = c.Solves.Select(s => s.Player.Team).Distinct().Count()
+                        Count = c.Solves
+                            .Where(s => !(s.SolvedAt > freezeStart && s.SolvedAt < freezeEnd))
+                            .Select(s => s.Player.Team).Distinct().Count()
                     })
                     .ToDictionary(c => c.Name, c => c.Count);
             }
@@ -49,9 +58,10 @@ public class ScoringService
             {
                 _challengeSolves = dbContext.Challenges
                     .Include(c => c.Solves)
-                    .ToDictionary(c => c.Name, c => c.Solves.Count);
+                    .ToDictionary(c => c.Name, c => c.Solves
+                        .Count(s => !(s.SolvedAt > freezeStart && s.SolvedAt < freezeEnd)));
             }
-            
+
             // Calculate the score based off the number of solves
             var minimumScore = _ctfConfig.Scoring.MinimumScore;
             var maximumScore = _ctfConfig.Scoring.MaximumScore;
@@ -73,12 +83,14 @@ public class ScoringService
                 .Select(p => new
                 {
                     p.Id,
-                    Solves = p.Solves.Select(s => new PlayerSolve
-                    {
-                        PlayerId = p.Id,
-                        ChallengeName = s.Challenge.Name,
-                        SolvedAt = s.SolvedAt
-                    }).OrderByDescending(s => s.SolvedAt).ToList()
+                    Solves = p.Solves
+                        .Where(s => !(s.SolvedAt > freezeStart && s.SolvedAt < freezeEnd))
+                        .Select(s => new PlayerSolve
+                        {
+                            PlayerId = p.Id,
+                            ChallengeName = s.Challenge.Name,
+                            SolvedAt = s.SolvedAt
+                        }).OrderByDescending(s => s.SolvedAt).ToList()
                 })
                 .ToDictionary(p => p.Id, p => p.Solves);
             _playerIndividualScore = _playerSolvedChallenges.ToDictionary(p => p.Key,
@@ -86,6 +98,7 @@ public class ScoringService
 
             var solvesByTeams = dbContext.Solves
                 .Where(s => s.Player.TeamId != null)
+                .Where(s => !(s.SolvedAt > freezeStart && s.SolvedAt < freezeEnd))
                 .GroupBy(s => s.Player.TeamId!.Value)
                 .ToDictionary(s => s.Key, s => s.ToList());
 
@@ -104,8 +117,7 @@ public class ScoringService
                         PlayerId = s.Solve.PlayerId
                     }).ToList()
                 );
-
-            // TODO: Make sure that we also subtract points for teams that created challenges that are too hard
+            
             _teamScore = _teamSolvedChallenges.ToDictionary(p => p.Key,
                 p => p.Value.Select(c => _challengeValues[c.ChallengeName]).Sum());
             
