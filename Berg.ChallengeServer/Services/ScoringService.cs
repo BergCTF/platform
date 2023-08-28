@@ -32,12 +32,13 @@ public class ScoringService
     {
         lock (CacheUpdateLock)
         {
+            var utcNow = DateTime.UtcNow;
             var freezeStart = DateTime.MinValue.AddDays(1).ToUniversalTime();
             var freezeEnd = DateTime.MinValue.AddDays(2).ToUniversalTime();
             if (_ctfConfig.Scoring is { FreezeStart: not null, FreezeEnd: not null })
             {
-                freezeStart = _ctfConfig.Scoring.FreezeStart.Value;
-                freezeEnd = _ctfConfig.Scoring.FreezeEnd.Value;
+                freezeStart = _ctfConfig.Scoring.FreezeStart.Value.ToUniversalTime();
+                freezeEnd = _ctfConfig.Scoring.FreezeEnd.Value.ToUniversalTime();
             }
 
             // Calculate the solves and value that a single challenge has
@@ -49,7 +50,7 @@ public class ScoringService
                     {
                         c.Name,
                         Count = c.Solves
-                            .Where(s => !(s.SolvedAt > freezeStart && s.SolvedAt < freezeEnd))
+                            .Where(s => !(s.SolvedAt > freezeStart && utcNow < freezeEnd))
                             .Select(s => s.Player.Team).Distinct().Count()
                     })
                     .ToDictionary(c => c.Name, c => c.Count);
@@ -59,7 +60,7 @@ public class ScoringService
                 _challengeSolves = dbContext.Challenges
                     .Include(c => c.Solves)
                     .ToDictionary(c => c.Name, c => c.Solves
-                        .Count(s => !(s.SolvedAt > freezeStart && s.SolvedAt < freezeEnd)));
+                        .Count(s => !(s.SolvedAt > freezeStart && utcNow < freezeEnd)));
             }
 
             // Calculate the score based off the number of solves
@@ -84,7 +85,7 @@ public class ScoringService
                 {
                     p.Id,
                     Solves = p.Solves
-                        .Where(s => !(s.SolvedAt > freezeStart && s.SolvedAt < freezeEnd))
+                        .Where(s => !(s.SolvedAt > freezeStart && utcNow < freezeEnd))
                         .Select(s => new PlayerSolve
                         {
                             PlayerId = p.Id,
@@ -98,7 +99,7 @@ public class ScoringService
 
             var solvesByTeams = dbContext.Solves
                 .Where(s => s.Player.TeamId != null)
-                .Where(s => !(s.SolvedAt > freezeStart && s.SolvedAt < freezeEnd))
+                .Where(s => !(s.SolvedAt > freezeStart && utcNow < freezeEnd))
                 .GroupBy(s => s.Player.TeamId!.Value)
                 .ToDictionary(s => s.Key, s => s.ToList());
 
