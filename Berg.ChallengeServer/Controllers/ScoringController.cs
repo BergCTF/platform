@@ -148,8 +148,19 @@ public class ScoringController : ControllerBase
             _logger.LogInformation("Player {} has solved challenge {}", playerId, challenge);
             
             // Its a valid solve!
-            SendDiscordNotification(player.DiscordId, player.Name, player.Team?.Name, challenge, firstBlood)
-                .Wait();
+            var freezeStart = _ctfConfig.Scoring.FreezeStart;
+            var freezeEnd = _ctfConfig.Scoring.FreezeEnd;
+            var utcNow = DateTime.UtcNow;
+            if (freezeStart != null && freezeEnd != null && utcNow > freezeStart.Value && utcNow < freezeEnd.Value)
+            {
+                _logger.LogInformation("Announcement not sent because the scoreboard is currently frozen.");
+            }
+            else
+            {
+                SendDiscordNotification(player.DiscordId, player.Name, player.Team?.Name, challenge, firstBlood)
+                    .Wait();
+            }
+            
             return SubmitFlagResult.Correct;
         }
     }
