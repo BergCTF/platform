@@ -39,6 +39,8 @@ public class ScoringService
                 freezeStart = _ctfConfig.Scoring.FreezeStart.Value;
                 freezeEnd = _ctfConfig.Scoring.FreezeEnd.Value;
             }
+            freezeStart = freezeStart.ToUniversalTime();
+            freezeEnd = freezeEnd.ToUniversalTime();
 
             // Calculate the solves and value that a single challenge has
             // This is different if this is a team based or a single player ctf.
