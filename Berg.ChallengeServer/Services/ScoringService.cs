@@ -32,15 +32,13 @@ public class ScoringService
     {
         lock (CacheUpdateLock)
         {
-            var freezeStart = DateTime.MinValue;
-            var freezeEnd = DateTime.MinValue.AddSeconds(1);
+            var freezeStart = DateTime.MinValue.AddDays(1).ToUniversalTime();
+            var freezeEnd = DateTime.MinValue.AddDays(2).ToUniversalTime();
             if (_ctfConfig.Scoring is { FreezeStart: not null, FreezeEnd: not null })
             {
                 freezeStart = _ctfConfig.Scoring.FreezeStart.Value;
                 freezeEnd = _ctfConfig.Scoring.FreezeEnd.Value;
             }
-            freezeStart = freezeStart.ToUniversalTime();
-            freezeEnd = freezeEnd.ToUniversalTime();
 
             // Calculate the solves and value that a single challenge has
             // This is different if this is a team based or a single player ctf.
