@@ -23,16 +23,16 @@ public class PlayerController : ControllerBase
     
     [HttpGet]
     [Route("/api/v1/login")]
-    public IActionResult Login(CancellationToken cancel, string redirectUri = "/")
+    public IActionResult Login(CancellationToken cancel)
     {
-        return Challenge(new AuthenticationProperties { RedirectUri = redirectUri });
+        return Challenge(new AuthenticationProperties { RedirectUri = "/" });
     }
     
     [HttpGet]
     [Route("/api/v1/logout")]
-    public IActionResult Logout(Guid? playerId, CancellationToken cancel, string redirectUri = "/")
+    public IActionResult Logout(Guid? playerId, CancellationToken cancel)
     {
-        return SignOut(new AuthenticationProperties { RedirectUri = redirectUri });
+        return SignOut(new AuthenticationProperties { RedirectUri = "/" });
     }
     
     [HttpGet]
