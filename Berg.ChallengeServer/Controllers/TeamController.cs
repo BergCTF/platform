@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json.Serialization;
+using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.Db;
 using Berg.ChallengeServer.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -15,17 +16,20 @@ public class TeamController : ControllerBase
     private readonly BergDbContext _dbContext;
     private readonly PlayerService _playerService;
     private readonly ScoringService _scoringService;
+    private readonly CtfConfig _ctfConfig;
     
     public TeamController(
         ILogger<TeamController> logger,
         BergDbContext dbContext,
         PlayerService playerService,
-        ScoringService scoringService)
+        ScoringService scoringService,
+        CtfConfig ctfConfig)
     {
         _logger = logger;
         _dbContext = dbContext;
         _playerService = playerService;
         _scoringService = scoringService;
+        _ctfConfig = ctfConfig;
     }
     
     [HttpGet]
@@ -63,6 +67,9 @@ public class TeamController : ControllerBase
     [Route("/api/v1/teams/create")]
     public async Task<Shared.Team> CreateTeam([FromBody] TeamCreateRequest team, CancellationToken cancel)
     {
+        if(!_ctfConfig.Teams)
+            throw new ArgumentException("Teams not enabled");
+
         var playerId = _playerService.GetPlayer(User).Id;
         var player = await _dbContext.Players
             .Include(p => p.Team)
@@ -119,6 +126,9 @@ public class TeamController : ControllerBase
     [Route("/api/v1/teams/join")]
     public async Task<Shared.Team> JoinTeam([FromBody] JoinTeamRequest req, CancellationToken cancel)
     {
+        if(!_ctfConfig.Teams)
+            throw new ArgumentException("Teams not enabled");
+        
         if(req.JoinToken == null)
             throw new ArgumentException("Join token can't be null");
         var joinToken = req.JoinToken.Trim();
@@ -172,6 +182,9 @@ public class TeamController : ControllerBase
     [Route("/api/v1/teams/leave")]
     public async Task LeaveTeam(CancellationToken cancel)
     {
+        if(!_ctfConfig.Teams)
+            throw new ArgumentException("Teams not enabled");
+
         var playerId = _playerService.GetPlayer(User).Id;
         var player = await _dbContext.Players
             .Include(p => p.Team)
