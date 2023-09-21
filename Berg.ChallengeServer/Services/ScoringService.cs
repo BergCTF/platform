@@ -17,6 +17,8 @@ public class ScoringService
     private Dictionary<string, int> _challengeValues = new();
     private Dictionary<Guid, List<PlayerSolve>> _playerSolvedChallenges = new();
     private Dictionary<Guid, List<TeamSolve>> _teamSolvedChallenges = new();
+    private Dictionary<Guid, List<PlayerSolve>> _playerSolvedChallengesIgnoringFreeze = new();
+    private Dictionary<Guid, List<TeamSolve>> _teamSolvedChallengesIgnoringFreeze = new();
     private Dictionary<Guid, int> _playerIndividualScore = new();
     private Dictionary<Guid, int> _teamScore = new();
     private List<TeamRanking> _teamScoreboard = new();
@@ -80,12 +82,11 @@ public class ScoringService
             }
             
             // Now that the values of each challenge are set, we can calculate the individual and team scores
-            _playerSolvedChallenges = dbContext.Players
+            _playerSolvedChallengesIgnoringFreeze = dbContext.Players
                 .Select(p => new
                 {
                     p.Id,
                     Solves = p.Solves
-                        .Where(s => !(s.SolvedAt > freezeStart && utcNow < freezeEnd))
                         .Select(s => new PlayerSolve
                         {
                             PlayerId = p.Id,
@@ -94,16 +95,24 @@ public class ScoringService
                         }).OrderByDescending(s => s.SolvedAt).ToList()
                 })
                 .ToDictionary(p => p.Id, p => p.Solves);
+            _playerSolvedChallenges = _playerSolvedChallengesIgnoringFreeze
+                .Select(p => new
+                {
+                    Id = p.Key,
+                    Solves = p.Value
+                        .Where(s => !(s.SolvedAt > freezeStart && utcNow < freezeEnd))
+                        .OrderByDescending(s => s.SolvedAt).ToList()
+                })
+                .ToDictionary(p => p.Id, p => p.Solves);
             _playerIndividualScore = _playerSolvedChallenges.ToDictionary(p => p.Key,
                 p => p.Value.Select(c => _challengeValues[c.ChallengeName]).Sum());
 
             var solvesByTeams = dbContext.Solves
                 .Where(s => s.Player.TeamId != null)
-                .Where(s => !(s.SolvedAt > freezeStart && utcNow < freezeEnd))
                 .GroupBy(s => s.Player.TeamId!.Value)
                 .ToDictionary(s => s.Key, s => s.ToList());
 
-            _teamSolvedChallenges = solvesByTeams
+            _teamSolvedChallengesIgnoringFreeze = solvesByTeams
                 .ToDictionary(g => g.Key, g => g.Value
                     .GroupBy(s => s.ChallengeId)
                     .Select(s => new
@@ -118,7 +127,15 @@ public class ScoringService
                         PlayerId = s.Solve.PlayerId
                     }).ToList()
                 );
-            
+            _teamSolvedChallenges = _teamSolvedChallengesIgnoringFreeze
+                .Select(p => new
+                {
+                    Id = p.Key,
+                    Solves = p.Value
+                        .Where(s => !(s.SolvedAt > freezeStart && utcNow < freezeEnd))
+                        .OrderByDescending(s => s.SolvedAt).ToList()
+                })
+                .ToDictionary(p => p.Id, p => p.Solves);
             _teamScore = _teamSolvedChallenges.ToDictionary(p => p.Key,
                 p => p.Value.Select(c => _challengeValues[c.ChallengeName]).Sum());
             
@@ -175,7 +192,7 @@ public class ScoringService
     {
         if (playerId == null)
             return false;
-        return _playerSolvedChallenges.TryGetValue(playerId.Value, out var solves) &&
+        return _playerSolvedChallengesIgnoringFreeze.TryGetValue(playerId.Value, out var solves) &&
                solves.Any(s => s.ChallengeName == challengeName);
     }
     
@@ -183,7 +200,7 @@ public class ScoringService
     {
         if (teamId == null)
             return false;
-        return _teamSolvedChallenges.TryGetValue(teamId.Value, out var solves) &&
+        return _teamSolvedChallengesIgnoringFreeze.TryGetValue(teamId.Value, out var solves) &&
                solves.Any(s => s.ChallengeName == challengeName);
     }
 
