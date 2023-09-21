@@ -197,19 +197,25 @@ public class ScoringController : ControllerBase
             }
 
             if (solverTeamName != null)
-                solverTeamName = $" ({solverTeamName})";
+                solverTeamName = $" ({Format.Sanitize(solverTeamName)})";
 
             var user = await guild.GetUserAsync(ulong.Parse(solverDiscordId));
             var username = user == null ? solverDiscordUsername : user.Mention;
+            var allowedMentions = new AllowedMentions
+            {
+                UserIds = new List<ulong> { ulong.Parse(solverDiscordId) }
+            };
             if (firstBlood)
             {
                 await channel.SendMessageAsync(
-                    $"{username}{solverTeamName} got first blood on challenge `{solvedChallenge}` :drop_of_blood:");
+                    $"{username}{solverTeamName} got first blood on challenge `{solvedChallenge}` :drop_of_blood:",
+                        allowedMentions: allowedMentions);
             }
             else
             {
                 await channel.SendMessageAsync(
-                    $"{username}{solverTeamName} solved challenge `{solvedChallenge}` :triangular_flag_on_post:");
+                    $"{username}{solverTeamName} solved challenge `{solvedChallenge}` :triangular_flag_on_post:",
+                        allowedMentions: allowedMentions);
             }
 
             await client.LogoutAsync();
