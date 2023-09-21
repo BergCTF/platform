@@ -71,7 +71,11 @@ public class TeamController : ControllerBase
             throw new ArgumentException("Invalid player");
         if (team.Name == null)
             throw new ArgumentException("Team name must be set");
-
+        if (team.Name.Length > 100)
+            throw new ArgumentException("Team name is too long. Thank coderion for this");
+        if (!team.Name.All(char.IsAscii))
+            throw new ArgumentException("Team name must be ascii-only");
+        
         if (player.Team != null)
             throw new ArgumentException("Player is already in a team");
 
