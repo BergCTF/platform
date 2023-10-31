@@ -1,4 +1,3 @@
-using System.Net;
 using Berg.ChallengeServer.BackgroundServices;
 using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.Db;
@@ -18,16 +17,6 @@ builder.Services.AddSingleton(new Kubernetes(KubernetesClientConfiguration.Build
 builder.Services.AddSingleton<ScoringService>();
 builder.Services.AddSingleton<ChallengeService>();
 builder.Services.AddSingleton<PlayerService>();
-builder.Services.AddHsts(opts =>
-{
-    opts.IncludeSubDomains = false;
-    opts.MaxAge = TimeSpan.FromDays(7);
-});
-builder.Services.AddHttpsRedirection(opts =>
-{
-    opts.RedirectStatusCode = (int)HttpStatusCode.PermanentRedirect;
-    opts.HttpsPort = 443;
-});
 builder.Services.AddHostedService<RefreshService>();
 var discordConfig = new DiscordConfig();
 builder.Configuration.GetSection("DiscordConfig").Bind(discordConfig);
@@ -91,11 +80,15 @@ using (var scope = app.Services.CreateScope())
     dbContext.Database.Migrate();
 }
 
-app.UseForwardedHeaders();
-app.UseHttpsRedirection();
-app.UseHsts();
 app.UseSwagger();
 app.UseSwaggerUI();
+
+app.Use(next => context => {
+    // Hack to make dotnet think that the request came in over https, to make sure that redirect urls are
+    // being created with a https:// prefix. Necessary because the ingress controller handles TLS termination for us.
+    context.Request.Scheme = "https";
+    return next(context);
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
