@@ -8,8 +8,8 @@ public class Player
     public string Email { get; set; } = null!;
     public Guid? TeamId { get; set; }
     public Team? Team { get; set; }
-    public List<string> Labels = new();
     public DateTime CreatedAt { get; set; }
     public List<Solve> Solves { get; set; } = null!;
     public List<Submission> Submissions { get; set; } = null!;
+    public Dictionary<string, string>? Attributes { get; set; }
 }

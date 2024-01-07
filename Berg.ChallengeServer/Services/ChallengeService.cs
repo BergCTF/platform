@@ -69,7 +69,7 @@ public class ChallengeService
         }
     }
 
-    public List<V1Challenge> GetChallenges()
+    public IEnumerable<V1Challenge> GetChallenges()
     {
         var now = DateTime.UtcNow;
         return _challenges.Values

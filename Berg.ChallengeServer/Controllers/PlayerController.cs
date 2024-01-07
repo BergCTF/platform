@@ -1,9 +1,12 @@
-using System.Text.Json.Serialization;
+using Berg.ChallengeServer.Configuration;
+using Berg.ChallengeServer.Db;
 using Berg.ChallengeServer.Services;
 using Berg.Shared;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Player = Berg.Shared.Player;
 
 namespace Berg.ChallengeServer.Controllers;
 
@@ -11,14 +14,40 @@ namespace Berg.ChallengeServer.Controllers;
 public class PlayerController : ControllerBase
 {
     private readonly ChallengeService _challengeService;
+    private readonly CtfConfig _ctfConfig;
     private readonly PlayerService _playerService;
+    private readonly BergDbContext _dbContext;
     
     public PlayerController(
         ChallengeService challengeService,
-        PlayerService playerService)
+        CtfConfig ctfConfig,
+        PlayerService playerService,
+        BergDbContext dbContext)
     {
         _challengeService = challengeService;
+        _ctfConfig = ctfConfig;
         _playerService = playerService;
+        _dbContext = dbContext;
+    }
+    
+    [HttpGet]
+    [Route("/api/v1/players")]
+    public async Task<List<Player>> ListPlayers(CancellationToken cancel)
+    {
+        var publicCustomAttributes = _ctfConfig.PlayerAttributes
+            .Where(a => a.Public).Select(a => a.Name).ToHashSet();
+        var players = await _dbContext.Players.ToListAsync(cancel);
+        return players.Select(p => new Player
+        {
+            Id = p.Id,
+            Name = p.Name,
+            TeamId = p.TeamId,
+            DiscordId = p.DiscordId,
+            Attributes = p.Attributes?
+                .Where(a => publicCustomAttributes.Contains(a.Key))
+                .ToDictionary(a => a.Key, a => a.Value) ?? new Dictionary<string, string>(),
+            RequiredAttributes = new List<PlayerAttribute>(),
+        }).ToList();
     }
     
     [HttpGet]
@@ -44,6 +73,8 @@ public class PlayerController : ControllerBase
             return new PlayerSelf();
         
         var player = _playerService.GetPlayer(User);
+        var requiredAttributes = _ctfConfig.PlayerAttributes
+            .Where(a => a.Required).ToHashSet();
         return new PlayerSelf
         {
             Player = new Player
@@ -52,41 +83,36 @@ public class PlayerController : ControllerBase
                 Name = player.Name,
                 TeamId = player.TeamId,
                 DiscordId = player.DiscordId,
-                Labels = player.Labels
+                Attributes = player.Attributes ?? new Dictionary<string, string>(),
+                RequiredAttributes = requiredAttributes
+                    .Where(a => !(player.Attributes?.ContainsKey(a.Name) ?? false))
+                    .ToList()
             },
             ChallengeInstance = await _challengeService.GetChallengeInstance(player.Id, cancel)
         };
     }
-    
-    public class ChallengeStartRequest
+
+    public class PlayerUpdateRequest
     {
-        [JsonPropertyName("challenge")]
-        public string? Challenge { get; set; }
+        public Dictionary<string, string> Attributes { get; set; } = new();
     }
     
     [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [Route("/api/v1/challengeInstance/start")]
-    public async Task<ChallengeInstanceStatus?> StartChallengeInstance([FromBody] ChallengeStartRequest startRequest,
-        CancellationToken cancel)
+    [Route("/api/v1/self")]
+    public void UpdatePlayerSelf(PlayerUpdateRequest playerUpdate)
     {
-        var challenge = startRequest.Challenge;
-        if (challenge == null)
-            throw new ArgumentException("Challenge can't be null");
-        var playerId = _playerService.GetPlayer(User).Id;
-        return await _challengeService.StartChallengeInstance(playerId, challenge, cancel);
-    }
-    
-    [HttpPost]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [Route("/api/v1/challengeInstance/stop")]
-    public async Task<ChallengeInstanceStatus> StopChallengeInstance(CancellationToken cancel)
-    {
-        var playerId = _playerService.GetPlayer(User).Id;
-        return await _challengeService.StopChallengeInstance(playerId, cancel);
+        var player = _playerService.GetPlayer(User);
+        var configAttributesByName = _ctfConfig.PlayerAttributes.ToDictionary(a => a.Name);
+        foreach (var attr in playerUpdate.Attributes)
+        {
+            if(!configAttributesByName.TryGetValue(attr.Key, out var configAttr))
+                throw new ArgumentException($"Invalid attribute name: {attr.Key}");
+            if (!configAttr.Values.Contains(attr.Value))
+                throw new ArgumentException($"Invalid attribute value: {attr.Value}");
+        }
+        _playerService.UpdatePlayerAttributes(player, playerUpdate.Attributes);
     }
 }

@@ -16,6 +16,9 @@ public class Player
     [JsonPropertyName("discordId")]
     public string DiscordId { get; set; } = null!;
 
-    [JsonPropertyName("labels")]
-    public List<string> Labels { get; set; } = new();
+    [JsonPropertyName("attributes")]
+    public Dictionary<string, string> Attributes { get; set; } = new();
+
+    [JsonPropertyName("requiredAttributes")]
+    public List<PlayerAttribute> RequiredAttributes { get; set; } = new();
 }

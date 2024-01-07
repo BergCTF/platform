@@ -46,20 +46,38 @@ public class BergDbContextFactory : IDisposable
         var team1Player1 = new Player
         {
             Id = Team1Player1Id,
+            DiscordId = "1",
             Name = "Team 1 Player 1",
+            Email = "player1@team1.local",
             Team = team1,
+            Attributes = new Dictionary<string, string>
+            {
+                { "Category", "Junior" }
+            }
         };
         var team1Player2 = new Player
         {
             Id = Team1Player2Id,
+            DiscordId = "2",
             Name = "Team 1 Player 2",
+            Email = "player2@team1.local",
             Team = team1,
+            Attributes = new Dictionary<string, string>
+            {
+                { "Category", "Senior" }
+            }
         };
         var team2Player1 = new Player
         {
             Id = Team2Player1Id,
+            DiscordId = "3",
             Name = "Team 2 Player 1",
+            Email = "player1@team2.local",
             Team = team2,
+            Attributes = new Dictionary<string, string>
+            {
+                { "Category", "Junior" }
+            }
         };
         dbContext.Players.Add(team1Player1);
         dbContext.Players.Add(team1Player2);
@@ -106,7 +124,7 @@ public class BergDbContextFactory : IDisposable
 
     internal BergDbContext CreateContext()
     {
-        return new BergDbContext(CreateOptions());
+        return new BergDbContext(CreateOptions(),  true);
     }
 
     public void Dispose()

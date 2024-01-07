@@ -1,11 +1,9 @@
 using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.CustomResources;
-using Berg.ChallengeServer.Db;
 using Berg.ChallengeServer.Services;
 using Berg.Shared;
 using k8s.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Challenge = Berg.Shared.Challenge;
 
 namespace Berg.ChallengeServer.Controllers;
@@ -17,20 +15,17 @@ public class CtfController : ControllerBase
     private readonly ChallengeService _challengeService;
     private readonly ScoringService _scoringService;
     private readonly PlayerService _playerService;
-    private readonly BergDbContext _dbContext;
 
     public CtfController(
         CtfConfig ctfConfig,
         ScoringService scoringService,
         ChallengeService challengeService,
-        PlayerService playerService,
-        BergDbContext dbContext)
+        PlayerService playerService)
     {
         _ctfConfig = ctfConfig;
         _scoringService = scoringService;
         _challengeService = challengeService;
         _playerService = playerService;
-        _dbContext = dbContext;
     }
 
     [HttpGet]
@@ -97,20 +92,6 @@ public class CtfController : ControllerBase
                 DownloadUrl = a.DownloadUrl,
             }).ToList() ?? new List<Attachment>(),
         };
-    }
-    
-    [HttpGet]
-    [Route("/api/v1/players")]
-    public async Task<List<Shared.Player>> ListPlayers(CancellationToken cancel)
-    {
-        return await _dbContext.Players.Select(t => new Shared.Player
-        {
-            Id = t.Id,
-            Name = t.Name,
-            TeamId = t.TeamId,
-            DiscordId = t.DiscordId,
-            Labels = t.Labels
-        }).ToListAsync(cancel);
     }
 
 }

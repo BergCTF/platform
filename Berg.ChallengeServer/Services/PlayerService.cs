@@ -85,4 +85,21 @@ public class PlayerService
         dbContext.SaveChanges();
         _playerCache[discordId] = existingPlayer;
     }
+    
+    public void UpdatePlayerAttributes(Player player, Dictionary<string, string> attributes)
+    {
+        using var scope = _serviceScopeFactory.CreateScope();
+        using var dbContext = scope.ServiceProvider.GetRequiredService<BergDbContext>();
+        
+        var existingPlayer = dbContext.Players.FirstOrDefault(p => p.Id == player.Id);
+        if (existingPlayer == null)
+            throw new ArgumentException("Player can't be updated since there is no player with this id.");
+            
+        lock (_playerUpdateLock)
+        {
+            existingPlayer.Attributes = attributes;
+            dbContext.SaveChanges();
+            _playerCache[player.DiscordId] = existingPlayer;
+        }
+    }
 }

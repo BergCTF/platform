@@ -1,3 +1,5 @@
+using Berg.Shared;
+
 namespace Berg.ChallengeServer.Configuration;
 
 public class CtfConfig
@@ -12,4 +14,5 @@ public class CtfConfig
     public int ChallengeInstanceEntryPointPort { get; set; } = 1337;
     public string ChallengeInstanceEntryPointName { get; set; } = "services";
     public TimeSpan ChallengeInstanceTimeout { get; set; } = TimeSpan.FromHours(1);
+    public List<PlayerAttribute> PlayerAttributes { get; set; }
 }
