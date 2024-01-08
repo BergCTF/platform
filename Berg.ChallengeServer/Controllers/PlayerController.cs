@@ -34,8 +34,9 @@ public class PlayerController : ControllerBase
     [Route("/api/v1/players")]
     public async Task<List<Player>> ListPlayers(CancellationToken cancel)
     {
-        var publicCustomAttributes = _ctfConfig.PlayerAttributes
-            .Where(a => a.Public).Select(a => a.Name).ToHashSet();
+        var publicCustomAttributes = _ctfConfig.PlayerAttributes?
+            .Where(a => a.Public).Select(a => a.Name)
+            .ToHashSet() ?? new HashSet<string>();
         var players = await _dbContext.Players.ToListAsync(cancel);
         return players.Select(p => new Player
         {
@@ -73,8 +74,8 @@ public class PlayerController : ControllerBase
             return new PlayerSelf();
         
         var player = _playerService.GetPlayer(User);
-        var requiredAttributes = _ctfConfig.PlayerAttributes
-            .Where(a => a.Required).ToHashSet();
+        var requiredAttributes = _ctfConfig.PlayerAttributes?
+            .Where(a => a.Required).ToHashSet() ?? new HashSet<PlayerAttribute>();
         return new PlayerSelf
         {
             Player = new Player
@@ -105,7 +106,8 @@ public class PlayerController : ControllerBase
     public void UpdatePlayerSelf(PlayerUpdateRequest playerUpdate)
     {
         var player = _playerService.GetPlayer(User);
-        var configAttributesByName = _ctfConfig.PlayerAttributes.ToDictionary(a => a.Name);
+        var configAttributesByName = _ctfConfig.PlayerAttributes?
+            .ToDictionary(a => a.Name) ?? new Dictionary<string, PlayerAttribute>();
         foreach (var attr in playerUpdate.Attributes)
         {
             if(!configAttributesByName.TryGetValue(attr.Key, out var configAttr))
