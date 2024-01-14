@@ -151,6 +151,7 @@ public class ScoringService
                         LastSolve = solves.Count > 0 ? solves.Select(s => s.SolvedAt).Max() : null
                     };
                 })
+                .Where(r => r.Score != 0)
                 .OrderByDescending(r => r.Score)
                 .ThenBy(r => r.LastSolve)
                 .ToList();
@@ -166,6 +167,7 @@ public class ScoringService
                         LastSolve = solves.Count > 0 ? solves.Select(s => s.SolvedAt).Max() : null
                     };
                 })
+                .Where(r => r.Score != 0)
                 .OrderByDescending(r => r.Score)
                 .ThenBy(r => r.LastSolve)
                 .ToList();
