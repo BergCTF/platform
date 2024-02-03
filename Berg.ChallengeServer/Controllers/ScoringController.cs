@@ -246,7 +246,7 @@ public class ScoringController : ControllerBase
             throw new ArgumentException("Can't filter by attribute that doesn't exist or is not public.");
         
         var filteredPlayers = _dbContext.Players
-            .Where(p => p.Attributes != null && p.Attributes[attributeName] == attributeValue)
+            .Where(p => p.Attributes.Any(a => a.Name == attributeName && a.Value == attributeValue))
             .Select(p => p.Id)
             .ToHashSet();
         return _scoringService.GetPlayerScoreboard()

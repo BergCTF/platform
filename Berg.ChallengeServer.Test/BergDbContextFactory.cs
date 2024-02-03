@@ -50,9 +50,9 @@ public class BergDbContextFactory : IDisposable
             Name = "Team 1 Player 1",
             Email = "player1@team1.local",
             Team = team1,
-            Attributes = new Dictionary<string, string>
+            Attributes = new List<PlayerAttribute>
             {
-                { "Category", "Junior" }
+                new() { Name = "Category", Value = "Junior" }
             }
         };
         var team1Player2 = new Player
@@ -62,9 +62,9 @@ public class BergDbContextFactory : IDisposable
             Name = "Team 1 Player 2",
             Email = "player2@team1.local",
             Team = team1,
-            Attributes = new Dictionary<string, string>
+            Attributes = new List<PlayerAttribute>
             {
-                { "Category", "Senior" }
+                new() { Name = "Category", Value = "Senior" }
             }
         };
         var team2Player1 = new Player
@@ -74,9 +74,9 @@ public class BergDbContextFactory : IDisposable
             Name = "Team 2 Player 1",
             Email = "player1@team2.local",
             Team = team2,
-            Attributes = new Dictionary<string, string>
+            Attributes = new List<PlayerAttribute>
             {
-                { "Category", "Junior" }
+                new() { Name = "Category", Value = "Junior" }
             }
         };
         dbContext.Players.Add(team1Player1);

@@ -45,9 +45,9 @@ public class PlayerController : ControllerBase
             TeamId = p.TeamId,
             DiscordId = p.DiscordId,
             Attributes = p.Attributes?
-                .Where(a => publicCustomAttributes.Contains(a.Key))
-                .ToDictionary(a => a.Key, a => a.Value) ?? new Dictionary<string, string>(),
-            RequiredAttributes = new List<PlayerAttribute>(),
+                .Where(a => publicCustomAttributes.Contains(a.Name))
+                .ToDictionary(a => a.Name, a => a.Value) ?? new Dictionary<string, string>(),
+            RequiredAttributes = new List<Shared.PlayerAttribute>(),
         }).ToList();
     }
     
@@ -75,7 +75,7 @@ public class PlayerController : ControllerBase
         
         var player = _playerService.GetPlayer(User);
         var requiredAttributes = _ctfConfig.PlayerAttributes?
-            .Where(a => a.Required).ToHashSet() ?? new HashSet<PlayerAttribute>();
+            .Where(a => a.Required).ToHashSet() ?? new HashSet<Shared.PlayerAttribute>();
         return new PlayerSelf
         {
             Player = new Player
@@ -84,9 +84,9 @@ public class PlayerController : ControllerBase
                 Name = player.Name,
                 TeamId = player.TeamId,
                 DiscordId = player.DiscordId,
-                Attributes = player.Attributes ?? new Dictionary<string, string>(),
+                Attributes = player.Attributes.ToDictionary(a => a.Name, a => a.Value),
                 RequiredAttributes = requiredAttributes
-                    .Where(a => !(player.Attributes?.ContainsKey(a.Name) ?? false))
+                    .Where(a => player.Attributes.All(pa => pa.Name != a.Name))
                     .ToList()
             },
             ChallengeInstance = await _challengeService.GetChallengeInstance(player.Id, cancel)
@@ -107,7 +107,7 @@ public class PlayerController : ControllerBase
     {
         var player = _playerService.GetPlayer(User);
         var configAttributesByName = _ctfConfig.PlayerAttributes?
-            .ToDictionary(a => a.Name) ?? new Dictionary<string, PlayerAttribute>();
+            .ToDictionary(a => a.Name) ?? new Dictionary<string, Shared.PlayerAttribute>();
         foreach (var attr in playerUpdate.Attributes)
         {
             if(!configAttributesByName.TryGetValue(attr.Key, out var configAttr))

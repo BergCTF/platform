@@ -11,5 +11,5 @@ public class Player
     public DateTime CreatedAt { get; set; }
     public List<Solve> Solves { get; set; } = null!;
     public List<Submission> Submissions { get; set; } = null!;
-    public Dictionary<string, string>? Attributes { get; set; }
+    public List<PlayerAttribute> Attributes { get; set; } = null!;
 }

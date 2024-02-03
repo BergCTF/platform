@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Berg.ChallengeServer.Db;
+using Microsoft.EntityFrameworkCore;
 
 namespace Berg.ChallengeServer.Services;
 
@@ -91,13 +92,31 @@ public class PlayerService
         using var scope = _serviceScopeFactory.CreateScope();
         using var dbContext = scope.ServiceProvider.GetRequiredService<BergDbContext>();
         
-        var existingPlayer = dbContext.Players.FirstOrDefault(p => p.Id == player.Id);
+        var existingPlayer = dbContext.Players
+            .Include(p => p.Attributes)
+            .FirstOrDefault(p => p.Id == player.Id);
         if (existingPlayer == null)
             throw new ArgumentException("Player can't be updated since there is no player with this id.");
             
         lock (_playerUpdateLock)
         {
-            existingPlayer.Attributes = attributes;
+            foreach (var pair in attributes)
+            {
+                var existingAttr = existingPlayer.Attributes.FirstOrDefault(a => a.Name == pair.Key);
+                if (existingAttr != null)
+                {
+                    existingAttr.Value = pair.Value;
+                }
+                else
+                {
+                    existingPlayer.Attributes.Add(new PlayerAttribute()
+                    {
+                        Player = existingPlayer,
+                        Name = pair.Key,
+                        Value = pair.Value
+                    });
+                }
+            }
             dbContext.SaveChanges();
             _playerCache[player.DiscordId] = existingPlayer;
         }
