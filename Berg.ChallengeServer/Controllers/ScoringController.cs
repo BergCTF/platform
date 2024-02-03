@@ -235,9 +235,23 @@ public class ScoringController : ControllerBase
     
     [HttpGet]
     [Route("/api/v1/scoreboard/players")]
-    public List<PlayerRanking> GetPlayerScoreboard()
+    public List<PlayerRanking> GetPlayerScoreboard(
+        [FromQuery] string? attributeName = null,
+        [FromQuery] string? attributeValue = null)
     {
-        return _scoringService.GetPlayerScoreboard();
+        if (attributeName == null || attributeValue == null)
+            return _scoringService.GetPlayerScoreboard();
+
+        if (!_ctfConfig.PlayerAttributes?.Any(a => a.Public && a.Name == attributeName) ?? true)
+            throw new ArgumentException("Can't filter by attribute that doesn't exist or is not public.");
+        
+        var filteredPlayers = _dbContext.Players
+            .Where(p => p.Attributes != null && p.Attributes[attributeName] == attributeValue)
+            .Select(p => p.Id)
+            .ToHashSet();
+        return _scoringService.GetPlayerScoreboard()
+            .Where(s => filteredPlayers.Contains(s.PlayerId))
+            .ToList();
     }
     
     [HttpGet]
