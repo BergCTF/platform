@@ -63,9 +63,9 @@ public class ScoringController : ControllerBase
 
         var now = DateTime.UtcNow;
         if (_ctfConfig.Start > now)
-            throw new ArgumentException("CTF has not started yet");
+            return SubmitFlagResult.CtfNotStarted;
         if (_ctfConfig.End < now)
-            throw new ArgumentException("CTF has ended, no more flags accepted");
+            return SubmitFlagResult.CtfHasEnded;
 
         lock (_submitFlagLock)
         {

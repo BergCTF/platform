@@ -2,7 +2,7 @@ apiVersion: berg.norelect.ch/v1
 kind: Challenge
 metadata:
   name: nginx
-  namespace: default
+  namespace: berg
 spec:
   author: NoRelect
   flag: flag{test_flag}
@@ -29,7 +29,7 @@ apiVersion: berg.norelect.ch/v1
 kind: Challenge
 metadata:
   name: hidden-nginx
-  namespace: default
+  namespace: berg
 spec:
   author: NoRelect
   flag: flag{test_flag}

@@ -5,5 +5,7 @@ public enum SubmitFlagResult
     Correct,
     Incorrect,
     RateLimited,
-    AlreadySolved
+    AlreadySolved,
+    CtfNotStarted,
+    CtfHasEnded,
 }
