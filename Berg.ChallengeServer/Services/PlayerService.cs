@@ -19,7 +19,8 @@ public class PlayerService
     {
         lock (_playerUpdateLock)
         {
-            var dbPlayers = dbContext.Players.ToList()
+            var dbPlayers = dbContext.Players
+                .Include(p => p.Attributes).ToList()
                 .ToDictionary(p => p.DiscordId, p => p);
             foreach (var entry in dbPlayers)
             {
@@ -64,7 +65,8 @@ public class PlayerService
             DiscordId = discordId,
             Name = discordName,
             CreatedAt = DateTime.UtcNow,
-            Email = email
+            Email = email,
+            Attributes = new List<PlayerAttribute>()
         };
         dbContext.Players.Add(newPlayer);
         dbContext.SaveChanges();
