@@ -173,14 +173,14 @@ public class ChallengeService
                 {
                     var ingress = traefikIngressRouteList.Items
                         .FirstOrDefault(i => i.Name() == $"ir-{container.Hostname}-{port.Port}");
-                    service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + _ctfConfig.ChallengeDomain;
+                    service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + "." + _ctfConfig.ChallengeDomain;
                     service.VHost = true;
                 }
                 else if (port.Type == V1ChallengePortType.PublicIngressRouteTcp)
                 {
                     var ingress = traefikIngressRouteTcpList.Items
                         .FirstOrDefault(i => i.Name() == $"ir-tcp-{container.Hostname}-{port.Port}");
-                    service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + _ctfConfig.ChallengeDomain;
+                    service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + "." +_ctfConfig.ChallengeDomain;
                     service.VHost = true;
                 }
                 services.Add(service);
