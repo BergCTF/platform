@@ -123,4 +123,22 @@ public class PlayerService
             _playerCache[player.DiscordId] = existingPlayer;
         }
     }
+
+    public void DeletePlayer(Player playerToRemove)
+    {
+        using var scope = _serviceScopeFactory.CreateScope();
+        using var dbContext = scope.ServiceProvider.GetRequiredService<BergDbContext>();
+
+        lock (_playerUpdateLock)
+        {
+            var dbPlayer = dbContext.Players.First(p => p.Id == playerToRemove.Id);
+            dbContext.Players.Remove(dbPlayer);
+            dbContext.SaveChanges();
+            
+            // TODO: Make sure that all running challenge instances are cleaned up to prevent DoS
+            // TODO: Make sure that the player can abuse the create/delete functionality to bypass rate limits
+            
+            _playerCache.Remove(playerToRemove.DiscordId);
+        }
+    }
 }

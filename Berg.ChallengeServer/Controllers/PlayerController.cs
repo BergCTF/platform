@@ -117,4 +117,16 @@ public class PlayerController : ControllerBase
         }
         _playerService.UpdatePlayerAttributes(player, playerUpdate.Attributes);
     }
+    
+    [HttpDelete]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [Route("/api/v1/self")]
+    public async Task DeleteSelf()
+    {
+        var player = _playerService.GetPlayer(User);
+        _playerService.DeletePlayer(player);
+        await HttpContext.SignOutAsync(new AuthenticationProperties { RedirectUri = "/" });
+    }
 }
