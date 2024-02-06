@@ -362,71 +362,11 @@ public class ChallengeService
             _logger.LogError("Response.Content: {}", ex.Response.Content);
             _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(networkPolicy));
         }
-
+        
+        var serviceEndpoints = new Dictionary<string, string>();
+        
         foreach (var container in challengeConfig.Spec.Containers ?? new List<V1ChallengeContainer>())
         {
-            var pod = new V1Pod
-            {
-                Metadata = new V1ObjectMeta
-                {
-                    Name = container.Hostname,
-                    Labels = new Dictionary<string, string>
-                    {
-                        { ManagedByLabel, "berg" },
-                        { ComponentLabel, "challenge-container" },
-                        { ChallengeLabel, challenge },
-                        { PlayerIdLabel, playerId.ToString() },
-                        { ContainerLabel, container.Hostname }
-                    }
-                },
-                Spec = new V1PodSpec
-                {
-                    RestartPolicy = "Always",
-                    Hostname = container.Hostname,
-                    EnableServiceLinks = false,
-                    AutomountServiceAccountToken = false,
-                    TerminationGracePeriodSeconds = 0,
-                    ImagePullSecrets = new List<V1LocalObjectReference> { new(ImagePullSecretName) },
-                    Containers = new List<V1Container>
-                    {
-                        new()
-                        {
-                            SecurityContext = new V1SecurityContext
-                            {
-                                Privileged = false,
-                                AllowPrivilegeEscalation = false,
-                            },
-                            Name = container.Hostname,
-                            Image = container.Image,
-                            ImagePullPolicy = "Always",
-                            Resources = container.ResourceLimits != null
-                                ? new V1ResourceRequirements
-                                {
-                                    Limits = container.ResourceLimits
-                                        .ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value))
-                                }
-                                : null,
-                            Env = container.Environment?
-                                .Select(e => new V1EnvVar(e.Key, e.Value.ToString()))
-                                .ToList(),
-                            Ports = container.Ports?
-                                .Select(p => new V1ContainerPort(p.Port, protocol: p.Protocol.ToUpperInvariant()))
-                                .ToList(),
-                        }
-                    },
-                }
-            };
-            try
-            {
-                await _kubernetes.CreateNamespacedPodAsync(pod, ns.Name(), cancellationToken: cancel);
-            }
-            catch (HttpOperationException ex)
-            {
-                _logger.LogError("Got exception while creating Pod: {}", ex);
-                _logger.LogError("Response.Content: {}", ex.Response.Content);
-                _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(pod));
-            }
-
             var internalPorts = container.Ports ?? new List<V1ChallengePort>();
             if (internalPorts.Any())
             {
@@ -453,6 +393,12 @@ public class ChallengeService
                         }).ToList(),
                     }
                 };
+                foreach (var port in internalPorts)
+                {
+                    if (port.Name == null)
+                        continue;
+                    serviceEndpoints.Add(port.Name, $"{container.Hostname}:{port.Port}");
+                }
                 try
                 {
                     await _kubernetes.CreateNamespacedServiceAsync(service, ns.Name(), cancellationToken: cancel);
@@ -503,6 +449,13 @@ public class ChallengeService
                     _logger.LogError("Response.Content: {}", ex.Response.Content);
                     _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(service));
                 }
+                foreach (var port in publicPorts)
+                {
+                    if (port.Name == null)
+                        continue;
+                    // TODO: Get assigned NodePort from k8s api
+                    // serviceEndpoints.Add(port.Name, $"{_ctfConfig.ChallengeDomain}:{port.NodePort}");
+                }
             }
             
             var ingressRoutePorts = container.Ports?
@@ -547,6 +500,11 @@ public class ChallengeService
                         Tls = new Dictionary<string, string>()
                     }
                 };
+                if (ingressRoutePort.Name != null)
+                {
+                    serviceEndpoints.Add(ingressRoutePort.Name,
+                        $"{serviceGuid}.{_ctfConfig.ChallengeDomain}:{_ctfConfig.ChallengeInstanceEntryPointPort}");
+                }
                 try
                 {
                     await _ingressRouteClient.CreateNamespacedAsync(ingressRoute, ns.Name(), cancel: cancel);
@@ -601,6 +559,11 @@ public class ChallengeService
                         Tls = new Dictionary<string, string>()
                     }
                 };
+                if (ingressRouteTcpPort.Name != null)
+                {
+                    serviceEndpoints.Add(ingressRouteTcpPort.Name,
+                        $"{serviceGuid}.{_ctfConfig.ChallengeDomain}:{_ctfConfig.ChallengeInstanceEntryPointPort}");
+                }
                 try
                 {
                     await _ingressRouteTcpClient.CreateNamespacedAsync(ingressRouteTcp, ns.Name(), cancel: cancel);
@@ -611,6 +574,73 @@ public class ChallengeService
                     _logger.LogError("Response.Content: {}", ex.Response.Content);
                     _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(ingressRouteTcp));
                 }
+            }
+        }
+
+        foreach (var container in challengeConfig.Spec.Containers ?? new List<V1ChallengeContainer>())
+        {
+            var env = (container.Environment ?? new Dictionary<string, string>())
+                .Select(e => new V1EnvVar(e.Key, e.Value.ToString()))
+                .Concat(serviceEndpoints.Select(e => new V1EnvVar($"{e.Key.ToUpperInvariant()}_ENDPOINT", e.Value)))
+                .ToList();
+            var pod = new V1Pod
+            {
+                Metadata = new V1ObjectMeta
+                {
+                    Name = container.Hostname,
+                    Labels = new Dictionary<string, string>
+                    {
+                        { ManagedByLabel, "berg" },
+                        { ComponentLabel, "challenge-container" },
+                        { ChallengeLabel, challenge },
+                        { PlayerIdLabel, playerId.ToString() },
+                        { ContainerLabel, container.Hostname }
+                    }
+                },
+                Spec = new V1PodSpec
+                {
+                    RestartPolicy = "Always",
+                    Hostname = container.Hostname,
+                    EnableServiceLinks = false,
+                    AutomountServiceAccountToken = false,
+                    TerminationGracePeriodSeconds = 0,
+                    ImagePullSecrets = new List<V1LocalObjectReference> { new(ImagePullSecretName) },
+                    Containers = new List<V1Container>
+                    {
+                        new()
+                        {
+                            SecurityContext = new V1SecurityContext
+                            {
+                                Privileged = false,
+                                AllowPrivilegeEscalation = false,
+                            },
+                            Name = container.Hostname,
+                            Image = container.Image,
+                            ImagePullPolicy = "Always",
+                            Resources = container.ResourceLimits != null
+                                ? new V1ResourceRequirements
+                                {
+                                    Limits = container.ResourceLimits
+                                        .ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value))
+                                }
+                                : null,
+                            Env = env,
+                            Ports = container.Ports?
+                                .Select(p => new V1ContainerPort(p.Port, protocol: p.Protocol.ToUpperInvariant()))
+                                .ToList(),
+                        }
+                    },
+                }
+            };
+            try
+            {
+                await _kubernetes.CreateNamespacedPodAsync(pod, ns.Name(), cancellationToken: cancel);
+            }
+            catch (HttpOperationException ex)
+            {
+                _logger.LogError("Got exception while creating Pod: {}", ex);
+                _logger.LogError("Response.Content: {}", ex.Response.Content);
+                _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(pod));
             }
         }
         
