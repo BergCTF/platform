@@ -579,7 +579,7 @@ public class ChallengeService
 
         foreach (var container in challengeConfig.Spec.Containers ?? new List<V1ChallengeContainer>())
         {
-            var env = (container.Environment ?? new Dictionary<string, string>())
+            var env = (container.Environment ?? new Dictionary<string, object>())
                 .Select(e => new V1EnvVar(e.Key, e.Value.ToString()))
                 .Concat(serviceEndpoints.Select(e => new V1EnvVar($"{e.Key.ToUpperInvariant()}_ENDPOINT", e.Value)))
                 .ToList();

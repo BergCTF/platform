@@ -54,7 +54,7 @@ public class V1ChallengeContainer
     public string Image { get; set; } = null!;
     
     [JsonPropertyName("environment")]
-    public Dictionary<string, string>? Environment { get; set; }
+    public Dictionary<string, object>? Environment { get; set; }
     
     [JsonPropertyName("resourceLimits")]
     public Dictionary<string, string>? ResourceLimits { get; set; }
