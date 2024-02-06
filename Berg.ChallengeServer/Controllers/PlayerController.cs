@@ -127,6 +127,6 @@ public class PlayerController : ControllerBase
     {
         var player = _playerService.GetPlayer(User);
         _playerService.DeletePlayer(player);
-        await HttpContext.SignOutAsync(new AuthenticationProperties { RedirectUri = "/" });
+        await HttpContext.SignOutAsync();
     }
 }
