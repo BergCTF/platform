@@ -502,6 +502,7 @@ public class ChallengeService
                 };
                 if (ingressRoutePort.Name != null)
                 {
+                    serviceEndpoints.Remove(ingressRoutePort.Name);
                     serviceEndpoints.Add(ingressRoutePort.Name,
                         $"{serviceGuid}.{_ctfConfig.ChallengeDomain}:{_ctfConfig.ChallengeInstanceEntryPointPort}");
                 }
@@ -561,6 +562,7 @@ public class ChallengeService
                 };
                 if (ingressRouteTcpPort.Name != null)
                 {
+                    serviceEndpoints.Remove(ingressRouteTcpPort.Name);
                     serviceEndpoints.Add(ingressRouteTcpPort.Name,
                         $"{serviceGuid}.{_ctfConfig.ChallengeDomain}:{_ctfConfig.ChallengeInstanceEntryPointPort}");
                 }
