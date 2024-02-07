@@ -155,6 +155,7 @@ public class ChallengeService
                     continue;
                 var service = new Service
                 {
+                    Name = port.Name,
                     Hostname = _ctfConfig.ChallengeDomain,
                     AppProtocol = port.AppProtocol,
                     Protocol = port.Protocol,

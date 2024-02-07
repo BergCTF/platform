@@ -4,6 +4,9 @@ namespace Berg.Shared;
 
 public class Service
 {
+    [JsonPropertyName("name")]
+    public string? Name { get; set; } = null;
+    
     [JsonPropertyName("hostname")]
     public string Hostname { get; set; } = null!;
     
