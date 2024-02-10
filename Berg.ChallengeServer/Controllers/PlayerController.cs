@@ -37,7 +37,9 @@ public class PlayerController : ControllerBase
         var publicCustomAttributes = _ctfConfig.PlayerAttributes?
             .Where(a => a.Public).Select(a => a.Name)
             .ToHashSet() ?? new HashSet<string>();
-        var players = await _dbContext.Players.ToListAsync(cancel);
+        var players = await _dbContext.Players
+            .Include(p => p.Attributes)
+            .ToListAsync(cancel);
         return players.Select(p => new Player
         {
             Id = p.Id,
