@@ -12,4 +12,7 @@ public class PlayerSolve
 
     [JsonPropertyName("challengeName")]
     public string ChallengeName { get; set; } = null!;
+
+    [JsonPropertyName("isFirstBlood")]
+    public bool IsFirstBlood { get; set; }
 }

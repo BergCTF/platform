@@ -244,13 +244,30 @@ public class ScoringController : ControllerBase
 
         if (!_ctfConfig.PlayerAttributes?.Any(a => a.Public && a.Name == attributeName) ?? true)
             throw new ArgumentException("Can't filter by attribute that doesn't exist or is not public.");
-        
+        var firstBloods = _dbContext.Challenges.Select(c => new
+        {
+            c.Name,
+            FirstBloodedPlayerId = c.Solves
+                .OrderByDescending(s => s.SolvedAt)
+                .Where(s => s.Player.Attributes
+                    .Any(a => a.Name == attributeName && a.Value == attributeValue))
+                .Select(s => s.PlayerId).FirstOrDefault()
+        }).ToDictionary(b => b.Name, b => b.FirstBloodedPlayerId);
         var filteredPlayers = _dbContext.Players
             .Where(p => p.Attributes.Any(a => a.Name == attributeName && a.Value == attributeValue))
             .Select(p => p.Id)
             .ToHashSet();
         return _scoringService.GetPlayerScoreboard()
             .Where(s => filteredPlayers.Contains(s.PlayerId))
+            .Select(r =>
+            {
+                r.Solves = r.Solves.Select(s =>
+                {
+                    s.IsFirstBlood = firstBloods[s.ChallengeName] == s.PlayerId;
+                    return s;
+                }).ToList();
+                return r;
+            })
             .ToList();
     }
     
