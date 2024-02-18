@@ -307,51 +307,47 @@ public class ChallengeService
                     },
                     new()
                     {
-                        To = challengeConfig.Spec.AllowOutboundTraffic
-                            ? new List<V1NetworkPolicyPeer>
+                        To = new List<V1NetworkPolicyPeer>
+                        {
+                            new()
                             {
-                                new()
+                                NamespaceSelector = new V1LabelSelector
                                 {
-                                    NamespaceSelector = new V1LabelSelector
+                                    MatchLabels = new Dictionary<string, string>
                                     {
-                                        MatchLabels = new Dictionary<string, string>
-                                        {
-                                            { "kubernetes.io/metadata.name", ns.Name() }
-                                        }
-                                    }
-                                },
-                                new()
-                                {
-                                    IpBlock = new V1IPBlock
-                                    {
-                                        Cidr = "0.0.0.0/0",
-                                        Except = new List<string>
-                                        {
-                                            "10.0.0.0/8",
-                                            "172.16.0.0/12",
-                                            "192.168.0.0/16",
-                                        }
+                                        { "kubernetes.io/metadata.name", ns.Name() }
                                     }
                                 }
                             }
-                            : new List<V1NetworkPolicyPeer>
-                            {
-                                new()
-                                {
-                                    NamespaceSelector = new V1LabelSelector
-                                    {
-                                        MatchLabels = new Dictionary<string, string>
-                                        {
-                                            { "kubernetes.io/metadata.name", ns.Name() }
-                                        }
-                                    }
-                                }
-                            }
+                        }
                     }
                 },
                 PolicyTypes = new List<string> { "Egress" }
             }
         };
+
+        if (challengeConfig.Spec.AllowOutboundTraffic)
+        {
+            networkPolicy.Spec.Egress.Add(new V1NetworkPolicyEgressRule
+            {
+                To = new List<V1NetworkPolicyPeer>
+                    {
+                        new()
+                        {
+                            IpBlock = new V1IPBlock
+                            {
+                                Cidr = "0.0.0.0/0",
+                                Except = new List<string>
+                                {
+                                    "10.0.0.0/8",
+                                    "172.16.0.0/12",
+                                    "192.168.0.0/16",
+                                }
+                            }
+                        }
+                    }
+            });
+        }
         
         try
         {
