@@ -275,13 +275,7 @@ public class ChallengeService
                         {
                             new()
                             {
-                                NamespaceSelector = new V1LabelSelector
-                                {
-                                    MatchLabels = new Dictionary<string, string>
-                                    {
-                                        { "kubernetes.io/metadata.name", "kube-system" }
-                                    }
-                                },
+                                NamespaceSelector = new V1LabelSelector(),
                                 PodSelector = new V1LabelSelector
                                 {
                                     MatchLabels = new Dictionary<string, string>
@@ -307,17 +301,12 @@ public class ChallengeService
                     },
                     new()
                     {
+                        // Allow traffic to other pods in the same namespace
                         To = new List<V1NetworkPolicyPeer>
                         {
                             new()
                             {
-                                NamespaceSelector = new V1LabelSelector
-                                {
-                                    MatchLabels = new Dictionary<string, string>
-                                    {
-                                        { "kubernetes.io/metadata.name", ns.Name() }
-                                    }
-                                }
+                                PodSelector = new V1LabelSelector()
                             }
                         }
                     }
@@ -328,24 +317,52 @@ public class ChallengeService
 
         if (challengeConfig.Spec.AllowOutboundTraffic)
         {
+            // https://serverfault.com/questions/304781/ipv4-cidr-ranges-for-everything-except-rfc1918#304791
+            var publicIpCidrs = new List<string>(){
+                // $ netmask -c 0.0.0.0:9.255.255.255
+                "0.0.0.0/5",
+                "8.0.0.0/7",
+                // $ netmask -c 11.0.0.0:172.15.255.255
+                "11.0.0.0/8",
+                "12.0.0.0/6",
+                "16.0.0.0/4",
+                "32.0.0.0/3",
+                "64.0.0.0/2",
+                "128.0.0.0/3",
+                "160.0.0.0/5",
+                "168.0.0.0/6",
+                "172.0.0.0/12",
+                // $ netmask -c 172.32.0.0:192.167.255.255
+                "172.32.0.0/11",
+                "172.64.0.0/10",
+                "172.128.0.0/9",
+                "173.0.0.0/8",
+                "174.0.0.0/7",
+                "176.0.0.0/4",
+                "192.0.0.0/9",
+                "192.128.0.0/11",
+                "192.160.0.0/13",
+                // $ netmask -c 192.169.0.0:223.255.255.255
+                "192.169.0.0/16",
+                "192.170.0.0/15",
+                "192.172.0.0/14",
+                "192.176.0.0/12",
+                "192.192.0.0/10",
+                "193.0.0.0/8",
+                "194.0.0.0/7",
+                "196.0.0.0/6",
+                "200.0.0.0/5",
+                "208.0.0.0/4"
+            };
             networkPolicy.Spec.Egress.Add(new V1NetworkPolicyEgressRule
             {
-                To = new List<V1NetworkPolicyPeer>
+                To = publicIpCidrs.Select(cidr => new V1NetworkPolicyPeer()
+                {
+                    IpBlock = new V1IPBlock
                     {
-                        new()
-                        {
-                            IpBlock = new V1IPBlock
-                            {
-                                Cidr = "0.0.0.0/0",
-                                Except = new List<string>
-                                {
-                                    "10.0.0.0/8",
-                                    "172.16.0.0/12",
-                                    "192.168.0.0/16",
-                                }
-                            }
-                        }
+                        Cidr = cidr,
                     }
+                }).ToList()
             });
         }
         
