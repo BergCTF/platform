@@ -354,16 +354,22 @@ public class ChallengeService
                 "200.0.0.0/5",
                 "208.0.0.0/4"
             };
-            networkPolicy.Spec.Egress.Add(new V1NetworkPolicyEgressRule
+            foreach (var cidr in publicIpCidrs)
             {
-                To = publicIpCidrs.Select(cidr => new V1NetworkPolicyPeer()
+                networkPolicy.Spec.Egress.Add(new V1NetworkPolicyEgressRule
                 {
-                    IpBlock = new V1IPBlock
+                    To = new List<V1NetworkPolicyPeer>
                     {
-                        Cidr = cidr,
+                        new()
+                        {
+                            IpBlock = new V1IPBlock
+                            {
+                                Cidr = cidr,
+                            }
+                        }
                     }
-                }).ToList()
-            });
+                });
+            }
         }
         
         try
