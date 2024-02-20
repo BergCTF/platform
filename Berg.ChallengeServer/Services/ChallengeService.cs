@@ -634,7 +634,12 @@ public class ChallengeService
                             SecurityContext = new V1SecurityContext
                             {
                                 Privileged = false,
-                                AllowPrivilegeEscalation = false,
+                                // AllowPrivilegeEscalation has to be set to true to enable setuid or setgid
+                                // challenges, as they break without this flag. This should not introduce a security
+                                // vulnerability to the cluster as written in the docs:
+                                // - https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+                                // - https://www.kernel.org/doc/Documentation/prctl/no_new_privs.txt
+                                AllowPrivilegeEscalation = true,
                             },
                             Name = container.Hostname,
                             Image = container.Image,
