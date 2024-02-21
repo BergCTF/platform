@@ -161,6 +161,8 @@ public class ScoringController : ControllerBase
                     .Wait();
             }
             
+            _scoringService.RefreshScores(_dbContext);
+            
             return SubmitFlagResult.Correct;
         }
     }
