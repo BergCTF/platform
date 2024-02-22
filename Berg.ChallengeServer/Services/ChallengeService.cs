@@ -605,6 +605,7 @@ public class ChallengeService
                 .Select(e => new V1EnvVar(e.Key, e.Value.ToString()))
                 .Concat(serviceEndpoints.Select(e => new V1EnvVar($"{e.Key.ToUpperInvariant()}_ENDPOINT", e.Value)))
                 .ToList();
+            env.Add(new V1EnvVar("CHALLENGE_NAMESPACE", ns.Name()));
             var pod = new V1Pod
             {
                 Metadata = new V1ObjectMeta
