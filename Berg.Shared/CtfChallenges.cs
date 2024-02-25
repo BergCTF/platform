@@ -9,6 +9,9 @@ public class CtfChallenges
     
     [JsonPropertyName("end")]
     public DateTime End { get; set; }
+
+    [JsonPropertyName("serverTime")]
+    public DateTime ServerTime { get; set; }
     
     [JsonPropertyName("freezeStart")]
     public DateTime? FreezeStart { get; set; }

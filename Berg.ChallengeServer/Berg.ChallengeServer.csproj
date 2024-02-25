@@ -37,4 +37,10 @@
       </Reference>
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="kubeconfig.yaml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>

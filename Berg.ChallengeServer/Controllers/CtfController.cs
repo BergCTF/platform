@@ -36,6 +36,7 @@ public class CtfController : ControllerBase
         {
             Start = _ctfConfig.Start,
             End = _ctfConfig.End,
+            ServerTime = DateTime.Now,
             FreezeStart = _ctfConfig.Scoring.FreezeStart,
             FreezeEnd = _ctfConfig.Scoring.FreezeEnd,
             Teams = _ctfConfig.Teams
