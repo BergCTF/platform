@@ -649,7 +649,12 @@ public class ChallengeService
                                 ? new V1ResourceRequirements
                                 {
                                     Limits = container.ResourceLimits
-                                        .ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value))
+                                        .ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value)),
+                                    Requests = new Dictionary<string, ResourceQuantity>()
+                                    {
+                                        {"cpu", new ResourceQuantity("10m") },
+                                        {"memory", new ResourceQuantity("50Mi") },
+                                    }
                                 }
                                 : null,
                             Env = env,
