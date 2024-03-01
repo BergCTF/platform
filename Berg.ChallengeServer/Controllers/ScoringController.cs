@@ -250,7 +250,7 @@ public class ScoringController : ControllerBase
         {
             c.Name,
             FirstBloodedPlayerId = c.Solves
-                .OrderByDescending(s => s.SolvedAt)
+                .OrderBy(s => s.SolvedAt)
                 .Where(s => s.Player.Attributes
                     .Any(a => a.Name == attributeName && a.Value == attributeValue))
                 .Select(s => s.PlayerId).FirstOrDefault()
