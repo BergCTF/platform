@@ -202,7 +202,7 @@ public class ScoringController : ControllerBase
                 solverTeamName = $" ({Format.Sanitize(solverTeamName)})";
 
             var user = await guild.GetUserAsync(ulong.Parse(solverDiscordId));
-            var username = user == null ? solverDiscordUsername : user.Mention;
+            var username = user == null ? Format.Sanitize(solverDiscordUsername) : user.Mention;
             var allowedMentions = new AllowedMentions
             {
                 UserIds = new List<ulong> { ulong.Parse(solverDiscordId) }
