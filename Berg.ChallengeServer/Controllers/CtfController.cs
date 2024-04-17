@@ -66,8 +66,9 @@ public class CtfController : ControllerBase
             { "easy", 2 },
             { "medium", 3 },
             { "hard", 4 },
+            { "leet", 5 },
         };
-        return mappings.TryGetValue(val, out var result) ? result : 5;
+        return mappings.TryGetValue(val, out var result) ? result : 6;
     }
 
     private Challenge ToChallenge(V1Challenge c, Guid? playerId, Guid? teamId)
