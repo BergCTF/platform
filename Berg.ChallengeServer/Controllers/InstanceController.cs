@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Berg.ChallengeServer.Controllers;
 
 [ApiController]
-public class InstanceController  : ControllerBase
+public class InstanceController : ControllerBase
 {
     private readonly ChallengeService _challengeService;
     private readonly PlayerService _playerService;

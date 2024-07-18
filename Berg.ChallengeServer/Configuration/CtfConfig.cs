@@ -13,6 +13,7 @@ public class CtfConfig
     public TimeSpan RefreshInterval { get; set; } = TimeSpan.FromSeconds(15);
     public int ChallengeInstanceEntryPointPort { get; set; } = 1337;
     public string ChallengeInstanceEntryPointName { get; set; } = "services";
+    public List<int> AllowedOutboundPorts { get; set; } = new() { 80, 443, 4444 };
     public TimeSpan ChallengeInstanceTimeout { get; set; } = TimeSpan.FromHours(2);
     public List<PlayerAttribute>? PlayerAttributes { get; set; }
 }

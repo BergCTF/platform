@@ -13,6 +13,7 @@ public class ChallengeService
 {
     private const string BergGroup           = "berg.norelect.ch";
     private const string TraefikGroup        = "traefik.io";
+    private const string CiliumGroup         = "cilium.io";
     private const string ManagedByLabel      = "app.kubernetes.io/managed-by";
     private const string ComponentLabel      = "app.kubernetes.io/component";
     private const string PlayerIdLabel       = "berg.norelect.ch/player-id";
@@ -26,6 +27,7 @@ public class ChallengeService
     private readonly GenericClient _challengeClient;
     private readonly GenericClient _ingressRouteClient;
     private readonly GenericClient _ingressRouteTcpClient;
+    private readonly GenericClient _ciliumNetworkPolicyClient;
     private readonly string _namespace;
     private readonly CtfConfig _ctfConfig;
 
@@ -42,6 +44,7 @@ public class ChallengeService
         _challengeClient = new GenericClient(kubernetes, BergGroup, "v1", "challenges", false);
         _ingressRouteClient = new GenericClient(kubernetes, TraefikGroup, "v1alpha1", "ingressroutes", false);
         _ingressRouteTcpClient = new GenericClient(kubernetes, TraefikGroup, "v1alpha1", "ingressroutetcps", false);
+        _ciliumNetworkPolicyClient = new GenericClient(kubernetes, CiliumGroup, "v2", "ciliumnetworkpolicies", false);
         _ctfConfig = ctfConfig;
         _namespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
     }
@@ -259,126 +262,120 @@ public class ChallengeService
             _logger.LogWarning("Detailed exception for pull secret copy operations: {}", ex);
         }
 
-        var networkPolicy = new V1NetworkPolicy
+        var networkPolicy = new V2CiliumNetworkPolicy()
         {
             Metadata = new V1ObjectMeta
             {
                 Name = "challenge-network-policy",
             },
-            Spec = new V1NetworkPolicySpec
+            Spec = new V2CiliumNetworkPolicySpec
             {
-                Egress = new List<V1NetworkPolicyEgressRule>
+                Egress = new List<V2CiliumEgressRule>
                 {
                     new()
                     {
-                        To = new List<V1NetworkPolicyPeer>
+                        ToEndpoints = new List<V1LabelSelector>
                         {
                             new()
                             {
-                                NamespaceSelector = new V1LabelSelector(),
-                                PodSelector = new V1LabelSelector
+                                MatchLabels = new Dictionary<string, string>
                                 {
-                                    MatchLabels = new Dictionary<string, string>
-                                    {
-                                        { "k8s-app", "kube-dns" }
-                                    }
+                                    { "k8s:io.kubernetes.pod.namespace", "kube-system" },
+                                    { "k8s:k8s-app", "kube-dns" },
                                 }
                             }
                         },
-                        Ports = new List<V1NetworkPolicyPort>
+                        ToPorts = new List<V2CiliumPortRule>
                         {
-                            new()
-                            {
-                                Port = "53",
-                                Protocol = "UDP",
-                            },
-                            new()
-                            {
-                                Port = "53",
-                                Protocol = "TCP",
-                            }
+                              new()
+                              {
+                                  Ports = new List<V2CiliumPortProtocol>
+                                  {
+                                      new()
+                                      {
+                                          Port = "53"
+                                      }
+                                  },
+                                  Rules = challengeConfig.Spec.AllowOutboundTraffic ? null : new List<V2CiliumL7Rule>
+                                  {
+                                      new()
+                                      {
+                                          Dns = new List<V2CiliumPortRuleDns>
+                                          {
+                                              new()
+                                              {
+                                                  // If outbound traffic is forbidden, only accept
+                                                  // dns requests for internal services
+                                                  MatchPattern = $"*.{ns.Name()}.svc.cluster.local.",
+                                              }
+                                          }
+                                      }
+                                  }
+                              }
                         }
                     },
                     new()
                     {
-                        // Allow traffic to other pods in the same namespace
-                        To = new List<V1NetworkPolicyPeer>
+                        ToEndpoints = new List<V1LabelSelector>
+                        {
+                            // Allow traffic to other pods in the same namespace
+                            // by matching all labels
+                            new()
+                        }
+                    },
+                    new()
+                    {
+                        // Allow outbound traffic to self using the public ip address
+                        // as this is required for OIDC to work if an IDP is deployed within
+                        // a challenge.
+                        ToEntities = new List<string> { CiliumEntity.Host },
+                        ToPorts = new List<V2CiliumPortRule>
                         {
                             new()
                             {
-                                PodSelector = new V1LabelSelector()
+                                Ports = new List<V2CiliumPortProtocol>
+                                {
+                                    new()
+                                    {
+                                        Port = _ctfConfig.ChallengeInstanceEntryPointPort.ToString()
+                                    }
+                                }
                             }
                         }
                     }
-                },
-                PolicyTypes = new List<string> { "Egress" }
+                }
             }
         };
 
         if (challengeConfig.Spec.AllowOutboundTraffic)
         {
-            // https://serverfault.com/questions/304781/ipv4-cidr-ranges-for-everything-except-rfc1918#304791
-            var publicIpCidrs = new List<string>(){
-                // $ netmask -c 0.0.0.0:9.255.255.255
-                "0.0.0.0/5",
-                "8.0.0.0/7",
-                // $ netmask -c 11.0.0.0:172.15.255.255
-                "11.0.0.0/8",
-                "12.0.0.0/6",
-                "16.0.0.0/4",
-                "32.0.0.0/3",
-                "64.0.0.0/2",
-                "128.0.0.0/3",
-                "160.0.0.0/5",
-                "168.0.0.0/6",
-                "172.0.0.0/12",
-                // $ netmask -c 172.32.0.0:192.167.255.255
-                "172.32.0.0/11",
-                "172.64.0.0/10",
-                "172.128.0.0/9",
-                "173.0.0.0/8",
-                "174.0.0.0/7",
-                "176.0.0.0/4",
-                "192.0.0.0/9",
-                "192.128.0.0/11",
-                "192.160.0.0/13",
-                // $ netmask -c 192.169.0.0:223.255.255.255
-                "192.169.0.0/16",
-                "192.170.0.0/15",
-                "192.172.0.0/14",
-                "192.176.0.0/12",
-                "192.192.0.0/10",
-                "193.0.0.0/8",
-                "194.0.0.0/7",
-                "196.0.0.0/6",
-                "200.0.0.0/5",
-                "208.0.0.0/4"
-            };
-            foreach (var cidr in publicIpCidrs)
+            networkPolicy.Spec.Egress.Add(new V2CiliumEgressRule
             {
-                networkPolicy.Spec.Egress.Add(new V1NetworkPolicyEgressRule
+                ToEntities = new List<string>
                 {
-                    To = new List<V1NetworkPolicyPeer>
+                    CiliumEntity.World
+                },
+                ToPorts = new List<V2CiliumPortRule>
+                {
+                    new()
                     {
-                        new()
+                        // Only allow outgoing traffic to a restricted set of ports
+                        Ports = _ctfConfig.AllowedOutboundPorts.Select(p => new V2CiliumPortProtocol
                         {
-                            IpBlock = new V1IPBlock
-                            {
-                                Cidr = cidr,
-                            }
-                        }
+                            Port = p.ToString()
+                        }).ToList()
                     }
-                });
-            }
+                }
+            });
         }
         
         try
         {
-            await _kubernetes.CreateNamespacedNetworkPolicyAsync(networkPolicy, ns.Name(), cancellationToken: cancel);
+            await _ciliumNetworkPolicyClient.CreateNamespacedAsync(networkPolicy, ns.Name(), cancel);
         }
         catch (HttpOperationException ex)
         {
-            _logger.LogError("Got exception while creating NetworkPolicy: {}", ex);
+            _logger.LogError("Got exception while creating CiliumNetworkPolicy: {}", ex);
             _logger.LogError("Response.Content: {}", ex.Response.Content);
             _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(networkPolicy));
         }
