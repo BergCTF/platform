@@ -13,13 +13,13 @@ namespace Berg.ChallengeServer.Controllers;
 [ApiController]
 public class PlayerController : ControllerBase
 {
-    private readonly ChallengeService _challengeService;
+    private readonly IChallengeService _challengeService;
     private readonly CtfConfig _ctfConfig;
     private readonly PlayerService _playerService;
     private readonly BergDbContext _dbContext;
     
     public PlayerController(
-        ChallengeService challengeService,
+        IChallengeService challengeService,
         CtfConfig ctfConfig,
         PlayerService playerService,
         BergDbContext dbContext)
@@ -112,6 +112,10 @@ public class PlayerController : ControllerBase
             .ToDictionary(a => a.Name) ?? new Dictionary<string, Shared.PlayerAttribute>();
         foreach (var attr in playerUpdate.Attributes)
         {
+            if(attr.Key.Length > 128)
+                throw new ArgumentException($"Attribute name too long (max 128): {attr.Key.Length}");
+            if(attr.Value.Length > 128)
+                throw new ArgumentException($"Attribute value too long (max 128): {attr.Value.Length}");
             if(!configAttributesByName.TryGetValue(attr.Key, out var configAttr))
                 throw new ArgumentException($"Invalid attribute name: {attr.Key}");
             if (!configAttr.Values.Contains(attr.Value))

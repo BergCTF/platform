@@ -19,7 +19,7 @@ public class ScoringController : ControllerBase
     private readonly CtfConfig _ctfConfig;
     private readonly DiscordConfig _discordConfig;
     private readonly BergDbContext _dbContext;
-    private readonly ChallengeService _challengeService;
+    private readonly IChallengeService _challengeService;
     private readonly ScoringService _scoringService;
     private readonly PlayerService _playerService;
     private readonly object _submitFlagLock = new();
@@ -29,7 +29,7 @@ public class ScoringController : ControllerBase
         CtfConfig ctfConfig,
         DiscordConfig discordConfig,
         BergDbContext dbContext,
-        ChallengeService challengeService,
+        IChallengeService challengeService,
         ScoringService scoringService,
         PlayerService playerService)
     {
@@ -60,6 +60,9 @@ public class ScoringController : ControllerBase
         var flag = flagRequest.Flag;
         if (challenge == null || flag == null)
             throw new ArgumentException("Values can't be null");
+        
+        if(flag.Length > 1024)
+            throw new ArgumentException("Submitted flag can't be longer than 1024 chars!");
 
         var now = DateTime.UtcNow;
         if (_ctfConfig.Start > now)

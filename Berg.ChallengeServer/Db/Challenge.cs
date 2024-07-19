@@ -5,7 +5,10 @@ namespace Berg.ChallengeServer.Db;
 public class Challenge
 {
     [Key]
-    public string Name { get; set; } = null!;
-    public List<Solve> Solves { get; set; }
-    public List<Submission> Submissions { get; set; }
+    [MaxLength(64)]
+    public string Name { get; set; } = default!;
+    
+    public List<Solve> Solves { get; set; } = default!;
+    
+    public List<Submission> Submissions { get; set; } = default!;
 }

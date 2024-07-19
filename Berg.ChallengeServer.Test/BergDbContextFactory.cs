@@ -124,7 +124,7 @@ public class BergDbContextFactory : IDisposable
 
     internal BergDbContext CreateContext()
     {
-        return new BergDbContext(CreateOptions(),  true);
+        return new BergDbContext(CreateOptions());
     }
 
     public void Dispose()

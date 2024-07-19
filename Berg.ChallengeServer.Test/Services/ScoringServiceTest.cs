@@ -1,5 +1,6 @@
 using Berg.ChallengeServer.Services;
 using Berg.ChallengeServer.Configuration;
+using Berg.ChallengeServer.Test.Mock;
 
 namespace Berg.ChallengeServer.Test.Services;
 
@@ -21,8 +22,9 @@ public class ScoringServiceTest
                 NumSolvesBeforeMinimum = 4
             }
         };
+        var mockChallengeService = new MockChallengeService();
 
-        var scoringService = new ScoringService(config, null);
+        var scoringService = new ScoringService(config, mockChallengeService);
         scoringService.RefreshScores(db);
         Assert.Multiple(() =>
         {
@@ -43,10 +45,12 @@ public class ScoringServiceTest
         var scoreboard = scoringService.GetTeamScoreboard();
         Assert.Multiple(() =>
         {
-            Assert.That(scoreboard, Has.Count.EqualTo(3));
+            Assert.That(scoreboard, Has.Count.EqualTo(2));
             Assert.That(scoreboard[0].TeamId, Is.EqualTo(BergDbContextFactory.Team2Id));
             Assert.That(scoreboard[1].TeamId, Is.EqualTo(BergDbContextFactory.Team1Id));
-            Assert.That(scoreboard[2].TeamId, Is.EqualTo(BergDbContextFactory.Team3Id));
+            
+            // Ensure that team 3 with no solves doesn't show up on the scoreboard
+            Assert.That(scoreboard.All(s => s.TeamId != BergDbContextFactory.Team3Id));
         });
     }
 
@@ -65,8 +69,9 @@ public class ScoringServiceTest
                 NumSolvesBeforeMinimum = 4
             }
         };
+        var mockChallengeService = new MockChallengeService();
 
-        var scoringService = new ScoringService(config, null);
+        var scoringService = new ScoringService(config, mockChallengeService);
         scoringService.RefreshScores(db);
         Assert.Multiple(() =>
         {

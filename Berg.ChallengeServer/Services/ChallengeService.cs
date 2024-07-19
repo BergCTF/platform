@@ -9,7 +9,18 @@ using k8s.Models;
 
 namespace Berg.ChallengeServer.Services;
 
-public class ChallengeService
+public interface IChallengeService
+{
+    IEnumerable<V1Challenge> GetChallenges();
+    V1Challenge? GetChallengeConfig(string challengeName);
+    void RefreshChallenges(BergDbContext dbContext);
+    Task CheckChallengeInstanceTimout(CancellationToken cancel);
+    Task<ChallengeInstanceStatus> GetChallengeInstance(Guid playerId, CancellationToken cancel);
+    Task<ChallengeInstanceStatus> StartChallengeInstance(Guid playerId, string challenge, CancellationToken cancel);
+    Task<ChallengeInstanceStatus> StopChallengeInstance(Guid playerId, CancellationToken cancel);
+}
+
+public class ChallengeService : IChallengeService
 {
     private const string ManagedByLabel      = "app.kubernetes.io/managed-by";
     private const string ComponentLabel      = "app.kubernetes.io/component";
@@ -461,13 +472,6 @@ public class ChallengeService
                     _logger.LogError("Response.Content: {}", ex.Response.Content);
                     _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(service));
                 }
-                foreach (var port in publicPorts)
-                {
-                    if (port.Name == null)
-                        continue;
-                    // TODO: Get assigned NodePort from k8s api
-                    // serviceEndpoints.Add(port.Name, $"{_ctfConfig.ChallengeDomain}:{port.NodePort}");
-                }
             }
             
             var ingressRoutePorts = container.Ports?
@@ -628,7 +632,7 @@ public class ChallengeService
                                 // vulnerability to the cluster as written in the docs:
                                 // - https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
                                 // - https://www.kernel.org/doc/Documentation/prctl/no_new_privs.txt
-                                AllowPrivilegeEscalation = true,
+                                AllowPrivilegeEscalation = true
                             },
                             Name = container.Hostname,
                             Image = container.Image,
@@ -641,14 +645,14 @@ public class ChallengeService
                                     Requests = new Dictionary<string, ResourceQuantity>()
                                     {
                                         {"cpu", new ResourceQuantity("10m") },
-                                        {"memory", new ResourceQuantity("50Mi") },
+                                        {"memory", new ResourceQuantity("50Mi") }
                                     }
                                 }
                                 : null,
                             Env = env,
                             Ports = container.Ports?
                                 .Select(p => new V1ContainerPort(p.Port, protocol: p.Protocol.ToUpperInvariant()))
-                                .ToList(),
+                                .ToList()
                         }
                     },
                 }

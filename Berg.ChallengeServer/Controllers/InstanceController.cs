@@ -9,11 +9,11 @@ namespace Berg.ChallengeServer.Controllers;
 [ApiController]
 public class InstanceController : ControllerBase
 {
-    private readonly ChallengeService _challengeService;
+    private readonly IChallengeService _challengeService;
     private readonly PlayerService _playerService;
 
     public InstanceController(
-        ChallengeService challengeService,
+        IChallengeService challengeService,
         PlayerService playerService)
     {
         _challengeService = challengeService;

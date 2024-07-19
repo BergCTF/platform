@@ -136,7 +136,7 @@ public class PlayerService
             dbContext.SaveChanges();
             
             // TODO: Make sure that all running challenge instances are cleaned up to prevent DoS
-            // TODO: Make sure that the player can abuse the create/delete functionality to bypass rate limits
+            // TODO: Make sure that the player can't abuse the create/delete functionality to bypass rate limits
             
             _playerCache.Remove(playerToRemove.DiscordId);
         }

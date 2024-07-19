@@ -15,7 +15,7 @@ builder.Configuration.GetSection("Ctf").Bind(ctfConfig);
 builder.Services.AddSingleton(ctfConfig);
 builder.Services.AddSingleton(new Kubernetes(KubernetesClientConfiguration.BuildDefaultConfig()));
 builder.Services.AddSingleton<ScoringService>();
-builder.Services.AddSingleton<ChallengeService>();
+builder.Services.AddSingleton<IChallengeService, ChallengeService>();
 builder.Services.AddSingleton<PlayerService>();
 builder.Services.AddHostedService<RefreshService>();
 var discordConfig = new DiscordConfig();

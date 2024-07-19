@@ -8,7 +8,7 @@ public class RefreshService : BackgroundService
 {
     private readonly ILogger<RefreshService> _logger;
     private readonly ScoringService _scoringService;
-    private readonly ChallengeService _challengeService;
+    private readonly IChallengeService _challengeService;
     private readonly PlayerService _playerService;
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly CtfConfig _ctfConfig;
@@ -16,7 +16,7 @@ public class RefreshService : BackgroundService
     public RefreshService(
         ILogger<RefreshService> logger,
         ScoringService scoringService,
-        ChallengeService challengeService,
+        IChallengeService challengeService,
         PlayerService playerService,
         IServiceScopeFactory serviceScopeFactory,
         CtfConfig ctfConfig)

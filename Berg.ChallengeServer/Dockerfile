@@ -10,6 +10,7 @@ RUN dotnet restore "Berg.ChallengeServer/Berg.ChallengeServer.csproj"
 COPY . .
 WORKDIR "/src/Berg.ChallengeServer"
 RUN dotnet build "Berg.ChallengeServer.csproj" -c Release -o /app/build
+RUN dotnet test "Berg.ChallengeServer.csproj"
 
 FROM build AS publish
 RUN dotnet publish "Berg.ChallengeServer.csproj" -c Release -o /app/publish /p:UseAppHost=false

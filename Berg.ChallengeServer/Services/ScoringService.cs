@@ -11,7 +11,7 @@ public class ScoringService
     private static readonly object CacheUpdateLock = new();
     
     private readonly CtfConfig _ctfConfig;
-    private readonly ChallengeService _challengeService;
+    private readonly IChallengeService _challengeService;
     
     private Dictionary<string, int> _challengeSolves = new();
     private Dictionary<string, int> _challengeValues = new();
@@ -24,7 +24,7 @@ public class ScoringService
     private List<TeamRanking> _teamScoreboard = new();
     private List<PlayerRanking> _playerScoreboard = new();
 
-    public ScoringService(CtfConfig ctfConfig, ChallengeService challengeService)
+    public ScoringService(CtfConfig ctfConfig, IChallengeService challengeService)
     {
         _ctfConfig = ctfConfig;
         _challengeService = challengeService;
@@ -83,6 +83,8 @@ public class ScoringService
             
             // Now that the values of each challenge are set, we can calculate the individual and team scores
             _playerSolvedChallengesIgnoringFreeze = dbContext.Players
+                .Include(p => p.Solves)
+                .ToList()
                 .Select(p => new
                 {
                     p.Id,
@@ -90,7 +92,7 @@ public class ScoringService
                         .Select(s => new PlayerSolve
                         {
                             PlayerId = p.Id,
-                            ChallengeName = s.Challenge.Name,
+                            ChallengeName = s.ChallengeId,
                             SolvedAt = s.SolvedAt
                         }).OrderByDescending(s => s.SolvedAt).ToList()
                 })

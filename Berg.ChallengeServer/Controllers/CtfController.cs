@@ -12,14 +12,14 @@ namespace Berg.ChallengeServer.Controllers;
 public class CtfController : ControllerBase
 {
     private readonly CtfConfig _ctfConfig;
-    private readonly ChallengeService _challengeService;
+    private readonly IChallengeService _challengeService;
     private readonly ScoringService _scoringService;
     private readonly PlayerService _playerService;
 
     public CtfController(
         CtfConfig ctfConfig,
         ScoringService scoringService,
-        ChallengeService challengeService,
+        IChallengeService challengeService,
         PlayerService playerService)
     {
         _ctfConfig = ctfConfig;
