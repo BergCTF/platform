@@ -47,7 +47,7 @@ public class V2CiliumPortRule
     public List<V2CiliumPortProtocol>? Ports { get; set; }
     
     [JsonPropertyName("rules")]
-    public List<V2CiliumL7Rule>? Rules { get; set; }
+    public V2CiliumL7Rule? Rules { get; set; }
 }
 
 public class V2CiliumPortProtocol

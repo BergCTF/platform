@@ -267,6 +267,7 @@ public class ChallengeService
             },
             Spec = new V2CiliumNetworkPolicySpec
             {
+                EndpointSelector = new V1LabelSelector(),
                 Egress = new List<V2CiliumEgressRule>
                 {
                     new()
@@ -293,18 +294,15 @@ public class ChallengeService
                                           Port = "53"
                                       }
                                   },
-                                  Rules = challengeConfig.Spec.AllowOutboundTraffic ? null : new List<V2CiliumL7Rule>
+                                  Rules = challengeConfig.Spec.AllowOutboundTraffic ? null : new V2CiliumL7Rule
                                   {
-                                      new()
+                                      Dns = new List<V2CiliumPortRuleDns>
                                       {
-                                          Dns = new List<V2CiliumPortRuleDns>
+                                          new()
                                           {
-                                              new()
-                                              {
-                                                  // If outbound traffic is forbidden, only accept
-                                                  // dns requests for internal services
-                                                  MatchPattern = $"*.{ns.Name()}.svc.cluster.local.",
-                                              }
+                                              // If outbound traffic is forbidden, only accept
+                                              // dns requests for internal services
+                                              MatchPattern = $"*.{ns.Name()}.svc.cluster.local.",
                                           }
                                       }
                                   }
