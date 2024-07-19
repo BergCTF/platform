@@ -4,6 +4,13 @@ namespace Berg.ChallengeServer.CustomResources;
 
 public class V1Challenge : CustomResource<V1ChallengeSpec>
 {
+    public V1Challenge() : base(
+        "Challenge", 
+        "challenges",
+        "berg.norelect.ch",
+        "v1")
+    {
+    }
 }
 
 public class V1ChallengeSpec

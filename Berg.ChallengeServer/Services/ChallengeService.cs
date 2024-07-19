@@ -11,9 +11,6 @@ namespace Berg.ChallengeServer.Services;
 
 public class ChallengeService
 {
-    private const string BergGroup           = "berg.norelect.ch";
-    private const string TraefikGroup        = "traefik.io";
-    private const string CiliumGroup         = "cilium.io";
     private const string ManagedByLabel      = "app.kubernetes.io/managed-by";
     private const string ComponentLabel      = "app.kubernetes.io/component";
     private const string PlayerIdLabel       = "berg.norelect.ch/player-id";
@@ -41,10 +38,10 @@ public class ChallengeService
     {
         _logger = logger;
         _kubernetes = kubernetes;
-        _challengeClient = new GenericClient(kubernetes, BergGroup, "v1", "challenges", false);
-        _ingressRouteClient = new GenericClient(kubernetes, TraefikGroup, "v1alpha1", "ingressroutes", false);
-        _ingressRouteTcpClient = new GenericClient(kubernetes, TraefikGroup, "v1alpha1", "ingressroutetcps", false);
-        _ciliumNetworkPolicyClient = new GenericClient(kubernetes, CiliumGroup, "v2", "ciliumnetworkpolicies", false);
+        _challengeClient = CustomResource.CreateGenericClient<V1Challenge>(kubernetes, false);
+        _ingressRouteClient = CustomResource.CreateGenericClient<V1TraefikIngressRoute>(kubernetes, false);
+        _ingressRouteTcpClient = CustomResource.CreateGenericClient<V1TraefikIngressRouteTcp>(kubernetes, false);
+        _ciliumNetworkPolicyClient = CustomResource.CreateGenericClient<V2CiliumNetworkPolicy>(kubernetes, false);
         _ctfConfig = ctfConfig;
         _namespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
     }
@@ -483,8 +480,6 @@ public class ChallengeService
                 var serviceGuid = Guid.NewGuid();
                 var ingressRoute = new V1TraefikIngressRoute
                 {
-                    Kind = "IngressRoute",
-                    ApiVersion = TraefikGroup+"/v1alpha1",
                     Metadata = new V1ObjectMeta
                     {
                         Name = $"ir-{container.Hostname}-{ingressRoutePort.Port}",
@@ -543,8 +538,6 @@ public class ChallengeService
                 var serviceGuid = Guid.NewGuid();
                 var ingressRouteTcp = new V1TraefikIngressRouteTcp
                 {
-                    Kind = "IngressRouteTCP",
-                    ApiVersion = TraefikGroup+"/v1alpha1",
                     Metadata = new V1ObjectMeta
                     {
                         Name = $"ir-tcp-{container.Hostname}-{ingressRouteTcpPort.Port}",

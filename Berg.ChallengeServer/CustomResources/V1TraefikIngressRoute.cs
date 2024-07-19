@@ -4,6 +4,13 @@ namespace Berg.ChallengeServer.CustomResources;
 
 public class V1TraefikIngressRoute : CustomResource<V1TraefikIngressRouteSpec>
 {
+    public V1TraefikIngressRoute() : base(
+        "IngressRoute", 
+        "ingressroutes",
+        "traefik.io",
+        "v1alpha1")
+    {
+    }
 }
 
 public class V1TraefikIngressRouteSpec

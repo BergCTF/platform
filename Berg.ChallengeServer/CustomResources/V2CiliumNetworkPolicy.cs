@@ -5,6 +5,14 @@ namespace Berg.ChallengeServer.CustomResources;
 
 public class V2CiliumNetworkPolicy : CustomResource<V2CiliumNetworkPolicySpec>
 {
+    public V2CiliumNetworkPolicy() : base(
+        "CiliumNetworkPolicy",
+        "ciliumnetworkpolicies",
+        "cilium.io",
+        "v2")
+    {
+    }
+    
     [JsonPropertyName("specs")]
     public List<V2CiliumNetworkPolicySpec>? Specs { get; set; }
 }
