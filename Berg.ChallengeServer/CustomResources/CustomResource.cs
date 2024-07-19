@@ -44,7 +44,7 @@ public abstract class CustomResource<T> : CustomResource
     public T Spec { get; set; } = default!;
 }
 
-public abstract class CustomResourceList<T> : KubernetesObject
+public class CustomResourceList<T> : KubernetesObject
     where T : CustomResource
 {
     public V1ListMeta Metadata { get; set; } = null!;
