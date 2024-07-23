@@ -45,7 +45,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.semrel.outputs.version }}
             type=semver,pattern={{major}},value=${{ steps.semrel.outputs.version }}
           labels: |
-            org.opencontainers.image.title=berg-challange-server
+            org.opencontainers.image.title=berg-challenge-server
             org.opencontainers.image.description=${{ github.event.repository.description }}
             org.opencontainers.image.url=${{ github.event.repository.html_url }}
             org.opencontainers.image.source=${{ github.event.repository.clone_url }}
