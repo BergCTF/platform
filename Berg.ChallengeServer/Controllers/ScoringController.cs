@@ -23,6 +23,7 @@ public class ScoringController : ControllerBase
     private readonly ScoringService _scoringService;
     private readonly PlayerService _playerService;
     private readonly object _submitFlagLock = new();
+    private readonly WebSocketService _webSocketService;
 
     public ScoringController(
         ILogger<ScoringController> logger,
@@ -31,7 +32,8 @@ public class ScoringController : ControllerBase
         BergDbContext dbContext,
         IChallengeService challengeService,
         ScoringService scoringService,
-        PlayerService playerService)
+        PlayerService playerService,
+        WebSocketService webSocketService)
     {
         _logger = logger;
         _challengeService = challengeService;
@@ -40,6 +42,7 @@ public class ScoringController : ControllerBase
         _dbContext = dbContext;
         _scoringService = scoringService;
         _playerService = playerService;
+        _webSocketService = webSocketService;
     }
 
     public class SubmitFlagRequest
@@ -60,8 +63,8 @@ public class ScoringController : ControllerBase
         var flag = flagRequest.Flag;
         if (challenge == null || flag == null)
             throw new ArgumentException("Values can't be null");
-        
-        if(flag.Length > 1024)
+
+        if (flag.Length > 1024)
             throw new ArgumentException("Submitted flag can't be longer than 1024 chars!");
 
         var now = DateTime.UtcNow;
@@ -149,7 +152,10 @@ public class ScoringController : ControllerBase
             });
             _dbContext.SaveChanges();
             _logger.LogInformation("Player {} has solved challenge {}", playerId, challenge);
-            
+
+            // format: "playerid:challengeid:timestamp"
+            // async is fine here
+            _webSocketService.PushEvent("solve", $"{playerId}:{challenge}:{now}");
             // Its a valid solve!
             var freezeStart = _ctfConfig.Scoring.FreezeStart;
             var freezeEnd = _ctfConfig.Scoring.FreezeEnd;
@@ -163,9 +169,9 @@ public class ScoringController : ControllerBase
                 SendDiscordNotification(player.DiscordId, player.Name, player.Team?.Name, challenge, firstBlood)
                     .Wait();
             }
-            
+
             _scoringService.RefreshScores(_dbContext);
-            
+
             return SubmitFlagResult.Correct;
         }
     }
@@ -230,14 +236,14 @@ public class ScoringController : ControllerBase
             _logger.LogError("Error while trying to send a notification: {}", ex);
         }
     }
-    
+
     [HttpGet]
     [Route("/api/v1/scoreboard/teams")]
     public List<TeamRanking> GetTeamScoreboard()
     {
         return _scoringService.GetTeamScoreboard();
     }
-    
+
     [HttpGet]
     [Route("/api/v1/scoreboard/players")]
     public List<PlayerRanking> GetPlayerScoreboard(
@@ -275,7 +281,7 @@ public class ScoringController : ControllerBase
             })
             .ToList();
     }
-    
+
     [HttpGet]
     [Route("/api/v1/activity")]
     public List<ActivityEntry> GetActivity()
