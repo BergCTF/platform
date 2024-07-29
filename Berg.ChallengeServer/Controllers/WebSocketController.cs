@@ -13,12 +13,15 @@ public class WebSocketController : ControllerBase
 {
 
     WebSocketService _webSocketService;
+    PlayerService _playerService;
 
     public WebSocketController(
-        WebSocketService webSocketService
+        WebSocketService webSocketService,
+        PlayerService playerService
     )
     {
         _webSocketService = webSocketService;
+        _playerService = playerService;
     }
 
     [HttpGet]
@@ -28,7 +31,8 @@ public class WebSocketController : ControllerBase
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
             using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-            await _webSocketService.WebSocketHandler(webSocket);
+            var player = (User.Identity?.IsAuthenticated ?? false) ? _playerService.GetPlayer(User) : null;
+            await _webSocketService.WebSocketHandler(webSocket, player);
         }
         else
         {
