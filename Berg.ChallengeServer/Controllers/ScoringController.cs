@@ -153,8 +153,6 @@ public class ScoringController : ControllerBase
             _dbContext.SaveChanges();
             _logger.LogInformation("Player {} has solved challenge {}", playerId, challenge);
 
-            // format: "playerid:challengeid:timestamp"
-            // async is fine here
             _webSocketService.PushEvent("solve", new
             {
                 PlayerId = player.Id,
@@ -165,6 +163,7 @@ public class ScoringController : ControllerBase
                 Timestamp = now,
                 FirstBlood = firstBlood
             }).ContinueWith(t => _logger.LogError("Error sending WebSocket Events", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+
             // Its a valid solve!
             var freezeStart = _ctfConfig.Scoring.FreezeStart;
             var freezeEnd = _ctfConfig.Scoring.FreezeEnd;

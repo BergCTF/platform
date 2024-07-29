@@ -41,6 +41,7 @@ public class WebSocketService : IWebSocketService
         WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
         while (!result.CloseStatus.HasValue)
         {
+            // Do nothing with this, websocket is just for pushing events. We just keep this open.
             result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
         }
         _websockets.Remove(webSocket);
