@@ -164,7 +164,7 @@ public class ScoringController : ControllerBase
                 Challenge = challenge,
                 Timestamp = now,
                 FirstBlood = firstBlood
-            });
+            }).ContinueWith(t => _logger.LogError("Error sending WebSocket Events", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
             // Its a valid solve!
             var freezeStart = _ctfConfig.Scoring.FreezeStart;
             var freezeEnd = _ctfConfig.Scoring.FreezeEnd;
