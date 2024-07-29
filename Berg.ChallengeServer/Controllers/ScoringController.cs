@@ -155,7 +155,16 @@ public class ScoringController : ControllerBase
 
             // format: "playerid:challengeid:timestamp"
             // async is fine here
-            _webSocketService.PushEvent("solve", $"{playerId}:{challenge}:{now}");
+            _webSocketService.PushEvent("solve", new
+            {
+                PlayerId = player.Id,
+                DiscordId = player.DiscordId,
+                Name = player.Name,
+                Team = player.Team?.Name,
+                Challenge = challenge,
+                Timestamp = now,
+                FirstBlood = firstBlood
+            });
             // Its a valid solve!
             var freezeStart = _ctfConfig.Scoring.FreezeStart;
             var freezeEnd = _ctfConfig.Scoring.FreezeEnd;

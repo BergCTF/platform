@@ -14,7 +14,7 @@ namespace Berg.ChallengeServer.Services;
 public interface IWebSocketService
 {
     Task WebSocketHandler(WebSocket webSocket);
-    Task PushEvent(string eventType, string message);
+    Task PushEvent<T>(string eventType, T message);
 }
 
 public class WebSocketService : IWebSocketService
@@ -47,7 +47,7 @@ public class WebSocketService : IWebSocketService
         await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
     }
 
-    public async Task PushEvent(string eventType, string message)
+    public async Task PushEvent<T>(string eventType, T message)
     {
         var buffer = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { type = eventType, message }));
         foreach (var ws in _websockets)
