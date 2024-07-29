@@ -153,15 +153,13 @@ public class ScoringController : ControllerBase
             _dbContext.SaveChanges();
             _logger.LogInformation("Player {} has solved challenge {}", playerId, challenge);
 
-            _webSocketService.PushEvent("solve", new
+            _webSocketService.PushEvent("solve", new Berg.Shared.Solve
             {
                 PlayerId = player.Id,
-                DiscordId = player.DiscordId,
-                Name = player.Name,
-                Team = player.Team?.Name,
-                Challenge = challenge,
-                Timestamp = now,
-                FirstBlood = firstBlood
+                TeamId = player.Team?.Id,
+                ChallengeName = challenge,
+                SolvedAt = now,
+                IsFirstBlood = firstBlood
             }).ContinueWith(t => _logger.LogError("Error sending WebSocket Events", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
 
             // Its a valid solve!
