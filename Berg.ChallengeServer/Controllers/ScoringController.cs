@@ -23,6 +23,7 @@ public class ScoringController : ControllerBase
     private readonly ScoringService _scoringService;
     private readonly PlayerService _playerService;
     private readonly object _submitFlagLock = new();
+    private readonly WebSocketService _webSocketService;
 
     public ScoringController(
         ILogger<ScoringController> logger,
@@ -31,7 +32,8 @@ public class ScoringController : ControllerBase
         BergDbContext dbContext,
         IChallengeService challengeService,
         ScoringService scoringService,
-        PlayerService playerService)
+        PlayerService playerService,
+        WebSocketService webSocketService)
     {
         _logger = logger;
         _challengeService = challengeService;
@@ -40,6 +42,7 @@ public class ScoringController : ControllerBase
         _dbContext = dbContext;
         _scoringService = scoringService;
         _playerService = playerService;
+        _webSocketService = webSocketService;
     }
 
     public class SubmitFlagRequest
@@ -60,8 +63,8 @@ public class ScoringController : ControllerBase
         var flag = flagRequest.Flag;
         if (challenge == null || flag == null)
             throw new ArgumentException("Values can't be null");
-        
-        if(flag.Length > 1024)
+
+        if (flag.Length > 1024)
             throw new ArgumentException("Submitted flag can't be longer than 1024 chars!");
 
         var now = DateTime.UtcNow;
@@ -140,7 +143,7 @@ public class ScoringController : ControllerBase
 
             var firstBlood = !_dbContext.Solves.Any(s => s.ChallengeId == challenge);
 
-            _dbContext.Solves.Add(new Solve
+            _dbContext.Solves.Add(new Db.Solve
             {
                 Id = Guid.NewGuid(),
                 Challenge = dbChallenge,
@@ -149,23 +152,44 @@ public class ScoringController : ControllerBase
             });
             _dbContext.SaveChanges();
             _logger.LogInformation("Player {} has solved challenge {}", playerId, challenge);
-            
+
+            var solveEvent = new Berg.Shared.Solve
+            {
+                PlayerId = player.Id,
+                TeamId = player.Team?.Id,
+                ChallengeName = challenge,
+                SolvedAt = now,
+                IsFirstBlood = firstBlood
+            };
             // Its a valid solve!
             var freezeStart = _ctfConfig.Scoring.FreezeStart;
             var freezeEnd = _ctfConfig.Scoring.FreezeEnd;
             var utcNow = DateTime.UtcNow;
             if (freezeStart != null && freezeEnd != null && utcNow > freezeStart.Value && utcNow < freezeEnd.Value)
             {
+                // add a user filter - only send to the user who solved the challenge and their team
+                if (player.TeamId != null)
+                {
+                    _webSocketService.PushEvent("solve", solveEvent, s => s.TeamId == player.TeamId)
+                        .ContinueWith(t => _logger.LogError("Error sending WebSocket Events", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+                }
+                else
+                {
+                    _webSocketService.PushEvent("solve", solveEvent, s => s.Id == player.Id)
+                        .ContinueWith(t => _logger.LogError("Error sending WebSocket Events", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+                }
                 _logger.LogInformation("Announcement not sent because the scoreboard is currently frozen.");
             }
             else
             {
+                _webSocketService.PushEventAll("solve", solveEvent)
+                    .ContinueWith(t => _logger.LogError("Error sending WebSocket Events", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
                 SendDiscordNotification(player.DiscordId, player.Name, player.Team?.Name, challenge, firstBlood)
                     .Wait();
             }
-            
+
             _scoringService.RefreshScores(_dbContext);
-            
+
             return SubmitFlagResult.Correct;
         }
     }
@@ -230,14 +254,14 @@ public class ScoringController : ControllerBase
             _logger.LogError("Error while trying to send a notification: {}", ex);
         }
     }
-    
+
     [HttpGet]
     [Route("/api/v1/scoreboard/teams")]
     public List<TeamRanking> GetTeamScoreboard()
     {
         return _scoringService.GetTeamScoreboard();
     }
-    
+
     [HttpGet]
     [Route("/api/v1/scoreboard/players")]
     public List<PlayerRanking> GetPlayerScoreboard(
@@ -275,7 +299,7 @@ public class ScoringController : ControllerBase
             })
             .ToList();
     }
-    
+
     [HttpGet]
     [Route("/api/v1/activity")]
     public List<ActivityEntry> GetActivity()

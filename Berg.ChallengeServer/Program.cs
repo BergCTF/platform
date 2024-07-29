@@ -14,6 +14,7 @@ var ctfConfig = new CtfConfig();
 builder.Configuration.GetSection("Ctf").Bind(ctfConfig);
 builder.Services.AddSingleton(ctfConfig);
 builder.Services.AddSingleton(new Kubernetes(KubernetesClientConfiguration.BuildDefaultConfig()));
+builder.Services.AddSingleton<WebSocketService>();
 builder.Services.AddSingleton<ScoringService>();
 builder.Services.AddSingleton<IChallengeService, ChallengeService>();
 builder.Services.AddSingleton<PlayerService>();
@@ -54,7 +55,7 @@ builder.Services.AddAuthentication(options =>
         options.Events.OnRedirectToAuthorizationEndpoint = ctx =>
         {
             if (!ctx.Request.Path.StartsWithSegments("/api/v1/login") &&
-                !ctx.Request.Path.StartsWithSegments("/api/v1/logout") )
+                !ctx.Request.Path.StartsWithSegments("/api/v1/logout"))
             {
                 ctx.Response.StatusCode = 401;
             }
@@ -80,10 +81,12 @@ using (var scope = app.Services.CreateScope())
     dbContext.Database.Migrate();
 }
 
+app.UseWebSockets();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.Use(next => context => {
+app.Use(next => context =>
+{
     // Hack to make dotnet think that the request came in over https, to make sure that redirect urls are
     // being created with a https:// prefix. Necessary because the ingress controller handles TLS termination for us.
     context.Request.Scheme = "https";
