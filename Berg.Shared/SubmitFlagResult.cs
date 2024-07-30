@@ -8,4 +8,5 @@ public enum SubmitFlagResult
     AlreadySolved,
     CtfNotStarted,
     CtfHasEnded,
+    MustJoinTeam
 }

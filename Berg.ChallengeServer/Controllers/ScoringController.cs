@@ -87,13 +87,23 @@ public class ScoringController : ControllerBase
             if (player.Solves.Any(s => s.ChallengeId == challenge))
                 return SubmitFlagResult.AlreadySolved;
 
-            // Prevent submission if the team has already solved the challenge
-            if (_ctfConfig.Teams &&
-                _dbContext.Solves.Where(s => s.Player.TeamId == player.TeamId).Any(s => s.ChallengeId == challenge))
-                return SubmitFlagResult.AlreadySolved;
+            if (_ctfConfig.Teams)
+            {
+                // Prevent submission if team mode is enabled but player has not yet joined a team
+                if (player.TeamId == null)
+                    return SubmitFlagResult.MustJoinTeam;
+                
+                // Prevent submission if the team has already solved the challenge
+                if (_dbContext.Solves
+                    .Where(s => s.Player.TeamId == player.TeamId)
+                    .Any(s => s.ChallengeId == challenge))
+                    return SubmitFlagResult.AlreadySolved;
+            }
 
             var yesterday = now.Subtract(TimeSpan.FromDays(1));
-            var latestFailedSubmissions = player.Submissions.Where(s => yesterday < s.SubmittedAt).ToList();
+            var latestFailedSubmissions = player.Submissions
+                .Where(s => yesterday < s.SubmittedAt)
+                .ToList();
             if (latestFailedSubmissions.Count > _ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerDay)
             {
                 _logger.LogWarning("Player {} has reached the daily submission limit", playerId);
