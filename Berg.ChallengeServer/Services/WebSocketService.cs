@@ -56,14 +56,23 @@ public class WebSocketService : IWebSocketService
 
         _websockets.Add(ws);
         var buffer = new byte[1024 * 4];
-        WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-        while (!result.CloseStatus.HasValue)
+        try
         {
-            // Do nothing with this, websocket is just for pushing events. We just keep this open.
-            result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            while (!result.CloseStatus.HasValue)
+            {
+                // Do nothing with this, websocket is just for pushing events. We just keep this open.
+                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            }
+            await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+        }
+        catch (WebSocketException)
+        {
+            _websockets.Remove(ws);
+            await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection closed", CancellationToken.None);
+            return;
         }
         _websockets.Remove(ws);
-        await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
     }
 
     public async Task PushEvent<T>(string eventType, T message, Func<Db.Player, bool> filter)
