@@ -7,6 +7,7 @@ public class CtfConfig
     public DateTime Start { get; set; }
     public DateTime End { get; set; }
     public string ChallengeDomain { get; set; } = "localhost";
+    public string GatewayName { get; set; } = "challenge-gateway";
     public bool Teams { get; set; } = false;
     public Scoring Scoring { get; set; } = new();
     public RateLimits RateLimits { get; set; } = new();

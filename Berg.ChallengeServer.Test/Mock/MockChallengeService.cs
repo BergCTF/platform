@@ -1,4 +1,4 @@
-using Berg.ChallengeServer.CustomResources;
+using Berg.ChallengeServer.CustomResources.Berg;
 using Berg.ChallengeServer.Db;
 using Berg.ChallengeServer.Services;
 using Berg.Shared;

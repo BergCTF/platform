@@ -23,7 +23,7 @@ spec:
         - port: 80
           protocol: tcp
           appProtocol: http
-          type: publicIngressRouteTcp
+          type: publicTlsRoute
 ---
 apiVersion: berg.norelect.ch/v1
 kind: Challenge
@@ -46,4 +46,4 @@ spec:
         - port: 80
           protocol: tcp
           appProtocol: http
-          type: publicIngressRouteTcp
+          type: publicTlsRoute
