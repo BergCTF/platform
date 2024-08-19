@@ -175,7 +175,6 @@ public class ChallengeService : IChallengeService
                     Hostname = _ctfConfig.ChallengeDomain,
                     AppProtocol = port.AppProtocol,
                     Protocol = port.Protocol,
-                    Port = _ctfConfig.ChallengeInstanceEntryPointPort,
                     VHost = false,
                 };
 
@@ -191,6 +190,7 @@ public class ChallengeService : IChallengeService
                     var ingress = httpRouteList.Items
                         .FirstOrDefault(i => i.Name() == $"{container.Hostname}-{port.Port}");
                     service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + "." + _ctfConfig.ChallengeDomain;
+                    service.Port = _ctfConfig.ChallengeInstanceHttpPort;
                     service.VHost = true;
                 }
                 else if (port.Type == V1ChallengePortType.PublicTlsRoute)
@@ -198,6 +198,7 @@ public class ChallengeService : IChallengeService
                     var ingress = tlsRouteList.Items
                         .FirstOrDefault(i => i.Name() == $"{container.Hostname}-{port.Port}");
                     service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + "." +_ctfConfig.ChallengeDomain;
+                    service.Port = _ctfConfig.ChallengeInstanceTlsPort;
                     service.VHost = true;
                 }
                 services.Add(service);
@@ -348,7 +349,11 @@ public class ChallengeService : IChallengeService
                                 {
                                     new()
                                     {
-                                        Port = _ctfConfig.ChallengeInstanceEntryPointPort.ToString()
+                                        Port = _ctfConfig.ChallengeInstanceHttpPort.ToString()
+                                    },
+                                    new()
+                                    {
+                                        Port = _ctfConfig.ChallengeInstanceTlsPort.ToString()
                                     }
                                 }
                             }
@@ -535,7 +540,7 @@ public class ChallengeService : IChallengeService
                 {
                     serviceEndpoints.Remove(httpRoutePort.Name);
                     serviceEndpoints.Add(httpRoutePort.Name,
-                        $"{serviceGuid}.{_ctfConfig.ChallengeDomain}:{_ctfConfig.ChallengeInstanceEntryPointPort}");
+                        $"{serviceGuid}.{_ctfConfig.ChallengeDomain}:{_ctfConfig.ChallengeInstanceHttpPort}");
                 }
                 try
                 {
@@ -605,7 +610,7 @@ public class ChallengeService : IChallengeService
                 {
                     serviceEndpoints.Remove(tlsRoutePort.Name);
                     serviceEndpoints.Add(tlsRoutePort.Name,
-                        $"{serviceGuid}.{_ctfConfig.ChallengeDomain}:{_ctfConfig.ChallengeInstanceEntryPointPort}");
+                        $"{serviceGuid}.{_ctfConfig.ChallengeDomain}:{_ctfConfig.ChallengeInstanceTlsPort}");
                 }
                 try
                 {
