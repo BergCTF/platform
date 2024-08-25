@@ -72,10 +72,10 @@ spec:
                             type:
                               type: string
                               enum:
-                                - internal
+                                - internalPort
                                 - publicPort
-                                - publicIngressRoute
-                                - publicIngressRouteTcp
+                                - publicHttpRoute
+                                - publicTlsRoute
                 attachments:
                   type: array
                   items:

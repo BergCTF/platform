@@ -1,5 +1,5 @@
 using Berg.ChallengeServer.Configuration;
-using Berg.ChallengeServer.CustomResources;
+using Berg.ChallengeServer.CustomResources.Berg;
 using Berg.ChallengeServer.Services;
 using Berg.Shared;
 using k8s.Models;

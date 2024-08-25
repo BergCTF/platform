@@ -46,9 +46,9 @@ public class PlayerController : ControllerBase
             Name = p.Name,
             TeamId = p.TeamId,
             DiscordId = p.DiscordId,
-            Attributes = p.Attributes?
+            Attributes = p.Attributes
                 .Where(a => publicCustomAttributes.Contains(a.Name))
-                .ToDictionary(a => a.Name, a => a.Value) ?? new Dictionary<string, string>(),
+                .ToDictionary(a => a.Name, a => a.Value),
             RequiredAttributes = new List<Shared.PlayerAttribute>(),
         }).ToList();
     }

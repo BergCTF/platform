@@ -1,10 +1,5 @@
-using Berg.ChallengeServer.Configuration;
-using Berg.ChallengeServer.CustomResources;
 using Berg.ChallengeServer.Services;
-using Berg.Shared;
-using k8s.Models;
 using Microsoft.AspNetCore.Mvc;
-using Challenge = Berg.Shared.Challenge;
 
 namespace Berg.ChallengeServer.Controllers;
 

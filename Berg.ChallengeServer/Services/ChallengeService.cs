@@ -1,6 +1,9 @@
 using System.Text;
 using Berg.ChallengeServer.Configuration;
 using Berg.ChallengeServer.CustomResources;
+using Berg.ChallengeServer.CustomResources.Berg;
+using Berg.ChallengeServer.CustomResources.Cilium;
+using Berg.ChallengeServer.CustomResources.GatewayApi;
 using Berg.ChallengeServer.Db;
 using Berg.Shared;
 using k8s;
@@ -29,14 +32,16 @@ public class ChallengeService : IChallengeService
     private const string ContainerLabel      = "berg.norelect.ch/container";
     private const string HostnameLabel       = "berg.norelect.ch/hostname";
     private const string ImagePullSecretName = "berg-pull-secret";
+    private const string HttpListenerSectionName = "http";
+    private const string TlsListenerSectionName = "tls";
 
     private readonly ILogger<ChallengeService> _logger;
     private readonly Kubernetes _kubernetes;
     private readonly GenericClient _challengeClient;
-    private readonly GenericClient _ingressRouteClient;
-    private readonly GenericClient _ingressRouteTcpClient;
+    private readonly GenericClient _httpRouteClient;
+    private readonly GenericClient _tlsRouteClient;
     private readonly GenericClient _ciliumNetworkPolicyClient;
-    private readonly string _namespace;
+    private readonly string _bergNamespace;
     private readonly CtfConfig _ctfConfig;
 
     private readonly object _refreshLock = new();
@@ -50,11 +55,11 @@ public class ChallengeService : IChallengeService
         _logger = logger;
         _kubernetes = kubernetes;
         _challengeClient = CustomResource.CreateGenericClient<V1Challenge>(kubernetes, false);
-        _ingressRouteClient = CustomResource.CreateGenericClient<V1TraefikIngressRoute>(kubernetes, false);
-        _ingressRouteTcpClient = CustomResource.CreateGenericClient<V1TraefikIngressRouteTcp>(kubernetes, false);
+        _httpRouteClient = CustomResource.CreateGenericClient<V1HTTPRoute>(kubernetes, false);
+        _tlsRouteClient = CustomResource.CreateGenericClient<V1Alpha2TLSRoute>(kubernetes, false);
         _ciliumNetworkPolicyClient = CustomResource.CreateGenericClient<V2CiliumNetworkPolicy>(kubernetes, false);
         _ctfConfig = ctfConfig;
-        _namespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
+        _bergNamespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
     }
 
     public void RefreshChallenges(BergDbContext dbContext)
@@ -62,7 +67,7 @@ public class ChallengeService : IChallengeService
         lock (_refreshLock)
         {
             var challengeList = _challengeClient
-                .ListNamespacedAsync<CustomResourceList<V1Challenge>>(_namespace).Result;
+                .ListNamespacedAsync<CustomResourceList<V1Challenge>>(_bergNamespace).Result;
 
             _challenges = challengeList.Items
                 .ToDictionary(c => c.Name(), c => c);
@@ -141,7 +146,7 @@ public class ChallengeService : IChallengeService
                 InstanceState = ChallengeInstanceState.Terminating
             };
         
-        var challenge = await _challengeClient.ReadNamespacedAsync<V1Challenge>(_namespace, challengeName, cancel);
+        var challenge = await _challengeClient.ReadNamespacedAsync<V1Challenge>(_bergNamespace, challengeName, cancel);
 
         var podList = await _kubernetes.ListNamespacedPodAsync(ns.Name(), cancellationToken: cancel);
         if (podList.Items.Any(p => p.Status.Phase != "Running"))
@@ -152,17 +157,17 @@ public class ChallengeService : IChallengeService
            };
         
         var serviceList = await _kubernetes.ListNamespacedServiceAsync(ns.Name(), cancellationToken: cancel);
-        var traefikIngressRouteList = await _ingressRouteClient
-            .ListNamespacedAsync<CustomResourceList<V1TraefikIngressRoute>>(ns.Name(), cancel);
-        var traefikIngressRouteTcpList = await _ingressRouteTcpClient
-            .ListNamespacedAsync<CustomResourceList<V1TraefikIngressRouteTcp>>(ns.Name(), cancel);
+        var httpRouteList = await _httpRouteClient
+            .ListNamespacedAsync<CustomResourceList<V1HTTPRoute>>(ns.Name(), cancel);
+        var tlsRouteList = await _tlsRouteClient
+            .ListNamespacedAsync<CustomResourceList<V1Alpha2TLSRoute>>(ns.Name(), cancel);
 
         var services = new List<Service>();
         foreach (var container in challenge.Spec.Containers ?? new List<V1ChallengeContainer>())
         {
             foreach (var port in container.Ports ?? new List<V1ChallengePort>())
             {
-                if (port.Type == V1ChallengePortType.Internal)
+                if (port.Type == V1ChallengePortType.InternalPort)
                     continue;
                 var service = new Service
                 {
@@ -170,7 +175,6 @@ public class ChallengeService : IChallengeService
                     Hostname = _ctfConfig.ChallengeDomain,
                     AppProtocol = port.AppProtocol,
                     Protocol = port.Protocol,
-                    Port = _ctfConfig.ChallengeInstanceEntryPointPort,
                     VHost = false,
                 };
 
@@ -181,18 +185,20 @@ public class ChallengeService : IChallengeService
                     var infraPort = infraService?.Spec.Ports.FirstOrDefault(p => p.Port == port.Port);
                     service.Port = infraPort?.NodePort ?? 0;
                 }
-                else if (port.Type == V1ChallengePortType.PublicIngressRoute)
+                else if (port.Type == V1ChallengePortType.PublicHttpRoute)
                 {
-                    var ingress = traefikIngressRouteList.Items
-                        .FirstOrDefault(i => i.Name() == $"ir-{container.Hostname}-{port.Port}");
+                    var ingress = httpRouteList.Items
+                        .FirstOrDefault(i => i.Name() == $"{container.Hostname}-{port.Port}");
                     service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + "." + _ctfConfig.ChallengeDomain;
+                    service.Port = _ctfConfig.ChallengeInstanceHttpPort;
                     service.VHost = true;
                 }
-                else if (port.Type == V1ChallengePortType.PublicIngressRouteTcp)
+                else if (port.Type == V1ChallengePortType.PublicTlsRoute)
                 {
-                    var ingress = traefikIngressRouteTcpList.Items
-                        .FirstOrDefault(i => i.Name() == $"ir-tcp-{container.Hostname}-{port.Port}");
+                    var ingress = tlsRouteList.Items
+                        .FirstOrDefault(i => i.Name() == $"{container.Hostname}-{port.Port}");
                     service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + "." +_ctfConfig.ChallengeDomain;
+                    service.Port = _ctfConfig.ChallengeInstanceTlsPort;
                     service.VHost = true;
                 }
                 services.Add(service);
@@ -226,7 +232,7 @@ public class ChallengeService : IChallengeService
         if (nsList.Items.Any())
             throw new ArgumentException("A challenge is already running!");
         
-        var challengeConfig = await _challengeClient.ReadNamespacedAsync<V1Challenge>(_namespace, challenge, cancel);
+        var challengeConfig = await _challengeClient.ReadNamespacedAsync<V1Challenge>(_bergNamespace, challenge, cancel);
         if (challengeConfig == null)
             throw new ArgumentException("Invalid challenge!");
         if(challengeConfig.Spec.HideUntil != null && DateTime.UtcNow < challengeConfig.Spec.HideUntil)
@@ -253,7 +259,7 @@ public class ChallengeService : IChallengeService
         try
         {
             var imagePullSecret =
-                await _kubernetes.ReadNamespacedSecretAsync(ImagePullSecretName, _namespace, cancellationToken: cancel);
+                await _kubernetes.ReadNamespacedSecretAsync(ImagePullSecretName, _bergNamespace, cancellationToken: cancel);
             await _kubernetes.CreateNamespacedSecretAsync(new V1Secret
             {
                 Metadata = new V1ObjectMeta
@@ -266,7 +272,7 @@ public class ChallengeService : IChallengeService
         }
         catch (HttpOperationException ex)
         {
-            _logger.LogWarning("Image pull secret '{}' not found in namespace '{}'", ImagePullSecretName, _namespace);
+            _logger.LogWarning("Image pull secret '{}' not found in namespace '{}'", ImagePullSecretName, _bergNamespace);
             _logger.LogWarning("Detailed exception for pull secret copy operations: {}", ex);
         }
 
@@ -343,7 +349,11 @@ public class ChallengeService : IChallengeService
                                 {
                                     new()
                                     {
-                                        Port = _ctfConfig.ChallengeInstanceEntryPointPort.ToString()
+                                        Port = _ctfConfig.ChallengeInstanceHttpPort.ToString()
+                                    },
+                                    new()
+                                    {
+                                        Port = _ctfConfig.ChallengeInstanceTlsPort.ToString()
                                     }
                                 }
                             }
@@ -390,8 +400,8 @@ public class ChallengeService : IChallengeService
         
         foreach (var container in challengeConfig.Spec.Containers ?? new List<V1ChallengeContainer>())
         {
-            var internalPorts = container.Ports ?? new List<V1ChallengePort>();
-            if (internalPorts.Any())
+            var allPorts = container.Ports ?? new List<V1ChallengePort>();
+            if (allPorts.Any())
             {
                 var service = new V1Service
                 {
@@ -406,7 +416,7 @@ public class ChallengeService : IChallengeService
                             { ContainerLabel, container.Hostname }
                         },
                         Type = "ClusterIP",
-                        Ports = internalPorts.Select(p => new V1ServicePort
+                        Ports = allPorts.Select(p => new V1ServicePort
                         {
                             Name = $"port-{p.Port}",
                             AppProtocol = p.AppProtocol,
@@ -416,7 +426,7 @@ public class ChallengeService : IChallengeService
                         }).ToList(),
                     }
                 };
-                foreach (var port in internalPorts)
+                foreach (var port in allPorts)
                 {
                     if (port.Name == null)
                         continue;
@@ -474,119 +484,143 @@ public class ChallengeService : IChallengeService
                 }
             }
             
-            var ingressRoutePorts = container.Ports?
-                .Where(p => p.Type is V1ChallengePortType.PublicIngressRoute)
+            var httpRoutePorts = container.Ports?
+                .Where(p => p.Type is V1ChallengePortType.PublicHttpRoute)
                 .ToList() ?? new List<V1ChallengePort>();
-            foreach (var ingressRoutePort in ingressRoutePorts)
+            foreach (var httpRoutePort in httpRoutePorts)
             {
                 var serviceGuid = Guid.NewGuid();
-                var ingressRoute = new V1TraefikIngressRoute
+                var httpRoute = new V1HTTPRoute
                 {
                     Metadata = new V1ObjectMeta
                     {
-                        Name = $"ir-{container.Hostname}-{ingressRoutePort.Port}",
+                        Name = $"{container.Hostname}-{httpRoutePort.Port}",
                         NamespaceProperty = ns.Name(),
                         Labels = new Dictionary<string, string>()
                         {
                             { ManagedByLabel, "berg" },
-                            { ComponentLabel, "ingress" },
+                            { ComponentLabel, "http-route" },
                             { HostnameLabel, $"{serviceGuid}" }
                         }
                     },
-                    Spec = new V1TraefikIngressRouteSpec
+                    Spec = new V1HTTPRouteSpec
                     {
-                        EntryPoints = new List<string> { _ctfConfig.ChallengeInstanceEntryPointName },
-                        Routes = new List<V1TraefikIngressRouteEntry>
+                        Hostnames = new List<string>
+                        {
+                            $"{serviceGuid}.{_ctfConfig.ChallengeDomain}"
+                        },
+                        ParentRefs = new List<V1ParentReference>
                         {
                             new()
                             {
-                                Match = $"Host(`{serviceGuid}.{_ctfConfig.ChallengeDomain}`)",
-                                Services = new List<V1TraefikIngressRouteService>
+                                Kind = "Gateway",
+                                Name = _ctfConfig.GatewayName,
+                                SectionName = HttpListenerSectionName,
+                                Namespace = _bergNamespace,
+                            }
+                        },
+                        Rules = new List<V1HTTPRouteRule>
+                        {
+                            new ()
+                            {
+                                BackendRefs = new List<V1HttpBackendRef>
                                 {
-                                    new()
+                                    new ()
                                     {
                                         Name = container.Hostname,
-                                        Port = ingressRoutePort.Port
+                                        Port = httpRoutePort.Port,
+                                        Namespace = ns.Name()
                                     }
                                 }
                             }
-                        },
-                        Tls = new Dictionary<string, string>()
+                        }
                     }
                 };
-                if (ingressRoutePort.Name != null)
+                if (httpRoutePort.Name != null)
                 {
-                    serviceEndpoints.Remove(ingressRoutePort.Name);
-                    serviceEndpoints.Add(ingressRoutePort.Name,
-                        $"{serviceGuid}.{_ctfConfig.ChallengeDomain}:{_ctfConfig.ChallengeInstanceEntryPointPort}");
+                    serviceEndpoints.Remove(httpRoutePort.Name);
+                    serviceEndpoints.Add(httpRoutePort.Name,
+                        $"{serviceGuid}.{_ctfConfig.ChallengeDomain}:{_ctfConfig.ChallengeInstanceHttpPort}");
                 }
                 try
                 {
-                    await _ingressRouteClient.CreateNamespacedAsync(ingressRoute, ns.Name(), cancel: cancel);
+                    await _httpRouteClient.CreateNamespacedAsync(httpRoute, ns.Name(), cancel: cancel);
                 }
                 catch (HttpOperationException ex)
                 {
-                    _logger.LogError("Got exception while creating IngressRoute: {}", ex);
+                    _logger.LogError("Got exception while creating HttpRoute: {}", ex);
                     _logger.LogError("Response.Content: {}", ex.Response.Content);
-                    _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(ingressRoute));
+                    _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(httpRoute));
                 }
             }
             
-            var ingressRouteTcpPorts = container.Ports?
-                .Where(p => p.Type is V1ChallengePortType.PublicIngressRouteTcp)
+            var tlsRoutePorts = container.Ports?
+                .Where(p => p.Type is V1ChallengePortType.PublicTlsRoute)
                 .ToList() ?? new List<V1ChallengePort>();
-            foreach (var ingressRouteTcpPort in ingressRouteTcpPorts)
+            foreach (var tlsRoutePort in tlsRoutePorts)
             {
                 var serviceGuid = Guid.NewGuid();
-                var ingressRouteTcp = new V1TraefikIngressRouteTcp
+                var tlsRoute = new V1Alpha2TLSRoute()
                 {
                     Metadata = new V1ObjectMeta
                     {
-                        Name = $"ir-tcp-{container.Hostname}-{ingressRouteTcpPort.Port}",
+                        Name = $"{container.Hostname}-{tlsRoutePort.Port}",
                         NamespaceProperty = ns.Name(),
                         Labels = new Dictionary<string, string>
                         {
                             { ManagedByLabel, "berg" },
-                            { ComponentLabel, "ingress" },
+                            { ComponentLabel, "tls-route" },
                             { HostnameLabel, $"{serviceGuid}" }
                         }
                     },
-                    Spec = new V1TraefikIngressRouteTcpSpec
+                    Spec = new V1Alpha2TLSRouteSpec
                     {
-                        EntryPoints = new List<string> { _ctfConfig.ChallengeInstanceEntryPointName },
-                        Routes = new List<V1TraefikIngressRouteTcpEntry>
+                        Hostnames = new List<string>
+                        {
+                            $"{serviceGuid}.{_ctfConfig.ChallengeDomain}"
+                        },
+                        ParentRefs = new List<V1ParentReference>
                         {
                             new()
                             {
-                                Match = $"HostSNI(`{serviceGuid}.{_ctfConfig.ChallengeDomain}`)",
-                                Services = new List<V1TraefikIngressRouteTcpService>
+                                Kind = "Gateway",
+                                Name = _ctfConfig.GatewayName,
+                                SectionName = TlsListenerSectionName,
+                                Namespace = _bergNamespace,
+                            }
+                        },
+                        Rules = new List<V1Alpha2TLSRouteRule>
+                        {
+                            new ()
+                            {
+                                BackendRefs = new List<V1BackendRef>
                                 {
-                                    new()
+                                    new ()
                                     {
                                         Name = container.Hostname,
-                                        Port = ingressRouteTcpPort.Port
+                                        Port = tlsRoutePort.Port,
+                                        Namespace = ns.Name()
                                     }
                                 }
                             }
-                        },
-                        Tls = new Dictionary<string, string>()
+                        }
                     }
                 };
-                if (ingressRouteTcpPort.Name != null)
+                if (tlsRoutePort.Name != null)
                 {
-                    serviceEndpoints.Remove(ingressRouteTcpPort.Name);
-                    serviceEndpoints.Add(ingressRouteTcpPort.Name,
-                        $"{serviceGuid}.{_ctfConfig.ChallengeDomain}:{_ctfConfig.ChallengeInstanceEntryPointPort}");
+                    serviceEndpoints.Remove(tlsRoutePort.Name);
+                    serviceEndpoints.Add(tlsRoutePort.Name,
+                        $"{serviceGuid}.{_ctfConfig.ChallengeDomain}:{_ctfConfig.ChallengeInstanceTlsPort}");
                 }
                 try
                 {
-                    await _ingressRouteTcpClient.CreateNamespacedAsync(ingressRouteTcp, ns.Name(), cancel: cancel);
+                    await _tlsRouteClient.CreateNamespacedAsync(tlsRoute, ns.Name(), cancel: cancel);
                 }
                 catch (HttpOperationException ex)
                 {
-                    _logger.LogError("Got exception while creating IngressRouteTCP: {}", ex);
+                    _logger.LogError("Got exception while creating TLSRoute: {}", ex);
                     _logger.LogError("Response.Content: {}", ex.Response.Content);
-                    _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(ingressRouteTcp));
+                    _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(tlsRoute));
                 }
             }
         }
@@ -644,8 +678,8 @@ public class ChallengeService : IChallengeService
                                         .ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value)),
                                     Requests = new Dictionary<string, ResourceQuantity>()
                                     {
-                                        {"cpu", new ResourceQuantity("10m") },
-                                        {"memory", new ResourceQuantity("50Mi") }
+                                        { "cpu", new ResourceQuantity("0.2") },
+                                        { "memory", new ResourceQuantity("50Mi") }
                                     }
                                 }
                                 : null,
