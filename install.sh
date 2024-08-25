@@ -66,6 +66,22 @@ rm traefik-values.yaml
 
 cat <<EOF > challenge-gateway.yaml
 apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: http-redirect
+  namespace: berg
+spec:
+  parentRefs:
+  - name: challenge-gateway
+    sectionName: http-redirect
+  rules:
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        statusCode: 301
+---
+apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: challenge-gateway
@@ -73,6 +89,15 @@ metadata:
 spec:
   gatewayClassName: traefik 
   listeners:
+  - name: http-redirect
+    protocol: HTTP
+    port: 1337
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            kubernetes.io/metadata.name: berg
   - name: http
     protocol: HTTPS
     port: 1337
