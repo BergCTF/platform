@@ -83,7 +83,11 @@ spec:
           name: ctf-wildcard-cert
     allowedRoutes:
       namespaces:
-        from: All
+        from: Selector
+        selector:
+          matchLabels:
+            app.kubernetes.io/managed-by: berg
+            app.kubernetes.io/component: challenge
   - name: tls
     protocol: TLS
     port: 31337
@@ -94,7 +98,11 @@ spec:
           name: ctf-wildcard-cert
     allowedRoutes:
       namespaces:
-        from: All
+        from: Selector
+        selector:
+          matchLabels:
+            app.kubernetes.io/managed-by: berg
+            app.kubernetes.io/component: challenge
 EOF
 kubectl apply -f challenge-gateway.yaml
 rm challenge-gateway.yaml
