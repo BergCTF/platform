@@ -5,7 +5,7 @@ namespace Berg.ChallengeServer.CustomResources.GatewayApi;
 public class V1HTTPRoute : CustomResource<V1HTTPRouteSpec>
 {
     public V1HTTPRoute() : base(
-        "HttpRoute",
+        "HTTPRoute",
         "httproutes",
         "gateway.networking.k8s.io",
         "v1")

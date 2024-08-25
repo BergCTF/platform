@@ -678,7 +678,7 @@ public class ChallengeService : IChallengeService
                                         .ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value)),
                                     Requests = new Dictionary<string, ResourceQuantity>()
                                     {
-                                        { "cpu", new ResourceQuantity("10m") },
+                                        { "cpu", new ResourceQuantity("0.2") },
                                         { "memory", new ResourceQuantity("50Mi") }
                                     }
                                 }
