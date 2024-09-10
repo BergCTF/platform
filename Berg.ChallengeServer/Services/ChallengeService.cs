@@ -370,17 +370,6 @@ public class ChallengeService : IChallengeService
                 ToEntities = new List<string>
                 {
                     CiliumEntity.World
-                },
-                ToPorts = new List<V2CiliumPortRule>
-                {
-                    new()
-                    {
-                        // Only allow outgoing traffic to a restricted set of ports
-                        Ports = _ctfConfig.AllowedOutboundPorts.Select(p => new V2CiliumPortProtocol
-                        {
-                            Port = p.ToString()
-                        }).ToList()
-                    }
                 }
             });
         }
