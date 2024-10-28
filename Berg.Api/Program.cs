@@ -86,15 +86,6 @@ using (var scope = app.Services.CreateScope())
 
 app.UseWebSockets();
 app.UseSwagger();
-app.UseSwaggerUI();
-
-app.Use(next => context =>
-{
-    // Hack to make dotnet think that the request came in over https, to make sure that redirect urls are
-    // being created with a https:// prefix. Necessary because the ingress controller handles TLS termination for us.
-    context.Request.Scheme = "https";
-    return next(context);
-});
 
 app.UseAuthentication();
 app.UseAuthorization();

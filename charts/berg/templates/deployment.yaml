@@ -30,6 +30,8 @@ spec:
               value: {{ .Release.Namespace | quote }}
             - name: "ASPNETCORE_URLS"
               value: "http://0.0.0.0:8080"
+            - name: "ASPNETCORE_FORWARDEDHEADERS_ENABLED"
+              value: "true"
           ports:
             - containerPort: 8080
           volumeMounts:
