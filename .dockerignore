@@ -21,5 +21,8 @@
 **/obj
 **/secrets.dev.yaml
 **/values.dev.yaml
+charts/
+run-local.sh
+setup-local.sh
 LICENSE
 README.md

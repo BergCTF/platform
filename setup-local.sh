@@ -1,0 +1,238 @@
+#!/bin/sh
+
+set -e
+
+# Install kind
+if ! type "kind" > /dev/null; then
+    echo "Installing kind"
+    curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64
+    chmod +x ./kind
+    sudo mv ./kind /usr/local/bin/kind
+fi
+
+# Install mkcert
+if ! type "mkcert" > /dev/null; then
+    echo "Installing mkcert"
+    sudo apt install mkcert libnss3-tools
+    mkcert -install
+fi
+
+# Add helm repos
+echo "Adding helm repos"
+helm repo add dex https://charts.dexidp.io
+helm repo add jetstack https://charts.jetstack.io
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+
+echo "Recreating kind cluster"
+kind delete cluster --name=berg-dev-cluster || echo "Nothing to delete"
+cat << EOL | kind create cluster --config=-
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: berg-dev-cluster
+networking:
+  disableDefaultCNI: true
+nodes:
+- role: control-plane
+  extraPortMappings:
+  - containerPort: 30080
+    hostPort: 80
+    listenAddress: "127.0.0.1"
+    protocol: TCP
+  - containerPort: 30443
+    hostPort: 443
+    listenAddress: "127.0.0.1"
+    protocol: TCP
+  - containerPort: 30337
+    hostPort: 1337
+    listenAddress: "127.0.0.1"
+    protocol: TCP
+  - containerPort: 31337
+    hostPort: 31337
+    listenAddress: "127.0.0.1"
+    protocol: TCP
+EOL
+
+kubectl --context kind-berg-dev-cluster cluster-info
+
+echo "Pre-loading cilium image"
+docker pull quay.io/cilium/cilium:v1.16.1
+kind load docker-image --name=berg-dev-cluster quay.io/cilium/cilium:v1.16.1
+
+echo "Installing cilium"
+cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait cilium cilium/cilium -n cilium --create-namespace -f -
+ipam:
+  mode: kubernetes
+image:
+  pullPolicy: IfNotPresent
+operator:
+  replicas: 1
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+    ingress:
+      enabled: true
+      annotations:
+        cert-manager.io/cluster-issuer: mkcert
+      className: traefik
+      hosts:
+        - hubble.localhost
+      tls:
+        - secretName: hubble-tls
+          hosts:
+            - hubble.localhost
+EOF
+
+echo "Installing traefik"
+cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait traefik traefik/traefik -n traefik --create-namespace -f -
+globalArguments:
+  - "--global.checknewversion=false"
+  - "--global.sendanonymoususage=false"
+gateway:
+  enabled: false
+gatewayClass:
+  enabled: true
+providers:
+  kubernetesIngress:
+    publishedService:
+      enabled: true
+  kubernetesGateway:
+    enabled: true
+    experimentalChannel: true
+service:
+  type: NodePort
+ports:
+  web:
+    nodePort: 30080
+  websecure:
+    nodePort: 30443
+  http-chall:
+    protocol: TCP
+    port: 1337
+    exposedPort: 1337
+    nodePort: 30337
+    expose:
+      default: true
+  tls-chall:
+    protocol: TCP
+    port: 31337
+    exposedPort: 31337
+    nodePort: 31337
+    expose:
+      default: true
+tlsOptions:
+  default:
+    sniStrict: false
+    alpnProtocols:
+      - http/1.1
+EOF
+
+echo "Installing cert-manager"
+helm --kube-context kind-berg-dev-cluster install --wait \
+    cert-manager \
+    jetstack/cert-manager \
+    --create-namespace \
+    --namespace cert-manager \
+    --set ingressShim.defaultIssuerName=mkcert \
+    --set ingressShim.defaultIssuerKind=ClusterIssuer \
+    --set crds.enabled=true
+
+echo "Deploying mkcert private key to cert-manager namespace"
+kubectl --context kind-berg-dev-cluster create secret tls mkcert --namespace cert-manager --cert="${XDG_DATA_HOME:-$HOME/.local/share}/mkcert/rootCA.pem" --key="${XDG_DATA_HOME:-$HOME/.local/share}/mkcert/rootCA-key.pem"
+
+echo "Create berg namespace"
+kubectl --context kind-berg-dev-cluster create ns berg || true
+
+# Configure mkcert ClusterIssuer and cert
+cat <<EOF | kubectl --context kind-berg-dev-cluster create -f -
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: mkcert
+spec:
+  ca:
+    secretName: mkcert
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: berg-gateway-cert
+  namespace: berg
+spec:
+  secretName: berg-gateway-tls
+  commonName: localhost
+  dnsNames:
+    - "berg.localhost"
+    - "*.berg.localhost"
+  ipAddresses:
+    - 127.0.0.1
+  issuerRef:
+    name: mkcert
+    kind: ClusterIssuer
+EOF
+
+echo "Installing dex idp"
+cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait dex dex/dex --create-namespace -n dex -f -
+config:
+  issuer: https://dex.localhost
+  storage:
+    type: memory
+  enablePasswordDB: true
+  staticClients:
+    - id: berg-client
+      secret: berg-client-secret
+      name: 'Berg CTF Platform'
+      redirectURIs:
+        - 'https://berg.localhost/api/v1/federation-callback'
+  staticPasswords:
+    - email: "admin@localhost"
+      # bcrypt hash of the string "password": $(echo password | htpasswd -BinC 10 admin | cut -d: -f2)
+      hash: "\$2a\$10\$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+      username: "admin"
+      userID: "00000000-0000-0000-0000-000000000001"
+  enablePasswordDB: true
+  oauth2:
+    passwordConnector: local
+    skipApprovalScreen: true
+ingress:
+  annotations:
+    cert-manager.io/cluster-issuer: mkcert
+  enabled: true
+  hosts:
+    - host: dex.localhost
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls:
+    - hosts:
+        - dex.localhost
+      secretName: dex-cert
+EOF
+
+echo "Installing postgres db"
+cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait berg-postgresql bitnami/postgresql -n berg -f -
+auth:
+  username: "berg"
+  password: "password"
+  postgresPassword: "postgres-password"
+  database: "berg"
+primary:
+  resources:
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+    requests:
+      cpu: "0.1"
+      memory: "300Mi"
+readReplicas:
+  resources:
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+    requests:
+      cpu: "0.1"
+      memory: "300Mi"
+EOF

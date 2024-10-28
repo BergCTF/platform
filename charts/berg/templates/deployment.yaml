@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "berg.fullname" . }}-api
+  labels:
+    {{- include "berg.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "berg.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "berg.selectorLabels" . | nindent 8 }}
+        component: api
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.berg.pullSecretName }}
+      serviceAccountName: {{ include "berg.fullname" . }}
+      containers:
+        - name: berg-api
+          image: "{{ .Values.berg.image.repository }}:{{ .Values.berg.image.tag | default .Release.AppVersion }}"
+          imagePullPolicy: {{ .Values.berg.image.imagePullPolicy }}
+          env:
+            - name: "BERG_NAMESPACE"
+              value: {{ .Release.Namespace | quote }}
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: appsettings
+              mountPath: /app/appsettings.json
+              subPath: appsettings.json
+          resources:
+            {{- toYaml .Values.berg.resources | nindent 12 }}
+      volumes:
+        - name: appsettings
+          configMap:
+            name: {{ include "berg.fullname" . }}-appsettings

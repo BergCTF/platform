@@ -1,0 +1,78 @@
+---
+nameOverride: ""
+fullnameOverride: ""
+
+gateway:
+  domain: ""
+  gatewayClassName: ""
+  tlsSecretName: ""
+  httpPort: 1337
+  tlsPort: 31337
+
+berg:
+  domain: ""
+  tlsSecretName: ""
+  image:
+    repository: "ghcr.io/norelect/berg/api"
+    imagePullPolicy: IfNotPresent
+    tag: ""
+  pullSecretName: ""
+  logLevel:
+    Default: Information
+    Microsoft.AspNetCore: Warning
+    Microsoft.EntityFrameworkCore.Database: Warning
+  resources:
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+    requests:
+      cpu: "0.2"
+      memory: "100Mi"
+  postgresql:
+    host: ""
+    database: ""
+    username: ""
+    password: ""
+  discord:
+    clientId: ""
+    clientSecret: ""
+    botToken: ""
+    notificationGuildId: 0
+    notificationChannelId: 0
+  ctf:
+    start: "1970-01-01T00:00:00+00:00"
+    end: "2099-01-01T00:00:00+00:00"
+    teams: false
+    playerAttributes: []
+    # - name: category
+    #   public: true
+    #   required: false
+    #   values:
+    #     - junior
+    #     - senior
+    #     - open
+    scoring:
+      freezeStart: "2099-01-01T00:00:00+00:00"
+      freezeEnd: "2099-01-01T00:00:00+00:00"
+      numSolvesBeforeMinimum: 50
+
+postgresql:
+  enabled: true
+  auth:
+    username: berg
+    password: "REPLACE_ME"
+    postgresPassword: "REPLACE_ME"
+    database: berg
+    volumePermissions:
+      enabled: true
+  persistence:
+    storageClass: ""
+    accessModes: [ReadWriteOnce]
+    size: 20Gi
+  resources:
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+    requests:
+      cpu: "0.5"
+      memory: "300Mi"

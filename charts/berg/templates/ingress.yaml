@@ -1,0 +1,46 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "berg.fullname" . }}-https
+  labels:
+    {{- include "berg.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    - websecure
+  tls:
+    secretName: {{ .Values.berg.tlsSecretName }}
+  routes:
+    - kind: Rule
+      match: Host(`{{ .Values.berg.domain }}`) && (PathPrefix(`/api`) || PathPrefix(`/swagger`))
+      services:
+        - kind: Service
+          name: {{ include "berg.fullname" . }}-api
+          port: 80
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "berg.fullname" . }}-http
+  labels:
+    {{- include "berg.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: Host(`{{ .Values.berg.domain }}`)
+      middlewares:
+        - name: {{ include "berg.fullname" . }}-https-redirect
+      services:
+        - kind: TraefikService
+          name: noop@internal
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "berg.fullname" . }}-https-redirect
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true

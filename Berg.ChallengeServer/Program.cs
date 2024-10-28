@@ -9,22 +9,25 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(o => o.AddServerHeader = false);
 
-builder.Services.AddControllers();
 var ctfConfig = new CtfConfig();
 builder.Configuration.GetSection("Ctf").Bind(ctfConfig);
 builder.Services.AddSingleton(ctfConfig);
+
+var infraConfig = new InfraConfig();
+builder.Configuration.GetSection("Infra").Bind(infraConfig);
+builder.Services.AddSingleton(infraConfig);
+
+var discordConfig = new DiscordConfig();
+builder.Configuration.GetSection("Discord").Bind(discordConfig);
+builder.Services.AddSingleton(discordConfig);
+
+builder.Services.AddControllers();
 builder.Services.AddSingleton(new Kubernetes(KubernetesClientConfiguration.BuildDefaultConfig()));
 builder.Services.AddSingleton<WebSocketService>();
 builder.Services.AddSingleton<ScoringService>();
 builder.Services.AddSingleton<IChallengeService, ChallengeService>();
 builder.Services.AddSingleton<PlayerService>();
 builder.Services.AddHostedService<RefreshService>();
-var discordConfig = new DiscordConfig();
-builder.Configuration.GetSection("DiscordConfig").Bind(discordConfig);
-builder.Services.AddSingleton(discordConfig);
-
-var joinUrl = $"https://discord.com/api/oauth2/authorize?client_id={discordConfig.ClientId}&permissions=2048&scope=bot";
-Console.WriteLine($"Add the discord bot to your server: {joinUrl}");
 
 builder.Services.AddAuthentication(options =>
     {
@@ -50,7 +53,7 @@ builder.Services.AddAuthentication(options =>
         options.CorrelationCookie.HttpOnly = true;
         options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
         options.CorrelationCookie.SameSite = SameSiteMode.Lax;
-        options.CallbackPath = "/api/v1/callback-discord";
+        options.CallbackPath = "/api/v1/federation-callback";
         options.Scope.Add("email");
         options.Events.OnRedirectToAuthorizationEndpoint = ctx =>
         {

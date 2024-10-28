@@ -11,7 +11,7 @@ public class RefreshService : BackgroundService
     private readonly IChallengeService _challengeService;
     private readonly PlayerService _playerService;
     private readonly IServiceScopeFactory _serviceScopeFactory;
-    private readonly CtfConfig _ctfConfig;
+    private readonly InfraConfig _infraConfig;
 
     public RefreshService(
         ILogger<RefreshService> logger,
@@ -19,16 +19,16 @@ public class RefreshService : BackgroundService
         IChallengeService challengeService,
         PlayerService playerService,
         IServiceScopeFactory serviceScopeFactory,
-        CtfConfig ctfConfig)
+        InfraConfig infraConfig)
     {
         _logger = logger;
         _serviceScopeFactory = serviceScopeFactory;
         _scoringService = scoringService;
         _challengeService = challengeService;
         _playerService = playerService;
-        _ctfConfig = ctfConfig;
+        _infraConfig = infraConfig;
     }
-    
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("RefreshService started");
@@ -41,9 +41,9 @@ public class RefreshService : BackgroundService
                 _scoringService.RefreshScores(dbContext);
                 _playerService.RefreshPlayerInfo(dbContext);
             }
-            await _challengeService.CheckChallengeInstanceTimout(stoppingToken);
-            
-            await Task.Delay(_ctfConfig.RefreshInterval, stoppingToken);
+            await _challengeService.CheckChallengeInstanceTimeout(stoppingToken);
+
+            await Task.Delay(_infraConfig.RefreshInterval, stoppingToken);
         }
         _logger.LogInformation("RefreshService stopped");
     }
