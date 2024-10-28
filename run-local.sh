@@ -9,7 +9,7 @@ kubectl --context kind-berg-dev-cluster create secret generic berg-pull-secret \
     --type=kubernetes.io/dockerconfigjson -n berg
 
 echo "Build image"
-docker build -t kind.localhost/berg/challenge-server:local -f Berg.ChallengeServer/Dockerfile .
+docker build -t kind.localhost/berg/challenge-server:local -f Berg.Api/Dockerfile .
 
 echo "Transfer image"
 kind load docker-image --name=berg-dev-cluster kind.localhost/berg/challenge-server:local

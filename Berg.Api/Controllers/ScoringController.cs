@@ -1,0 +1,329 @@
+using System.Text.Json.Serialization;
+using Berg.Api.Configuration;
+using Berg.Api.Db;
+using Berg.Api.Services;
+using Berg.Shared;
+using Discord;
+using Discord.Rest;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using DiscordConfig = Berg.Api.Configuration.DiscordConfig;
+
+namespace Berg.Api.Controllers;
+
+[ApiController]
+public class ScoringController : ControllerBase
+{
+    private readonly ILogger<ScoringController> _logger;
+    private readonly CtfConfig _ctfConfig;
+    private readonly DiscordConfig _discordConfig;
+    private readonly BergDbContext _dbContext;
+    private readonly IChallengeService _challengeService;
+    private readonly ScoringService _scoringService;
+    private readonly PlayerService _playerService;
+    private readonly object _submitFlagLock = new();
+    private readonly WebSocketService _webSocketService;
+
+    public ScoringController(
+        ILogger<ScoringController> logger,
+        CtfConfig ctfConfig,
+        DiscordConfig discordConfig,
+        BergDbContext dbContext,
+        IChallengeService challengeService,
+        ScoringService scoringService,
+        PlayerService playerService,
+        WebSocketService webSocketService)
+    {
+        _logger = logger;
+        _challengeService = challengeService;
+        _ctfConfig = ctfConfig;
+        _discordConfig = discordConfig;
+        _dbContext = dbContext;
+        _scoringService = scoringService;
+        _playerService = playerService;
+        _webSocketService = webSocketService;
+    }
+
+    public class SubmitFlagRequest
+    {
+        [JsonPropertyName("challenge")] public string? Challenge { get; set; }
+
+        [JsonPropertyName("flag")] public string? Flag { get; set; }
+    }
+
+    [HttpPost]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [Route("/api/v1/flag")]
+    public SubmitFlagResult SubmitFlag([FromBody] SubmitFlagRequest flagRequest)
+    {
+        var challenge = flagRequest.Challenge;
+        var flag = flagRequest.Flag;
+        if (challenge == null || flag == null)
+            throw new ArgumentException("Values can't be null");
+
+        if (flag.Length > 1024)
+            throw new ArgumentException("Submitted flag can't be longer than 1024 chars!");
+
+        var now = DateTime.UtcNow;
+        if (_ctfConfig.Start > now)
+            return SubmitFlagResult.CtfNotStarted;
+        if (_ctfConfig.End < now)
+            return SubmitFlagResult.CtfHasEnded;
+
+        lock (_submitFlagLock)
+        {
+            var playerId = _playerService.GetPlayer(User).Id;
+            var player = _dbContext.Players
+                .Include(p => p.Submissions)
+                .Include(p => p.Solves)
+                .Include(p => p.Team)
+                .FirstOrDefault(p => p.Id == playerId);
+            if (player == null)
+                throw new ArgumentException("Invalid player");
+
+            if (player.Solves.Any(s => s.ChallengeId == challenge))
+                return SubmitFlagResult.AlreadySolved;
+
+            if (_ctfConfig.Teams)
+            {
+                // Prevent submission if team mode is enabled but player has not yet joined a team
+                if (player.TeamId == null)
+                    return SubmitFlagResult.MustJoinTeam;
+
+                // Prevent submission if the team has already solved the challenge
+                if (_dbContext.Solves
+                    .Where(s => s.Player.TeamId == player.TeamId)
+                    .Any(s => s.ChallengeId == challenge))
+                    return SubmitFlagResult.AlreadySolved;
+            }
+
+            var yesterday = now.Subtract(TimeSpan.FromDays(1));
+            var latestFailedSubmissions = player.Submissions
+                .Where(s => yesterday < s.SubmittedAt)
+                .ToList();
+            if (latestFailedSubmissions.Count > _ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerDay)
+            {
+                _logger.LogWarning("Player {} has reached the daily submission limit", playerId);
+                return SubmitFlagResult.RateLimited;
+            }
+
+            var oneHourAgo = now.Subtract(TimeSpan.FromHours(1));
+            var submissionCountHour = latestFailedSubmissions.Count(s => oneHourAgo < s.SubmittedAt);
+            if (submissionCountHour > _ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerHour)
+            {
+                _logger.LogWarning("Player {} has reached the hourly submission limit", playerId);
+                return SubmitFlagResult.RateLimited;
+            }
+
+            var oneMinuteAgo = now.Subtract(TimeSpan.FromMinutes(1));
+            var submissionCountMinute = latestFailedSubmissions.Count(s => oneMinuteAgo < s.SubmittedAt);
+            if (submissionCountMinute > _ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerMinute)
+            {
+                _logger.LogWarning("Player {} has reached the minute submission limit", playerId);
+                return SubmitFlagResult.RateLimited;
+            }
+
+            var challengeConfig = _challengeService.GetChallengeConfig(challenge);
+            if (challengeConfig == null)
+                throw new ArgumentException("Invalid challenge");
+
+            var dbChallenge = _dbContext.Challenges.FirstOrDefault(c => c.Name == challenge);
+            if (dbChallenge == null)
+                throw new ArgumentException("Invalid db challenge");
+
+            var trimmedFlag = flag.Trim();
+            if (challengeConfig.Spec.Flag != trimmedFlag)
+            {
+                // Invalid submission
+                _dbContext.Submissions.Add(new Submission
+                {
+                    Id = Guid.NewGuid(),
+                    Challenge = dbChallenge,
+                    SubmittedAt = now,
+                    Player = player,
+                    Value = trimmedFlag
+                });
+                _dbContext.SaveChanges();
+                _logger.LogInformation("Player {} submitted an invalid flag for challenge {}", playerId, challenge);
+                return SubmitFlagResult.Incorrect;
+            }
+
+            var firstBlood = !_dbContext.Solves.Any(s => s.ChallengeId == challenge);
+
+            _dbContext.Solves.Add(new Db.Solve
+            {
+                Id = Guid.NewGuid(),
+                Challenge = dbChallenge,
+                SolvedAt = now,
+                Player = player,
+            });
+            _dbContext.SaveChanges();
+            _logger.LogInformation("Player {} has solved challenge {}", playerId, challenge);
+
+            var solveEvent = new Berg.Shared.Solve
+            {
+                PlayerId = player.Id,
+                TeamId = player.Team?.Id,
+                ChallengeName = challenge,
+                SolvedAt = now,
+                IsFirstBlood = firstBlood
+            };
+            // Its a valid solve!
+            var freezeStart = _ctfConfig.Scoring.FreezeStart;
+            var freezeEnd = _ctfConfig.Scoring.FreezeEnd;
+            var utcNow = DateTime.UtcNow;
+            if (freezeStart != null && freezeEnd != null && utcNow > freezeStart.Value && utcNow < freezeEnd.Value)
+            {
+                // add a user filter - only send to the user who solved the challenge and their team
+                if (player.TeamId != null)
+                {
+                    _webSocketService.PushEvent("solve", solveEvent, s => s.TeamId == player.TeamId)
+                        .ContinueWith(t => _logger.LogError("Error sending WebSocket Events", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+                }
+                else
+                {
+                    _webSocketService.PushEvent("solve", solveEvent, s => s.Id == player.Id)
+                        .ContinueWith(t => _logger.LogError("Error sending WebSocket Events", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+                }
+                _logger.LogInformation("Announcement not sent because the scoreboard is currently frozen.");
+            }
+            else
+            {
+                _webSocketService.PushEventAll("solve", solveEvent)
+                    .ContinueWith(t => _logger.LogError("Error sending WebSocket Events", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+                SendDiscordNotification(player.DiscordId, player.Name, player.Team?.Name, challenge, firstBlood)
+                    .Wait();
+            }
+
+            _scoringService.RefreshScores(_dbContext);
+
+            return SubmitFlagResult.Correct;
+        }
+    }
+
+    private async Task SendDiscordNotification(
+        string solverDiscordId,
+        string solverDiscordUsername,
+        string? solverTeamName,
+        string solvedChallenge,
+        bool firstBlood)
+    {
+        if (_discordConfig.NotificationChannelId == 0 || _discordConfig.NotificationGuildId == 0)
+        {
+            _logger.LogError("No channel id or guild id configured, did not send notification.");
+            return;
+        }
+
+        try
+        {
+            var client = new DiscordRestClient();
+            await client.LoginAsync(TokenType.Bot, _discordConfig.BotToken);
+
+            var channel = await client.GetChannelAsync(_discordConfig.NotificationChannelId) as IMessageChannel;
+            if (channel == null)
+            {
+                _logger.LogError("Invalid channel id configured, did not send notification.");
+                return;
+            }
+            var guild = await client.GetGuildAsync(_discordConfig.NotificationGuildId);
+            if (guild == null)
+            {
+                _logger.LogError("Invalid guild id configured, did not send notification.");
+                return;
+            }
+
+            if (solverTeamName != null)
+                solverTeamName = $" ({Format.Sanitize(solverTeamName)})";
+
+            var user = await guild.GetUserAsync(ulong.Parse(solverDiscordId));
+            var username = user == null ? Format.Sanitize(solverDiscordUsername) : user.Mention;
+            var allowedMentions = new AllowedMentions
+            {
+                UserIds = new List<ulong> { ulong.Parse(solverDiscordId) }
+            };
+            if (firstBlood)
+            {
+                await channel.SendMessageAsync(
+                    $"{username}{solverTeamName} got first blood on challenge `{solvedChallenge}` :drop_of_blood:",
+                        allowedMentions: allowedMentions);
+            }
+            else
+            {
+                await channel.SendMessageAsync(
+                    $"{username}{solverTeamName} solved challenge `{solvedChallenge}` :triangular_flag_on_post:",
+                        allowedMentions: allowedMentions);
+            }
+
+            await client.LogoutAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Error while trying to send a notification: {}", ex);
+        }
+    }
+
+    [HttpGet]
+    [Route("/api/v1/scoreboard/teams")]
+    public List<TeamRanking> GetTeamScoreboard()
+    {
+        return _scoringService.GetTeamScoreboard();
+    }
+
+    [HttpGet]
+    [Route("/api/v1/scoreboard/players")]
+    public List<PlayerRanking> GetPlayerScoreboard(
+        [FromQuery] string? attributeName = null,
+        [FromQuery] string? attributeValue = null)
+    {
+        if (attributeName == null || attributeValue == null)
+            return _scoringService.GetPlayerScoreboard();
+
+        if (!_ctfConfig.PlayerAttributes?.Any(a => a.Public && a.Name == attributeName) ?? true)
+            throw new ArgumentException("Can't filter by attribute that doesn't exist or is not public.");
+        var firstBloods = _dbContext.Challenges.Select(c => new
+        {
+            c.Name,
+            FirstBloodedPlayerId = c.Solves
+                .OrderBy(s => s.SolvedAt)
+                .Where(s => s.Player.Attributes
+                    .Any(a => a.Name == attributeName && a.Value == attributeValue))
+                .Select(s => s.PlayerId).FirstOrDefault()
+        }).ToDictionary(b => b.Name, b => b.FirstBloodedPlayerId);
+        var filteredPlayers = _dbContext.Players
+            .Where(p => p.Attributes.Any(a => a.Name == attributeName && a.Value == attributeValue))
+            .Select(p => p.Id)
+            .ToHashSet();
+        return _scoringService.GetPlayerScoreboard()
+            .Where(s => filteredPlayers.Contains(s.PlayerId))
+            .Select(r =>
+            {
+                r.Solves = r.Solves.Select(s =>
+                {
+                    s.IsFirstBlood = firstBloods[s.ChallengeName] == s.PlayerId;
+                    return s;
+                }).ToList();
+                return r;
+            })
+            .ToList();
+    }
+
+    [HttpGet]
+    [Route("/api/v1/activity")]
+    public List<ActivityEntry> GetActivity()
+    {
+        return _dbContext.Solves
+            .Include(s => s.Player)
+            .OrderBy(s => s.SolvedAt)
+            .Select(s => new ActivityEntry
+            {
+                PlayerId = s.PlayerId,
+                SolvedAt = s.SolvedAt,
+                ChallengeName = s.ChallengeId,
+                TeamId = s.Player.TeamId
+            })
+            .ToList();
+    }
+}
