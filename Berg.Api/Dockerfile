@@ -1,9 +1,9 @@
-﻿FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
+﻿FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 COPY ["Berg.Api/Berg.Api.csproj", "Berg.Api/"]
 RUN dotnet restore "Berg.Api/Berg.Api.csproj"
@@ -17,6 +17,6 @@ RUN dotnet publish "Berg.Api.csproj" -c Release -o /app/publish /p:UseAppHost=fa
 
 FROM base AS final
 WORKDIR /app
-ENV ASPNETCORE_URLS="http://0.0.0.0:80"
+
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Berg.Api.dll"]
