@@ -5,7 +5,7 @@ namespace Berg.ChallengeServer.CustomResources.Berg;
 public class V1Challenge : CustomResource<V1ChallengeSpec>
 {
     public V1Challenge() : base(
-        "Challenge", 
+        "Challenge",
         "challenges",
         "berg.norelect.ch",
         "v1")
@@ -17,19 +17,19 @@ public class V1ChallengeSpec
 {
     [JsonPropertyName("author")]
     public string Author { get; set; } = null!;
-    
+
     [JsonPropertyName("description")]
     public string Description { get; set; } = null!;
-    
+
     [JsonPropertyName("flag")]
     public string Flag { get; set; } = null!;
-    
+
     [JsonPropertyName("flagFormat")]
     public string FlagFormat { get; set; } = "flag{...}";
 
     [JsonPropertyName("hideUntil")]
     public DateTime? HideUntil { get; set; } = null;
-    
+
     [JsonPropertyName("staticValue")]
     public int? StaticValue { get; set; } = null;
 
@@ -41,10 +41,10 @@ public class V1ChallengeSpec
 
     [JsonPropertyName("categories")]
     public List<string> Categories { get; set; } = new();
-    
+
     [JsonPropertyName("containers")]
     public List<V1ChallengeContainer>? Containers { get; set; }
-    
+
     [JsonPropertyName("attachments")]
     public List<V1ChallengeAttachment>? Attachments { get; set; }
 }

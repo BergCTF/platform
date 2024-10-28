@@ -14,15 +14,15 @@ public abstract class CustomResource : KubernetesObject, IMetadata<V1ObjectMeta>
         Version = version;
         ApiVersion = $"{group}/{version}";
     }
-    
+
     public V1ObjectMeta Metadata { get; set; } = null!;
 
     [JsonIgnore]
     public string Plural { get; set; }
-    
+
     [JsonIgnore]
     public string Group { get; set; }
-    
+
     [JsonIgnore]
     public string Version { get; set; }
 
@@ -39,7 +39,7 @@ public abstract class CustomResource<T> : CustomResource
     protected CustomResource(string kind, string plural, string group, string version) : base(kind, plural, group, version)
     {
     }
-    
+
     [JsonPropertyName("spec")]
     public T Spec { get; set; } = default!;
 }

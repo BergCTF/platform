@@ -9,10 +9,10 @@ namespace Berg.ChallengeServer.Services;
 public class ScoringService
 {
     private static readonly object CacheUpdateLock = new();
-    
+
     private readonly CtfConfig _ctfConfig;
     private readonly IChallengeService _challengeService;
-    
+
     private Dictionary<string, int> _challengeSolves = new();
     private Dictionary<string, int> _challengeValues = new();
     private Dictionary<Guid, List<PlayerSolve>> _playerSolvedChallenges = new();
@@ -70,8 +70,8 @@ public class ScoringService
             var maximumScore = _ctfConfig.Scoring.MaximumScore;
             var solvesBeforeMinimum = _ctfConfig.Scoring.NumSolvesBeforeMinimum;
             var factor = (minimumScore - maximumScore) / Math.Pow(solvesBeforeMinimum, 2);
-            
-            _challengeValues = _challengeSolves.ToDictionary(s => s.Key, s => 
+
+            _challengeValues = _challengeSolves.ToDictionary(s => s.Key, s =>
                 (int)Math.Max(minimumScore, Math.Ceiling(factor * Math.Pow(s.Value, 2) + maximumScore)));
 
             var staticValueChallengeConfigs = _challengeService.GetChallenges()
@@ -80,7 +80,7 @@ public class ScoringService
             {
                 _challengeValues[config.Name()] = config.Spec.StaticValue!.Value;
             }
-            
+
             // Now that the values of each challenge are set, we can calculate the individual and team scores
             _playerSolvedChallengesIgnoringFreeze = dbContext.Players
                 .Include(p => p.Solves)
@@ -140,7 +140,7 @@ public class ScoringService
                 .ToDictionary(p => p.Id, p => p.Solves);
             _teamScore = _teamSolvedChallenges.ToDictionary(p => p.Key,
                 p => p.Value.Select(c => _challengeValues[c.ChallengeName]).Sum());
-            
+
             _playerScoreboard = dbContext.Players.Select(t => t.Id).ToList()
                 .Select(t =>
                 {
@@ -183,7 +183,7 @@ public class ScoringService
             .OrderBy(s => s.SolvedAt)
             .ToList();
     }
-    
+
     public List<PlayerSolve> GetChallengePlayerSolves(string challengeName)
     {
         return _playerSolvedChallenges.Values.SelectMany(s => s)
@@ -199,7 +199,7 @@ public class ScoringService
         return _playerSolvedChallengesIgnoringFreeze.TryGetValue(playerId.Value, out var solves) &&
                solves.Any(s => s.ChallengeName == challengeName);
     }
-    
+
     public bool HasTeamSolvedChallenge(Guid? teamId, string challengeName)
     {
         if (teamId == null)
@@ -217,12 +217,12 @@ public class ScoringService
     {
         return _playerScoreboard;
     }
-    
+
     public List<PlayerSolve> GetPlayerSolves(Guid playerId)
     {
         return _playerSolvedChallenges.TryGetValue(playerId, out var solves) ? solves : new List<PlayerSolve>();
     }
-    
+
     public List<TeamSolve> GetTeamSolves(Guid teamId)
     {
         return _teamSolvedChallenges.TryGetValue(teamId, out var solves) ? solves : new List<TeamSolve>();
@@ -232,12 +232,12 @@ public class ScoringService
     {
         return _challengeValues.TryGetValue(challengeName, out var value) ? value : 0;
     }
-    
+
     public int GetPlayerScore(Guid id)
     {
         return _playerIndividualScore.TryGetValue(id, out var value) ? value : 0;
     }
-    
+
     public int GetTeamScore(Guid id)
     {
         return _teamScore.TryGetValue(id, out var value) ? value : 0;

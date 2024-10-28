@@ -92,7 +92,7 @@ public class ScoringController : ControllerBase
                 // Prevent submission if team mode is enabled but player has not yet joined a team
                 if (player.TeamId == null)
                     return SubmitFlagResult.MustJoinTeam;
-                
+
                 // Prevent submission if the team has already solved the challenge
                 if (_dbContext.Solves
                     .Where(s => s.Player.TeamId == player.TeamId)

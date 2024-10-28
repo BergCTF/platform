@@ -95,5 +95,4 @@ public class CtfController : ControllerBase
             }).ToList() ?? new List<Attachment>(),
         };
     }
-
 }

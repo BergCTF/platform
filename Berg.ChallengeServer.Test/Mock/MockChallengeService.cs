@@ -113,7 +113,7 @@ public class MockChallengeService : IChallengeService
         // Normally this would sync the challenges defined in the custom resources into the database.
     }
 
-    public Task CheckChallengeInstanceTimout(CancellationToken cancel)
+    public Task CheckChallengeInstanceTimeout(CancellationToken cancel)
     {
         // Do nothing intentionally.
         // Normally this would clean up challenges that are past their timeout

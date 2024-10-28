@@ -17,7 +17,7 @@ public class V1Alpha2TLSRouteSpec : V1CommonRouteSpec
 {
     [JsonPropertyName("hostnames")]
     public List<string>? Hostnames { get; set; }
-    
+
     [JsonPropertyName("rules")]
     public List<V1Alpha2TLSRouteRule>? Rules { get; set; }
 }

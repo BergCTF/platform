@@ -6,7 +6,6 @@ namespace Berg.ChallengeServer.Controllers;
 [ApiController]
 public class WebSocketController : ControllerBase
 {
-
     WebSocketService _webSocketService;
     PlayerService _playerService;
 
@@ -34,5 +33,4 @@ public class WebSocketController : ControllerBase
             HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
         }
     }
-
 }

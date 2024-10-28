@@ -12,7 +12,7 @@ public class V2CiliumNetworkPolicy : CustomResource<V2CiliumNetworkPolicySpec>
         "v2")
     {
     }
-    
+
     [JsonPropertyName("specs")]
     public List<V2CiliumNetworkPolicySpec>? Specs { get; set; }
 }

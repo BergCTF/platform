@@ -17,7 +17,7 @@ public class PlayerController : ControllerBase
     private readonly CtfConfig _ctfConfig;
     private readonly PlayerService _playerService;
     private readonly BergDbContext _dbContext;
-    
+
     public PlayerController(
         IChallengeService challengeService,
         CtfConfig ctfConfig,
@@ -29,7 +29,7 @@ public class PlayerController : ControllerBase
         _playerService = playerService;
         _dbContext = dbContext;
     }
-    
+
     [HttpGet]
     [Route("/api/v1/players")]
     public async Task<List<Player>> ListPlayers(CancellationToken cancel)
@@ -52,21 +52,21 @@ public class PlayerController : ControllerBase
             RequiredAttributes = new List<Shared.PlayerAttribute>(),
         }).ToList();
     }
-    
+
     [HttpGet]
     [Route("/api/v1/login")]
     public IActionResult Login(CancellationToken cancel)
     {
         return Challenge(new AuthenticationProperties { RedirectUri = "/" });
     }
-    
+
     [HttpGet]
     [Route("/api/v1/logout")]
     public IActionResult Logout(Guid? playerId, CancellationToken cancel)
     {
         return SignOut(new AuthenticationProperties { RedirectUri = "/" });
     }
-    
+
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [Route("/api/v1/self")]
@@ -74,7 +74,7 @@ public class PlayerController : ControllerBase
     {
         if (!(User.Identity?.IsAuthenticated ?? false))
             return new PlayerSelf();
-        
+
         var player = _playerService.GetPlayer(User);
         var requiredAttributes = _ctfConfig.PlayerAttributes?
             .Where(a => a.Required).ToHashSet() ?? new HashSet<Shared.PlayerAttribute>();
@@ -99,7 +99,7 @@ public class PlayerController : ControllerBase
     {
         public Dictionary<string, string> Attributes { get; set; } = new();
     }
-    
+
     [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -123,7 +123,7 @@ public class PlayerController : ControllerBase
         }
         _playerService.UpdatePlayerAttributes(player, playerUpdate.Attributes);
     }
-    
+
     [HttpDelete]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]

@@ -6,7 +6,7 @@ public class V2CiliumPortRuleDns
 {
     [JsonPropertyName("matchName")]
     public string? MatchName { get; set; }
-    
+
     [JsonPropertyName("matchPattern")]
     public string? MatchPattern { get; set; }
 }

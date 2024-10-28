@@ -9,7 +9,7 @@ public class PlayerService
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly Dictionary<string, Player> _playerCache = new();
     private readonly object _playerUpdateLock = new();
-    
+
     public PlayerService(IServiceScopeFactory serviceScopeFactory)
     {
         _serviceScopeFactory = serviceScopeFactory;
@@ -40,7 +40,7 @@ public class PlayerService
         var email = user.FindFirstValue(ClaimTypes.Email);
         if (email == null)
             throw new ArgumentException("Email Claim missing in user identity.");
-        
+
         lock (_playerUpdateLock)
         {
             if (_playerCache.TryGetValue(discordId, out var player))
@@ -58,7 +58,7 @@ public class PlayerService
     {
         using var scope = _serviceScopeFactory.CreateScope();
         using var dbContext = scope.ServiceProvider.GetRequiredService<BergDbContext>();
-        
+
         var newPlayer = new Player
         {
             Id = Guid.NewGuid(),
@@ -77,29 +77,29 @@ public class PlayerService
     {
         using var scope = _serviceScopeFactory.CreateScope();
         using var dbContext = scope.ServiceProvider.GetRequiredService<BergDbContext>();
-        
+
         var existingPlayer = dbContext.Players.FirstOrDefault(p => p.DiscordId == discordId);
         if (existingPlayer == null)
             throw new ArgumentException("Player can't be updated since there is no player with this id.");
-            
+
         // Update properties on login
         existingPlayer.Name = discordName;
         existingPlayer.Email = email;
         dbContext.SaveChanges();
         _playerCache[discordId] = existingPlayer;
     }
-    
+
     public void UpdatePlayerAttributes(Player player, Dictionary<string, string> attributes)
     {
         using var scope = _serviceScopeFactory.CreateScope();
         using var dbContext = scope.ServiceProvider.GetRequiredService<BergDbContext>();
-        
+
         var existingPlayer = dbContext.Players
             .Include(p => p.Attributes)
             .FirstOrDefault(p => p.Id == player.Id);
         if (existingPlayer == null)
             throw new ArgumentException("Player can't be updated since there is no player with this id.");
-            
+
         lock (_playerUpdateLock)
         {
             foreach (var pair in attributes)
@@ -134,10 +134,10 @@ public class PlayerService
             var dbPlayer = dbContext.Players.First(p => p.Id == playerToRemove.Id);
             dbContext.Players.Remove(dbPlayer);
             dbContext.SaveChanges();
-            
+
             // TODO: Make sure that all running challenge instances are cleaned up to prevent DoS
             // TODO: Make sure that the player can't abuse the create/delete functionality to bypass rate limits
-            
+
             _playerCache.Remove(playerToRemove.DiscordId);
         }
     }

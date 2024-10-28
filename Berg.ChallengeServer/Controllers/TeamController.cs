@@ -17,7 +17,7 @@ public class TeamController : ControllerBase
     private readonly PlayerService _playerService;
     private readonly ScoringService _scoringService;
     private readonly CtfConfig _ctfConfig;
-    
+
     public TeamController(
         ILogger<TeamController> logger,
         BergDbContext dbContext,
@@ -31,7 +31,7 @@ public class TeamController : ControllerBase
         _scoringService = scoringService;
         _ctfConfig = ctfConfig;
     }
-    
+
     [HttpGet]
     [Route("/api/v1/teams")]
     public async Task<List<Shared.Team>> ListTeams(CancellationToken cancel)
@@ -59,7 +59,7 @@ public class TeamController : ControllerBase
         [JsonPropertyName("name")]
         public string? Name { get; set; }
     }
-    
+
     [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -82,13 +82,13 @@ public class TeamController : ControllerBase
             throw new ArgumentException("Team name is too long. Thank coderion for this");
         if (!team.Name.All(char.IsAscii))
             throw new ArgumentException("Team name must be ascii-only");
-        
+
         if (player.Team != null)
             throw new ArgumentException("Player is already in a team");
 
         if(_dbContext.Teams.Any(t => t.Name == team.Name))
             throw new ArgumentException("Name is already taken");
-            
+
         // Create team
         var dbTeam = new Team
         {
@@ -97,7 +97,7 @@ public class TeamController : ControllerBase
             JoinToken = CreateJoinToken()
         };
         await _dbContext.Teams.AddAsync(dbTeam, cancel);
-        
+
         // Add player to team
         player.Team = dbTeam;
         await _dbContext.SaveChangesAsync(cancel);
@@ -128,11 +128,11 @@ public class TeamController : ControllerBase
     {
         if(!_ctfConfig.Teams)
             throw new ArgumentException("Teams not enabled");
-        
+
         if(req.JoinToken == null)
             throw new ArgumentException("Join token can't be null");
         var joinToken = req.JoinToken.Trim();
-        
+
         var playerId = _playerService.GetPlayer(User).Id;
         var player = await _dbContext.Players
             .Include(p => p.Team)
@@ -142,7 +142,7 @@ public class TeamController : ControllerBase
 
         if (player.Team != null)
             throw new ArgumentException("Player is already in a team");
-        
+
         var dbTeam = await _dbContext.Teams
             .Include(t => t.Players)
             .FirstOrDefaultAsync(t => t.JoinToken == joinToken, cancel);
@@ -158,12 +158,12 @@ public class TeamController : ControllerBase
         _playerService.RefreshPlayerInfo(_dbContext);
         _scoringService.RefreshScores(_dbContext);
         _logger.LogInformation("Player {} joined team: {}", playerId, dbTeam.Id);
-        
+
         // Add our new player to the list of players as we fetched the db information
         // before assigning the user to the team.
         var playerIds = dbTeam.Players.Select(p => p.Id).ToList();
         playerIds.Add(player.Id);
-        
+
         var team = new Shared.Team
         {
             Id = dbTeam.Id,
@@ -171,7 +171,7 @@ public class TeamController : ControllerBase
             JoinToken = dbTeam.JoinToken,
             Players = playerIds,
         };
-        
+
         return team;
     }
 

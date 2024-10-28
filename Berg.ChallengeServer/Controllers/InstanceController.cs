@@ -19,13 +19,13 @@ public class InstanceController : ControllerBase
         _challengeService = challengeService;
         _playerService = playerService;
     }
-    
+
     public class ChallengeStartRequest
     {
         [JsonPropertyName("challenge")]
         public string? Challenge { get; set; }
     }
-    
+
     [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -40,7 +40,7 @@ public class InstanceController : ControllerBase
         var playerId = _playerService.GetPlayer(User).Id;
         return await _challengeService.StartChallengeInstance(playerId, challenge, cancel);
     }
-    
+
     [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
