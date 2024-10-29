@@ -23,6 +23,7 @@ data:
         "challengeTlsPort": {{ .Values.gateway.tlsPort }},
         "challengeHttpListenerName": "http-chall",
         "challengeTlsListenerName": "tls-chall",
+        "playerIdNamespace": {{ .Values.berg.playerIdNamespace | quote }},
         "redirectUris": {{ .Values.berg.redirectUris | toJson }},
         "pullSecretName": {{ .Values.berg.pullSecretName | quote }}
       },
