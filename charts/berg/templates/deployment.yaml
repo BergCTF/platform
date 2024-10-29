@@ -23,7 +23,7 @@ spec:
       serviceAccountName: {{ include "berg.fullname" . }}
       containers:
         - name: berg-api
-          image: "{{ .Values.berg.image.repository }}:{{ .Values.berg.image.tag | default .Release.AppVersion }}"
+          image: "{{ .Values.berg.image.repository }}:{{ .Values.berg.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.berg.image.imagePullPolicy }}
           env:
             - name: "BERG_NAMESPACE"
