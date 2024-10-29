@@ -50,9 +50,4 @@ berg:
 
 postgresql:
   enabled: false
-  auth:
-    username: "berg"
-    password: "password"
-    postgresPassword: "postgres-password"
-    database: "berg"
 EOF

@@ -75,8 +75,8 @@ postgresql:
   enabled: true
   auth:
     username: berg
-    password: "REPLACE_ME"
-    postgresPassword: "REPLACE_ME"
+    password: ""
+    postgresPassword: ""
     database: berg
     volumePermissions:
       enabled: true

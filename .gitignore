@@ -352,5 +352,6 @@ MigrationBackup/
 # Rider
 .idea/
 
+charts/berg/charts
 appsettings.Development.json
 kubeconfig.yaml

@@ -236,3 +236,7 @@ readReplicas:
       cpu: "0.1"
       memory: "300Mi"
 EOF
+
+echo "Fetching helm dependencies"
+cd charts/berg
+helm dependency update
