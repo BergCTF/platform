@@ -6,7 +6,7 @@ public class ChallengeInstanceStatus
 {
     [JsonPropertyName("name")]
     public string Name { get; set; } = null!;
-    
+
     [JsonPropertyName("status")]
     public ChallengeInstanceState InstanceState { get; set; } = ChallengeInstanceState.None;
 

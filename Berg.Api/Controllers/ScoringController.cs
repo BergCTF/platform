@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text.Json.Serialization;
 using Berg.Api.Configuration;
 using Berg.Api.Db;
@@ -8,6 +9,7 @@ using Discord.Rest;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OpenIddict.Abstractions;
 using DiscordConfig = Berg.Api.Configuration.DiscordConfig;
 
 namespace Berg.Api.Controllers;
@@ -21,7 +23,6 @@ public class ScoringController : ControllerBase
     private readonly BergDbContext _dbContext;
     private readonly IChallengeService _challengeService;
     private readonly ScoringService _scoringService;
-    private readonly PlayerService _playerService;
     private readonly object _submitFlagLock = new();
     private readonly WebSocketService _webSocketService;
 
@@ -32,7 +33,6 @@ public class ScoringController : ControllerBase
         BergDbContext dbContext,
         IChallengeService challengeService,
         ScoringService scoringService,
-        PlayerService playerService,
         WebSocketService webSocketService)
     {
         _logger = logger;
@@ -41,7 +41,6 @@ public class ScoringController : ControllerBase
         _discordConfig = discordConfig;
         _dbContext = dbContext;
         _scoringService = scoringService;
-        _playerService = playerService;
         _webSocketService = webSocketService;
     }
 
@@ -75,7 +74,7 @@ public class ScoringController : ControllerBase
 
         lock (_submitFlagLock)
         {
-            var playerId = _playerService.GetPlayer(User).Id;
+            var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
             var player = _dbContext.Players
                 .Include(p => p.Submissions)
                 .Include(p => p.Solves)
@@ -178,14 +177,15 @@ public class ScoringController : ControllerBase
             if (freezeStart != null && freezeEnd != null && utcNow > freezeStart.Value && utcNow < freezeEnd.Value)
             {
                 // add a user filter - only send to the user who solved the challenge and their team
-                if (player.TeamId != null)
+                if (_ctfConfig.Teams && player.TeamId != null)
                 {
-                    _webSocketService.PushEvent("solve", solveEvent, s => s.TeamId == player.TeamId)
+                    var teamPlayerIds = _dbContext.Players.Where(p => p.TeamId == player.TeamId).Select(p => p.Id).ToHashSet();
+                    _webSocketService.PushEvent("solve", solveEvent, teamPlayerIds.Contains)
                         .ContinueWith(t => _logger.LogError("Error sending WebSocket Events", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
                 }
                 else
                 {
-                    _webSocketService.PushEvent("solve", solveEvent, s => s.Id == player.Id)
+                    _webSocketService.PushEvent("solve", solveEvent, s => s == player.Id)
                         .ContinueWith(t => _logger.LogError("Error sending WebSocket Events", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
                 }
                 _logger.LogInformation("Announcement not sent because the scoreboard is currently frozen.");
@@ -194,7 +194,7 @@ public class ScoringController : ControllerBase
             {
                 _webSocketService.PushEventAll("solve", solveEvent)
                     .ContinueWith(t => _logger.LogError("Error sending WebSocket Events", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
-                SendDiscordNotification(player.DiscordId, player.Name, player.Team?.Name, challenge, firstBlood)
+                SendDiscordNotification(player.FederatedId, player.Name, player.Team?.Name, challenge, firstBlood)
                     .Wait();
             }
 

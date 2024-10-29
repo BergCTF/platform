@@ -9,7 +9,7 @@ public class Team
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = null!;
-    
+
     [JsonPropertyName("joinToken")]
     public string? JoinToken { get; set; }
 

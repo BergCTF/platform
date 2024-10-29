@@ -6,16 +6,16 @@ public class CtfChallenges
 {
     [JsonPropertyName("start")]
     public DateTime Start { get; set; }
-    
+
     [JsonPropertyName("end")]
     public DateTime End { get; set; }
 
     [JsonPropertyName("serverTime")]
     public DateTime ServerTime { get; set; }
-    
+
     [JsonPropertyName("freezeStart")]
     public DateTime? FreezeStart { get; set; }
-    
+
     [JsonPropertyName("freezeEnd")]
     public DateTime? FreezeEnd { get; set; }
 

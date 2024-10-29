@@ -14,8 +14,8 @@ namespace Berg.Api.Services;
 
 public interface IWebSocketService
 {
-    Task WebSocketHandler(WebSocket webSocket, Db.Player? player);
-    Task PushEvent<T>(string eventType, T message, Func<Db.Player, bool> filter);
+    Task WebSocketHandler(WebSocket webSocket, Guid? playerId);
+    Task PushEvent<T>(string eventType, T message, Func<Guid, bool> filter);
     Task PushEventAll<T>(string eventType, T message);
 }
 
@@ -23,7 +23,7 @@ public class BergWebSocketConnection
 {
     public WebSocket WebSocket { get; set; } = null!;
     public bool IsAuthenticated { get; set; }
-    public Db.Player? Player { get; set; }
+    public Guid? PlayerId { get; set; }
 }
 
 public class WebSocketService : IWebSocketService
@@ -43,15 +43,15 @@ public class WebSocketService : IWebSocketService
         _ctfConfig = ctfConfig;
     }
 
-    public async Task WebSocketHandler(WebSocket webSocket, Db.Player? player)
+    public async Task WebSocketHandler(WebSocket webSocket, Guid? playerId)
     {
         _logger.LogInformation("WebSocket connection opened");
         var ws = new BergWebSocketConnection { WebSocket = webSocket, IsAuthenticated = false };
 
-        if (player != null)
+        if (playerId != null)
         {
             ws.IsAuthenticated = true;
-            ws.Player = player;
+            ws.PlayerId = playerId;
         }
 
         _websockets.Add(ws);
@@ -75,12 +75,12 @@ public class WebSocketService : IWebSocketService
         _websockets.Remove(ws);
     }
 
-    public async Task PushEvent<T>(string eventType, T message, Func<Db.Player, bool> filter)
+    public async Task PushEvent<T>(string eventType, T message, Func<Guid, bool> filter)
     {
         var buffer = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { type = eventType, message }));
         foreach (var ws in _websockets)
         {
-            if (!ws.IsAuthenticated || !filter(ws.Player!)) continue;
+            if (!ws.IsAuthenticated || !filter(ws.PlayerId!.Value)) continue;
             if (ws.WebSocket.State == WebSocketState.Open)
                 await ws.WebSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
             else if (ws.WebSocket.State == WebSocketState.CloseReceived || ws.WebSocket.State == WebSocketState.CloseSent)

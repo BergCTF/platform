@@ -11,10 +11,16 @@ public class Player
     public string Name { get; set; } = default!;
 
     [MaxLength(128)]
-    public string DiscordId { get; set; } = default!;
+    public string FederatedId { get; set; } = default!;
 
     [MaxLength(1024)]
     public string Email { get; set; } = default!;
+
+    [MaxLength(1024)]
+    public string? ApiKeyHash { get; set; }
+
+    [MaxLength(1024)]
+    public string? ApiKeyPlaceholder { get; set; }
 
     public Guid? TeamId { get; set; }
 

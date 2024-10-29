@@ -17,13 +17,16 @@ data:
       },
       "infra": {
         "challengeDomain": {{ .Values.gateway.domain | quote }},
+        "platformDomain": {{ .Values.berg.domain | quote }},
         "gatewayName": "{{ include "berg.fullname" . }}-gateway",
         "challengeHttpPort": {{ .Values.gateway.httpPort }},
         "challengeTlsPort": {{ .Values.gateway.tlsPort }},
         "challengeHttpListenerName": "http-chall",
         "challengeTlsListenerName": "tls-chall",
+        "redirectUris": {{ .Values.berg.redirectUris | toJson }},
         "pullSecretName": {{ .Values.berg.pullSecretName | quote }}
       },
       "discord": {{ .Values.berg.discord | toJson }},
+      "genericOpenId": {{ .Values.berg.genericOpenId | toJson }},
       "ctf": {{ .Values.berg.ctf | toJson }}
     }

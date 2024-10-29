@@ -12,7 +12,7 @@ spec:
     secretName: {{ .Values.berg.tlsSecretName }}
   routes:
     - kind: Rule
-      match: Host(`{{ .Values.berg.domain }}`) && (PathPrefix(`/api`) || PathPrefix(`/swagger`))
+      match: Host(`{{ .Values.berg.domain }}`) && (PathPrefix(`/api`) || PathPrefix(`/swagger`) || PathPrefix(`/.well-known/openid-configuration`) || PathPrefix(`/.well-known/jwks`))
       services:
         - kind: Service
           name: {{ include "berg.fullname" . }}-api

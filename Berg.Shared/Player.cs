@@ -6,15 +6,15 @@ public class Player
 {
     [JsonPropertyName("id")]
     public Guid Id { get; set; }
-    
+
     [JsonPropertyName("name")]
     public string Name { get; set; } = null!;
 
     [JsonPropertyName("teamId")]
     public Guid? TeamId { get; set; }
 
-    [JsonPropertyName("discordId")]
-    public string DiscordId { get; set; } = null!;
+    [JsonPropertyName("federatedId")]
+    public string FederatedId { get; set; } = null!;
 
     [JsonPropertyName("attributes")]
     public Dictionary<string, string> Attributes { get; set; } = new();

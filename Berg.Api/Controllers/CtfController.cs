@@ -1,9 +1,12 @@
+using System.Security.Claims;
 using Berg.Api.Configuration;
 using Berg.Api.CustomResources.Berg;
+using Berg.Api.Db;
 using Berg.Api.Services;
 using Berg.Shared;
 using k8s.Models;
 using Microsoft.AspNetCore.Mvc;
+using OpenIddict.Abstractions;
 using Challenge = Berg.Shared.Challenge;
 
 namespace Berg.Api.Controllers;
@@ -14,18 +17,18 @@ public class CtfController : ControllerBase
     private readonly CtfConfig _ctfConfig;
     private readonly IChallengeService _challengeService;
     private readonly ScoringService _scoringService;
-    private readonly PlayerService _playerService;
+    private readonly BergDbContext _dbContext;
 
     public CtfController(
         CtfConfig ctfConfig,
         ScoringService scoringService,
         IChallengeService challengeService,
-        PlayerService playerService)
+        BergDbContext dbContext)
     {
         _ctfConfig = ctfConfig;
         _scoringService = scoringService;
         _challengeService = challengeService;
-        _playerService = playerService;
+        _dbContext = dbContext;
     }
 
     [HttpGet]
@@ -42,7 +45,11 @@ public class CtfController : ControllerBase
             Teams = _ctfConfig.Teams
         };
         var now = DateTime.UtcNow;
-        var player = (User.Identity?.IsAuthenticated ?? false) ? _playerService.GetPlayer(User) : null;
+        Db.Player? player = null;
+        if (User.Identity?.IsAuthenticated ?? false) {
+            var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
+            player = _dbContext.Players.Single(p => p.Id == playerId);
+        }
         if (_ctfConfig.Start <= now)
         {
             ctf.Challenges = _challengeService.GetChallenges()

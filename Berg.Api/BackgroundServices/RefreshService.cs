@@ -9,7 +9,6 @@ public class RefreshService : BackgroundService
     private readonly ILogger<RefreshService> _logger;
     private readonly ScoringService _scoringService;
     private readonly IChallengeService _challengeService;
-    private readonly PlayerService _playerService;
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly InfraConfig _infraConfig;
 
@@ -17,7 +16,6 @@ public class RefreshService : BackgroundService
         ILogger<RefreshService> logger,
         ScoringService scoringService,
         IChallengeService challengeService,
-        PlayerService playerService,
         IServiceScopeFactory serviceScopeFactory,
         InfraConfig infraConfig)
     {
@@ -25,7 +23,6 @@ public class RefreshService : BackgroundService
         _serviceScopeFactory = serviceScopeFactory;
         _scoringService = scoringService;
         _challengeService = challengeService;
-        _playerService = playerService;
         _infraConfig = infraConfig;
     }
 
@@ -39,7 +36,6 @@ public class RefreshService : BackgroundService
             {
                 _challengeService.RefreshChallenges(dbContext);
                 _scoringService.RefreshScores(dbContext);
-                _playerService.RefreshPlayerInfo(dbContext);
             }
             await _challengeService.CheckChallengeInstanceTimeout(stoppingToken);
 

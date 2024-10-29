@@ -44,9 +44,9 @@ berg:
       - "profile"
       - "email"
     claims:
-      userId: "sub"
-      userName: "name"
-      userEmail: "email"
+      id: "sub"
+      name: "name"
+      email: "email"
 
 postgresql:
   enabled: false

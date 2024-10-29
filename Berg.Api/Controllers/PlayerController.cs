@@ -1,11 +1,13 @@
+using System.Security.Claims;
+using System.Security.Cryptography;
 using Berg.Api.Configuration;
 using Berg.Api.Db;
 using Berg.Api.Services;
 using Berg.Shared;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OpenIddict.Abstractions;
 using Player = Berg.Shared.Player;
 
 namespace Berg.Api.Controllers;
@@ -15,18 +17,15 @@ public class PlayerController : ControllerBase
 {
     private readonly IChallengeService _challengeService;
     private readonly CtfConfig _ctfConfig;
-    private readonly PlayerService _playerService;
     private readonly BergDbContext _dbContext;
 
     public PlayerController(
         IChallengeService challengeService,
         CtfConfig ctfConfig,
-        PlayerService playerService,
         BergDbContext dbContext)
     {
         _challengeService = challengeService;
         _ctfConfig = ctfConfig;
-        _playerService = playerService;
         _dbContext = dbContext;
     }
 
@@ -45,7 +44,7 @@ public class PlayerController : ControllerBase
             Id = p.Id,
             Name = p.Name,
             TeamId = p.TeamId,
-            DiscordId = p.DiscordId,
+            FederatedId = "", // No need to leak federated ids to the public
             Attributes = p.Attributes
                 .Where(a => publicCustomAttributes.Contains(a.Name))
                 .ToDictionary(a => a.Name, a => a.Value),
@@ -54,28 +53,15 @@ public class PlayerController : ControllerBase
     }
 
     [HttpGet]
-    [Route("/api/v1/login")]
-    public IActionResult Login(CancellationToken cancel)
-    {
-        return Challenge(new AuthenticationProperties { RedirectUri = "/" });
-    }
-
-    [HttpGet]
-    [Route("/api/v1/logout")]
-    public IActionResult Logout(Guid? playerId, CancellationToken cancel)
-    {
-        return SignOut(new AuthenticationProperties { RedirectUri = "/" });
-    }
-
-    [HttpGet]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [Route("/api/v1/self")]
     public async Task<PlayerSelf> GetPlayerSelf(CancellationToken cancel)
     {
-        if (!(User.Identity?.IsAuthenticated ?? false))
-            return new PlayerSelf();
-
-        var player = _playerService.GetPlayer(User);
+        var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
+        var player = _dbContext.Players
+            .Include(p => p.Attributes)
+            .Single(p => p.Id == playerId);
         var requiredAttributes = _ctfConfig.PlayerAttributes?
             .Where(a => a.Required).ToHashSet() ?? new HashSet<Shared.PlayerAttribute>();
         return new PlayerSelf
@@ -85,12 +71,13 @@ public class PlayerController : ControllerBase
                 Id = player.Id,
                 Name = player.Name,
                 TeamId = player.TeamId,
-                DiscordId = player.DiscordId,
+                FederatedId = player.FederatedId,
                 Attributes = player.Attributes.ToDictionary(a => a.Name, a => a.Value),
                 RequiredAttributes = requiredAttributes
                     .Where(a => player.Attributes.All(pa => pa.Name != a.Name))
                     .ToList()
             },
+            ApiKeyPlaceholder = player.ApiKeyPlaceholder,
             ChallengeInstance = await _challengeService.GetChallengeInstance(player.Id, cancel)
         };
     }
@@ -107,9 +94,10 @@ public class PlayerController : ControllerBase
     [Route("/api/v1/self")]
     public void UpdatePlayerSelf(PlayerUpdateRequest playerUpdate)
     {
-        var player = _playerService.GetPlayer(User);
+        var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
+        var player = _dbContext.Players.Single(p => p.Id == playerId);
         var configAttributesByName = _ctfConfig.PlayerAttributes?
-            .ToDictionary(a => a.Name) ?? new Dictionary<string, Shared.PlayerAttribute>();
+            .ToDictionary(a => a.Name) ?? [];
         foreach (var attr in playerUpdate.Attributes)
         {
             if(attr.Key.Length > 128)
@@ -121,7 +109,53 @@ public class PlayerController : ControllerBase
             if (!configAttr.Values.Contains(attr.Value))
                 throw new ArgumentException($"Invalid attribute value: {attr.Value}");
         }
-        _playerService.UpdatePlayerAttributes(player, playerUpdate.Attributes);
+
+        foreach (var pair in playerUpdate.Attributes)
+        {
+            var existingAttr = player.Attributes.FirstOrDefault(a => a.Name == pair.Key);
+            if (existingAttr != null)
+            {
+                existingAttr.Value = pair.Value;
+            }
+            else
+            {
+                player.Attributes.Add(new Db.PlayerAttribute()
+                {
+                    Player = player,
+                    Name = pair.Key,
+                    Value = pair.Value
+                });
+            }
+        }
+        _dbContext.SaveChanges();
+    }
+
+    [HttpDelete]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [Route("/api/v1/self/api-key")]
+    public ActionResult<string> DeleteApiKey()
+    {
+        var loginType = User.FindFirstValue(Constants.Claims.LoginType)!;
+
+        if (loginType != Constants.LoginTypes.Federation)
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid login type",
+                Detail = "Can't reset api key with a token obtained through api key authentication.",
+            });
+
+        var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
+        var newApiKey = RandomNumberGenerator.GetHexString(64, true);
+        var apiKeyHash = Helpers.GetApiKeyHash(newApiKey, playerId);
+
+        var player = _dbContext.Players.Single(p => p.Id == playerId);
+        player.ApiKeyPlaceholder = newApiKey[..4] + new string('*', newApiKey.Length - 4);
+        player.ApiKeyHash = apiKeyHash;
+        _dbContext.SaveChanges();
+
+        return Ok(newApiKey);
     }
 
     [HttpDelete]
@@ -129,10 +163,22 @@ public class PlayerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/self")]
-    public async Task DeleteSelf()
+    public IActionResult DeleteSelf()
     {
-        var player = _playerService.GetPlayer(User);
-        _playerService.DeletePlayer(player);
-        await HttpContext.SignOutAsync();
+        var loginType = User.FindFirstValue(Constants.Claims.LoginType)!;
+        var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
+
+        if (loginType != Constants.LoginTypes.Federation)
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid login type",
+                Detail = "Can't delete your account with a token obtained through api key authentication.",
+            });
+
+        var player = _dbContext.Players.First(p => p.Id == playerId);
+        _dbContext.Players.Remove(player);
+        _dbContext.SaveChanges();
+
+        return SignOut();
     }
 }

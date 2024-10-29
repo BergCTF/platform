@@ -1,8 +1,10 @@
+using System.Security.Claims;
 using System.Text.Json.Serialization;
 using Berg.Api.Services;
 using Berg.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OpenIddict.Abstractions;
 
 namespace Berg.Api.Controllers;
 
@@ -10,14 +12,11 @@ namespace Berg.Api.Controllers;
 public class InstanceController : ControllerBase
 {
     private readonly IChallengeService _challengeService;
-    private readonly PlayerService _playerService;
 
     public InstanceController(
-        IChallengeService challengeService,
-        PlayerService playerService)
+        IChallengeService challengeService)
     {
         _challengeService = challengeService;
-        _playerService = playerService;
     }
 
     public class ChallengeStartRequest
@@ -37,7 +36,7 @@ public class InstanceController : ControllerBase
         var challenge = startRequest.Challenge;
         if (challenge == null)
             throw new ArgumentException("Challenge can't be null");
-        var playerId = _playerService.GetPlayer(User).Id;
+        var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
         return await _challengeService.StartChallengeInstance(playerId, challenge, cancel);
     }
 
@@ -48,7 +47,7 @@ public class InstanceController : ControllerBase
     [Route("/api/v1/challengeInstance/stop")]
     public async Task<ChallengeInstanceStatus> StopChallengeInstance(CancellationToken cancel)
     {
-        var playerId = _playerService.GetPlayer(User).Id;
+        var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
         return await _challengeService.StopChallengeInstance(playerId, cancel);
     }
 }

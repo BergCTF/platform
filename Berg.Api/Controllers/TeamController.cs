@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.Json.Serialization;
 using Berg.Api.Configuration;
@@ -6,6 +7,7 @@ using Berg.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OpenIddict.Abstractions;
 
 namespace Berg.Api.Controllers;
 
@@ -14,20 +16,17 @@ public class TeamController : ControllerBase
 {
     private readonly ILogger<TeamController> _logger;
     private readonly BergDbContext _dbContext;
-    private readonly PlayerService _playerService;
     private readonly ScoringService _scoringService;
     private readonly CtfConfig _ctfConfig;
 
     public TeamController(
         ILogger<TeamController> logger,
         BergDbContext dbContext,
-        PlayerService playerService,
         ScoringService scoringService,
         CtfConfig ctfConfig)
     {
         _logger = logger;
         _dbContext = dbContext;
-        _playerService = playerService;
         _scoringService = scoringService;
         _ctfConfig = ctfConfig;
     }
@@ -36,7 +35,11 @@ public class TeamController : ControllerBase
     [Route("/api/v1/teams")]
     public async Task<List<Shared.Team>> ListTeams(CancellationToken cancel)
     {
-        var player = (User.Identity?.IsAuthenticated ?? false) ? _playerService.GetPlayer(User) : null;
+        Player player = null;
+        if (User.Identity?.IsAuthenticated ?? false) {
+            var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
+            player = _dbContext.Players.Single(p => p.Id == playerId);
+        }
         var teamId = player?.TeamId;
         return (await _dbContext.Teams.Select(t => new Shared.Team
         {
@@ -70,7 +73,7 @@ public class TeamController : ControllerBase
         if(!_ctfConfig.Teams)
             throw new ArgumentException("Teams not enabled");
 
-        var playerId = _playerService.GetPlayer(User).Id;
+        var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
         var player = await _dbContext.Players
             .Include(p => p.Team)
             .FirstOrDefaultAsync(p => p.Id == playerId, cancel);
@@ -101,7 +104,6 @@ public class TeamController : ControllerBase
         // Add player to team
         player.Team = dbTeam;
         await _dbContext.SaveChangesAsync(cancel);
-        _playerService.RefreshPlayerInfo(_dbContext);
         _scoringService.RefreshScores(_dbContext);
         _logger.LogInformation("Player {} created team: {}", playerId, dbTeam.Id);
 
@@ -133,7 +135,7 @@ public class TeamController : ControllerBase
             throw new ArgumentException("Join token can't be null");
         var joinToken = req.JoinToken.Trim();
 
-        var playerId = _playerService.GetPlayer(User).Id;
+        var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
         var player = await _dbContext.Players
             .Include(p => p.Team)
             .FirstOrDefaultAsync(p => p.Id == playerId, cancel);
@@ -155,7 +157,6 @@ public class TeamController : ControllerBase
         // Assign the player to the team
         player.Team = dbTeam;
         await _dbContext.SaveChangesAsync(cancel);
-        _playerService.RefreshPlayerInfo(_dbContext);
         _scoringService.RefreshScores(_dbContext);
         _logger.LogInformation("Player {} joined team: {}", playerId, dbTeam.Id);
 
@@ -185,7 +186,7 @@ public class TeamController : ControllerBase
         if(!_ctfConfig.Teams)
             throw new ArgumentException("Teams not enabled");
 
-        var playerId = _playerService.GetPlayer(User).Id;
+        var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
         var player = await _dbContext.Players
             .Include(p => p.Team)
             .FirstOrDefaultAsync(p => p.Id == playerId, cancel);
@@ -198,7 +199,6 @@ public class TeamController : ControllerBase
         var previousTeamId = player.Team.Id;
         player.Team = null;
         await _dbContext.SaveChangesAsync(cancel);
-        _playerService.RefreshPlayerInfo(_dbContext);
         _scoringService.RefreshScores(_dbContext);
         _logger.LogInformation("Player {} left team {}", playerId, previousTeamId);
     }

@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using Berg.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using OpenIddict.Abstractions;
 
 namespace Berg.Api.Controllers;
 
@@ -7,15 +9,12 @@ namespace Berg.Api.Controllers;
 public class WebSocketController : ControllerBase
 {
     WebSocketService _webSocketService;
-    PlayerService _playerService;
 
     public WebSocketController(
-        WebSocketService webSocketService,
-        PlayerService playerService
+        WebSocketService webSocketService
     )
     {
         _webSocketService = webSocketService;
-        _playerService = playerService;
     }
 
     [HttpGet]
@@ -25,7 +24,7 @@ public class WebSocketController : ControllerBase
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
             using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-            var player = (User.Identity?.IsAuthenticated ?? false) ? _playerService.GetPlayer(User) : null;
+            Guid? player = (User.Identity?.IsAuthenticated ?? false) ? Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!) : null;
             await _webSocketService.WebSocketHandler(webSocket, player);
         }
         else
