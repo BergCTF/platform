@@ -8,10 +8,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
+using Team = Berg.Api.Models.V1.Team;
 
-namespace Berg.Api.Controllers;
+namespace Berg.Api.Controllers.V1;
 
 [ApiController]
+[ApiExplorerSettings(GroupName = "v1")]
 public class TeamController : ControllerBase
 {
     private readonly ILogger<TeamController> _logger;
@@ -33,15 +35,15 @@ public class TeamController : ControllerBase
 
     [HttpGet]
     [Route("/api/v1/teams")]
-    public async Task<List<Shared.Team>> ListTeams(CancellationToken cancel)
+    public async Task<List<Team>> ListTeams(CancellationToken cancel)
     {
-        Player player = null;
+        Db.Player? player = null;
         if (User.Identity?.IsAuthenticated ?? false) {
             var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
             player = _dbContext.Players.Single(p => p.Id == playerId);
         }
         var teamId = player?.TeamId;
-        return (await _dbContext.Teams.Select(t => new Shared.Team
+        return (await _dbContext.Teams.Select(t => new Team
         {
             Id = t.Id,
             Name = t.Name,
@@ -68,7 +70,7 @@ public class TeamController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/teams/create")]
-    public async Task<Shared.Team> CreateTeam([FromBody] TeamCreateRequest team, CancellationToken cancel)
+    public async Task<Team> CreateTeam([FromBody] TeamCreateRequest team, CancellationToken cancel)
     {
         if(!_ctfConfig.Teams)
             throw new ArgumentException("Teams not enabled");
@@ -93,7 +95,7 @@ public class TeamController : ControllerBase
             throw new ArgumentException("Name is already taken");
 
         // Create team
-        var dbTeam = new Team
+        var dbTeam = new Db.Team
         {
             Id = Guid.NewGuid(),
             Name = team.Name,
@@ -107,7 +109,7 @@ public class TeamController : ControllerBase
         _scoringService.RefreshScores(_dbContext);
         _logger.LogInformation("Player {} created team: {}", playerId, dbTeam.Id);
 
-        return new Shared.Team
+        return new Team
         {
             Id = dbTeam.Id,
             JoinToken = dbTeam.JoinToken,
@@ -126,7 +128,7 @@ public class TeamController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Route("/api/v1/teams/join")]
-    public async Task<Shared.Team> JoinTeam([FromBody] JoinTeamRequest req, CancellationToken cancel)
+    public async Task<Team> JoinTeam([FromBody] JoinTeamRequest req, CancellationToken cancel)
     {
         if(!_ctfConfig.Teams)
             throw new ArgumentException("Teams not enabled");
@@ -165,7 +167,7 @@ public class TeamController : ControllerBase
         var playerIds = dbTeam.Players.Select(p => p.Id).ToList();
         playerIds.Add(player.Id);
 
-        var team = new Shared.Team
+        var team = new Team
         {
             Id = dbTeam.Id,
             Name = dbTeam.Name,

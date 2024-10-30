@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Berg.Shared;
+namespace Berg.Api.Models.V1;
 
 public class CtfChallenges
 {

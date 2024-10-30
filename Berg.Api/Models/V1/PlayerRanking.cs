@@ -1,11 +1,11 @@
 using System.Text.Json.Serialization;
 
-namespace Berg.Shared;
+namespace Berg.Api.Models.V1;
 
-public class TeamRanking
+public class PlayerRanking
 {
-    [JsonPropertyName("teamId")]
-    public Guid TeamId { get; set; }
+    [JsonPropertyName("playerId")]
+    public Guid PlayerId { get; set; }
 
     [JsonPropertyName("score")]
     public int Score { get; set; }
@@ -14,5 +14,5 @@ public class TeamRanking
     public DateTime? LastSolve { get; set; }
 
     [JsonPropertyName("solves")]
-    public List<TeamSolve> Solves { get; set; } = new();
+    public List<PlayerSolve> Solves { get; set; } = new();
 }

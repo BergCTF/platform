@@ -3,15 +3,16 @@ using Berg.Api.Configuration;
 using Berg.Api.CustomResources.Berg;
 using Berg.Api.Db;
 using Berg.Api.Services;
-using Berg.Shared;
+using Berg.Api.Models.V1;
 using k8s.Models;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
-using Challenge = Berg.Shared.Challenge;
+using Challenge = Berg.Api.Models.V1.Challenge;
 
-namespace Berg.Api.Controllers;
+namespace Berg.Api.Controllers.V1;
 
 [ApiController]
+[ApiExplorerSettings(GroupName = "v1")]
 public class CtfController : ControllerBase
 {
     private readonly CtfConfig _ctfConfig;

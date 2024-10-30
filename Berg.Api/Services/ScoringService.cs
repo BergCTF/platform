@@ -1,6 +1,6 @@
 using Berg.Api.Configuration;
 using Berg.Api.Db;
-using Berg.Shared;
+using Berg.Api.Models.V1;
 using k8s.Models;
 using Microsoft.EntityFrameworkCore;
 

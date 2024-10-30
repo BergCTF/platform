@@ -1,14 +1,11 @@
 using System.Text.Json.Serialization;
 
-namespace Berg.Shared;
+namespace Berg.Api.Models.V1;
 
-public class Solve
+public class PlayerSolve
 {
     [JsonPropertyName("playerId")]
     public Guid PlayerId { get; set; }
-
-    [JsonPropertyName("teamId")]
-    public Guid? TeamId { get; set; }
 
     [JsonPropertyName("solvedAt")]
     public DateTime SolvedAt { get; set; }

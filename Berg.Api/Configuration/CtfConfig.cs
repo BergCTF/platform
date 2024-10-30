@@ -1,4 +1,4 @@
-using Berg.Shared;
+using Berg.Api.Models.V1;
 
 namespace Berg.Api.Configuration;
 

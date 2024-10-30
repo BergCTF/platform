@@ -5,7 +5,7 @@ using Berg.Api.CustomResources.Berg;
 using Berg.Api.CustomResources.Cilium;
 using Berg.Api.CustomResources.GatewayApi;
 using Berg.Api.Db;
-using Berg.Shared;
+using Berg.Api.Models.V2;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
@@ -18,9 +18,9 @@ public interface IChallengeService
     V1Challenge? GetChallengeConfig(string challengeName);
     void RefreshChallenges(BergDbContext dbContext);
     Task CheckChallengeInstanceTimeout(CancellationToken cancel);
-    Task<ChallengeInstanceStatus> GetChallengeInstance(Guid playerId, CancellationToken cancel);
-    Task<ChallengeInstanceStatus> StartChallengeInstance(Guid playerId, string challenge, CancellationToken cancel);
-    Task<ChallengeInstanceStatus> StopChallengeInstance(Guid playerId, CancellationToken cancel);
+    Task<Instance> GetChallengeInstance(Guid playerId, CancellationToken cancel);
+    Task<Instance> StartChallengeInstance(Guid playerId, string challenge, CancellationToken cancel);
+    Task<Instance> StopChallengeInstance(Guid playerId, CancellationToken cancel);
 }
 
 public class ChallengeService : IChallengeService
@@ -118,11 +118,11 @@ public class ChallengeService : IChallengeService
         }
     }
 
-    public async Task<ChallengeInstanceStatus> GetChallengeInstance(Guid playerId, CancellationToken cancel)
+    public async Task<Instance> GetChallengeInstance(Guid playerId, CancellationToken cancel)
     {
         var now = DateTime.UtcNow;
         if (_ctfConfig.Start > now)
-            return new ChallengeInstanceStatus();
+            return new Instance();
 
         var labelSelector = new Dictionary<string, string>
         {
@@ -135,24 +135,24 @@ public class ChallengeService : IChallengeService
 
         var ns = nsList.Items.FirstOrDefault();
         if (ns == null)
-            return new ChallengeInstanceStatus { InstanceState = ChallengeInstanceState.None };
+            return new Instance { InstanceState = InstanceState.None };
 
         var challengeName = ns.GetLabel(ChallengeLabel);
         if (ns.Status.Phase == "Terminating")
-            return new ChallengeInstanceStatus
+            return new Instance
             {
                 Name = challengeName,
-                InstanceState = ChallengeInstanceState.Terminating
+                InstanceState = InstanceState.Terminating
             };
 
         var challenge = await _challengeClient.ReadNamespacedAsync<V1Challenge>(_bergNamespace, challengeName, cancel);
 
         var podList = await _kubernetes.ListNamespacedPodAsync(ns.Name(), cancellationToken: cancel);
         if (podList.Items.Any(p => p.Status.Phase != "Running"))
-           return new ChallengeInstanceStatus
+           return new Instance
            {
                Name = challengeName,
-               InstanceState = ChallengeInstanceState.Starting
+               InstanceState = InstanceState.Starting
            };
 
         var serviceList = await _kubernetes.ListNamespacedServiceAsync(ns.Name(), cancellationToken: cancel);
@@ -204,21 +204,21 @@ public class ChallengeService : IChallengeService
             }
         }
 
-        return new ChallengeInstanceStatus
+        return new Instance
         {
             Name = challengeName,
-            InstanceState = ChallengeInstanceState.Running,
+            InstanceState = InstanceState.Running,
             Services = services,
-            InstanceTimeout = ns.CreationTimestamp()?.Add(_infraConfig.ChallengeInstanceTimeout)
+            Timeout = ns.CreationTimestamp()?.Add(_infraConfig.ChallengeInstanceTimeout)
         };
     }
 
-    public async Task<ChallengeInstanceStatus> StartChallengeInstance(Guid playerId, string challenge,
+    public async Task<Instance> StartChallengeInstance(Guid playerId, string challenge,
         CancellationToken cancel)
     {
         var now = DateTime.UtcNow;
         if (_ctfConfig.Start > now)
-            return new ChallengeInstanceStatus();
+            return new Instance();
 
         var labelSelector = new Dictionary<string, string>
         {
@@ -709,10 +709,10 @@ public class ChallengeService : IChallengeService
         }
 
         _logger.LogInformation("Created instance of challenge: {}", challenge);
-        return new ChallengeInstanceStatus { Name = challenge, InstanceState = ChallengeInstanceState.Starting };
+        return new Instance { Name = challenge, InstanceState = InstanceState.Starting };
     }
 
-    public async Task<ChallengeInstanceStatus> StopChallengeInstance(Guid playerId, CancellationToken cancel)
+    public async Task<Instance> StopChallengeInstance(Guid playerId, CancellationToken cancel)
     {
         var labelSelector = new Dictionary<string, string>
         {
@@ -724,12 +724,12 @@ public class ChallengeService : IChallengeService
             cancellationToken: cancel);
         var ns = nsList.Items.FirstOrDefault();
         if (ns == null)
-            return new ChallengeInstanceStatus { InstanceState = ChallengeInstanceState.None };
+            return new Instance { InstanceState = InstanceState.None };
 
         await _kubernetes.DeleteNamespaceAsync(ns.Name(), gracePeriodSeconds: 0, cancellationToken: cancel);
         var challengeName = ns.GetLabel(ChallengeLabel);
         _logger.LogInformation("Deleted instance of challenge: {}", challengeName);
-        return new ChallengeInstanceStatus { Name = challengeName, InstanceState = ChallengeInstanceState.Terminating };
+        return new Instance { Name = challengeName, InstanceState = InstanceState.Terminating };
     }
 
     private static string ToLabelSelector(Dictionary<string, string> labelSelector)

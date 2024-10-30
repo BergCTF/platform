@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using Berg.Api.Configuration;
 using Berg.Api.Db;
 using Berg.Api.Services;
-using Berg.Shared;
+using Berg.Api.Models.V1;
 using Discord;
 using Discord.Rest;
 using Microsoft.AspNetCore.Authorization;
@@ -12,9 +12,10 @@ using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using DiscordConfig = Berg.Api.Configuration.DiscordConfig;
 
-namespace Berg.Api.Controllers;
+namespace Berg.Api.Controllers.V1;
 
 [ApiController]
+[ApiExplorerSettings(GroupName = "v1")]
 public class ScoringController : ControllerBase
 {
     private readonly ILogger<ScoringController> _logger;
@@ -162,7 +163,7 @@ public class ScoringController : ControllerBase
             _dbContext.SaveChanges();
             _logger.LogInformation("Player {} has solved challenge {}", playerId, challenge);
 
-            var solveEvent = new Berg.Shared.Solve
+            var solveEvent = new Berg.Api.Models.V1.Solve
             {
                 PlayerId = player.Id,
                 TeamId = player.Team?.Id,
@@ -181,19 +182,19 @@ public class ScoringController : ControllerBase
                 {
                     var teamPlayerIds = _dbContext.Players.Where(p => p.TeamId == player.TeamId).Select(p => p.Id).ToHashSet();
                     _webSocketService.PushEvent("solve", solveEvent, teamPlayerIds.Contains)
-                        .ContinueWith(t => _logger.LogError("Error sending WebSocket Events", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+                        .ContinueWith(t => _logger.LogError(t.Exception, "Error sending WebSocket Events"), TaskContinuationOptions.OnlyOnFaulted);
                 }
                 else
                 {
                     _webSocketService.PushEvent("solve", solveEvent, s => s == player.Id)
-                        .ContinueWith(t => _logger.LogError("Error sending WebSocket Events", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+                        .ContinueWith(t => _logger.LogError(t.Exception, "Error sending WebSocket Events"), TaskContinuationOptions.OnlyOnFaulted);
                 }
                 _logger.LogInformation("Announcement not sent because the scoreboard is currently frozen.");
             }
             else
             {
                 _webSocketService.PushEventAll("solve", solveEvent)
-                    .ContinueWith(t => _logger.LogError("Error sending WebSocket Events", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+                    .ContinueWith(t => _logger.LogError(t.Exception, "Error sending WebSocket Events"), TaskContinuationOptions.OnlyOnFaulted);
                 SendDiscordNotification(player.FederatedId, player.Name, player.Team?.Name, challenge, firstBlood)
                     .Wait();
             }

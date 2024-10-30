@@ -1,7 +1,7 @@
 using Berg.Api.CustomResources.Berg;
 using Berg.Api.Db;
 using Berg.Api.Services;
-using Berg.Shared;
+using Berg.Api.Models.V1;
 using k8s.Models;
 
 namespace Berg.Api.Test.Mock;

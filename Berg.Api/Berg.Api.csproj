@@ -21,7 +21,6 @@
     <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="5.8.0" />
     <PackageReference Include="OpenIddict.Quartz" Version="5.8.0" />
     <PackageReference Include="Quartz.AspNetCore" Version="3.13.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.7.3" />
     <PackageReference Include="UUIDNext" Version="3.0.0" />
   </ItemGroup>
 
@@ -29,9 +28,5 @@
     <Content Include="..\.dockerignore">
       <Link>.dockerignore</Link>
     </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Berg.Shared\Berg.Shared.csproj" />
   </ItemGroup>
 </Project>

@@ -4,7 +4,7 @@ using System.Text.Json;
 using Berg.Api.Configuration;
 using Berg.Api.CustomResources;
 using Berg.Api.Db;
-using Berg.Shared;
+using Berg.Api.Models.V1;
 using Microsoft.AspNetCore.Authorization;
 using k8s;
 using k8s.Autorest;

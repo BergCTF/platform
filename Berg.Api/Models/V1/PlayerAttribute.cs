@@ -1,4 +1,4 @@
-namespace Berg.Shared;
+namespace Berg.Api.Models.V1;
 
 public class PlayerAttribute
 {

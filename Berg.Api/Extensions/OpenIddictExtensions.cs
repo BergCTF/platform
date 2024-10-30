@@ -62,6 +62,21 @@ public static class OpenIddictBuilder
             .AddCookie(options => {
                 // TODO: Make sure that no cookie encryption key needs to be persisted to disk
                 options.ExpireTimeSpan = TimeSpan.FromDays(14);
+
+                // Hacky workaround due to https://github.com/dotnet/aspnetcore/issues/9039
+                options.Events = new CookieAuthenticationEvents()
+                {
+                    OnRedirectToLogin = (ctx) =>
+                    {
+                        ctx.Response.StatusCode = 401;
+                        return Task.CompletedTask;
+                    },
+                    OnRedirectToAccessDenied = (ctx) =>
+                    {
+                        ctx.Response.StatusCode = 403;
+                        return Task.CompletedTask;
+                    }
+                };
             });
         builder.Services.AddAuthorization();
         builder.Services.AddOpenIddict()

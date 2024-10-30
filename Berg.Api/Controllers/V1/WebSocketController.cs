@@ -3,9 +3,10 @@ using Berg.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
 
-namespace Berg.Api.Controllers;
+namespace Berg.Api.Controllers.V1;
 
 [ApiController]
+[ApiExplorerSettings(GroupName = "v1")]
 public class WebSocketController : ControllerBase
 {
     WebSocketService _webSocketService;

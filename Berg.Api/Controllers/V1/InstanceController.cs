@@ -1,14 +1,16 @@
 using System.Security.Claims;
 using System.Text.Json.Serialization;
 using Berg.Api.Services;
-using Berg.Shared;
+using Berg.Api.Models.V1;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
+using Berg.Api.Models.V2;
 
-namespace Berg.Api.Controllers;
+namespace Berg.Api.Controllers.V1;
 
 [ApiController]
+[ApiExplorerSettings(GroupName = "v1")]
 public class InstanceController : ControllerBase
 {
     private readonly IChallengeService _challengeService;
@@ -37,7 +39,8 @@ public class InstanceController : ControllerBase
         if (challenge == null)
             throw new ArgumentException("Challenge can't be null");
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-        return await _challengeService.StartChallengeInstance(playerId, challenge, cancel);
+        var instance = await _challengeService.StartChallengeInstance(playerId, challenge, cancel);
+        return ToChallengeInstanceStatus(instance);
     }
 
     [HttpPost]
@@ -48,6 +51,33 @@ public class InstanceController : ControllerBase
     public async Task<ChallengeInstanceStatus> StopChallengeInstance(CancellationToken cancel)
     {
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-        return await _challengeService.StopChallengeInstance(playerId, cancel);
+        var instance = await _challengeService.StopChallengeInstance(playerId, cancel);
+        return ToChallengeInstanceStatus(instance);
+    }
+
+    internal static ChallengeInstanceStatus ToChallengeInstanceStatus(Instance instance)
+    {
+        return new ChallengeInstanceStatus
+        {
+            InstanceState = instance.InstanceState switch
+            {
+                InstanceState.Starting => ChallengeInstanceState.Starting,
+                InstanceState.Running => ChallengeInstanceState.Running,
+                InstanceState.Terminating => ChallengeInstanceState.Terminating,
+                InstanceState.None => ChallengeInstanceState.None,
+                _ => ChallengeInstanceState.None
+            },
+            InstanceTimeout = instance.Timeout,
+            Name = instance.Name,
+            Services = instance.Services.Select(s => new Models.V1.Service
+            {
+                AppProtocol = s.AppProtocol,
+                Hostname = s.Hostname,
+                Name = s.Name,
+                Port = s.Port,
+                Protocol = s.Protocol,
+                VHost = s.VHost
+            }).ToList()
+        };
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using Berg.Api.Configuration;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -24,6 +25,14 @@ public static class SwaggerExtensions
             };
             options.AddSecurityDefinition("oidc", securityScheme);
             options.AddOperationFilterInstance(new AuthorizationOperationFilter());
+            options.SwaggerDoc("v2", new OpenApiInfo {
+                Title = "Berg.API v2",
+                Version = "v2"
+            });
+            options.SwaggerDoc("v1", new OpenApiInfo {
+                Title = "Berg.API v1",
+                Version = "v1"
+            });
         });
     }
 
@@ -41,6 +50,9 @@ public static class SwaggerExtensions
             {
                 { "nonce", "hardcoded" }
             };
+
+            options.SwaggerEndpoint("/swagger/v2/swagger.json", "Berg.API v2");
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Berg.API v1");
         });
     }
 
@@ -68,8 +80,8 @@ public static class SwaggerExtensions
             operation.Responses.TryAdd("401", new OpenApiResponse { Description = "Unauthorized" });
             operation.Responses.TryAdd("403", new OpenApiResponse { Description = "Forbidden" });
 
-            operation.Security = new List<OpenApiSecurityRequirement>
-            {
+            operation.Security =
+            [
                 new()
                 {
                     {
@@ -83,7 +95,7 @@ public static class SwaggerExtensions
                         }, ["openid"]
                     }
                 }
-            };
+            ];
         }
     }
 }

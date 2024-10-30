@@ -1,0 +1,45 @@
+using System.Text.Json.Serialization;
+
+namespace Berg.Api.Models.V1;
+
+public class Challenge
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = null!;
+
+    [JsonPropertyName("author")]
+    public string Author { get; set; } = null!;
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = null!;
+
+    [JsonPropertyName("categories")]
+    public List<string> Categories { get; set; } = new();
+
+    [JsonPropertyName("difficulty")]
+    public string Difficulty { get; set; } = null!;
+
+    [JsonPropertyName("flagFormat")]
+    public string FlagFormat { get; set; } = null!;
+
+    [JsonPropertyName("attachments")]
+    public List<Attachment> Attachments { get; set; } = new();
+
+    [JsonPropertyName("value")]
+    public int Value { get; set; }
+
+    [JsonPropertyName("solvedByTeam")]
+    public bool SolvedByTeam { get; set; }
+
+    [JsonPropertyName("solvedByPlayer")]
+    public bool SolvedByPlayer { get; set; }
+
+    [JsonPropertyName("instantiatable")]
+    public bool Instantiatable { get; set; }
+
+    [JsonPropertyName("playerSolves")]
+    public List<PlayerSolve> PlayerSolves { get; set; } = new();
+
+    [JsonPropertyName("teamSolves")]
+    public List<TeamSolve> TeamSolves { get; set; } = new();
+}

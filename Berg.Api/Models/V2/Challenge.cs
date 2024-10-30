@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Berg.Shared;
+namespace Berg.Api.Models.V2;
 
 public class Challenge
 {
@@ -34,12 +34,15 @@ public class Challenge
     [JsonPropertyName("solvedByPlayer")]
     public bool SolvedByPlayer { get; set; }
 
-    [JsonPropertyName("instantiatable")]
-    public bool Instantiatable { get; set; }
+    [JsonPropertyName("instantiable")]
+    public bool Instantiable { get; set; }
+}
 
-    [JsonPropertyName("playerSolves")]
-    public List<PlayerSolve> PlayerSolves { get; set; } = new();
+public class Attachment
+{
+    [JsonPropertyName("fileName")]
+    public string FileName { get; set; } = default!;
 
-    [JsonPropertyName("teamSolves")]
-    public List<TeamSolve> TeamSolves { get; set; } = new();
+    [JsonPropertyName("downloadUrl")]
+    public string DownloadUrl { get; set; } = default!;
 }

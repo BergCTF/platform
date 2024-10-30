@@ -1,6 +1,29 @@
 using System.Text.Json.Serialization;
 
-namespace Berg.Shared;
+namespace Berg.Api.Models.V2;
+
+public class Instance
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = null!;
+
+    [JsonPropertyName("status")]
+    public InstanceState InstanceState { get; set; } = InstanceState.None;
+
+    [JsonPropertyName("services")]
+    public List<Service> Services { get; set; } = [];
+
+    [JsonPropertyName("timeout")]
+    public DateTime? Timeout { get; set; }
+}
+
+public enum InstanceState
+{
+    None,
+    Starting,
+    Running,
+    Terminating,
+}
 
 public class Service
 {

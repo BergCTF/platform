@@ -11,8 +11,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Berg", "Berg", "{427024F8-9
 		setup-local.sh = setup-local.sh
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Berg.Shared", "Berg.Shared\Berg.Shared.csproj", "{1949330B-24EC-46BC-B3A9-22D178347637}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Berg.Api", "Berg.Api\Berg.Api.csproj", "{3C37C646-0AF6-4C80-A380-4065BB78F478}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Berg.Api.Test", "Berg.Api.Test\Berg.Api.Test.csproj", "{F3E63D32-7A9A-4A64-A06C-45D13580EA48}"
@@ -23,10 +21,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{1949330B-24EC-46BC-B3A9-22D178347637}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1949330B-24EC-46BC-B3A9-22D178347637}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1949330B-24EC-46BC-B3A9-22D178347637}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1949330B-24EC-46BC-B3A9-22D178347637}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3C37C646-0AF6-4C80-A380-4065BB78F478}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3C37C646-0AF6-4C80-A380-4065BB78F478}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C37C646-0AF6-4C80-A380-4065BB78F478}.Release|Any CPU.ActiveCfg = Release|Any CPU
