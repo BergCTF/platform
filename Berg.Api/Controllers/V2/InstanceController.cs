@@ -10,15 +10,9 @@ namespace Berg.Api.Controllers.V2;
 
 [ApiController]
 [ApiExplorerSettings(GroupName = "v2")]
-public class InstanceController : ControllerBase
+public class InstanceController(IChallengeService challengeService) : ControllerBase
 {
-    private readonly IChallengeService _challengeService;
-
-    public InstanceController(
-        IChallengeService challengeService)
-    {
-        _challengeService = challengeService;
-    }
+    private readonly IChallengeService _challengeService = challengeService;
 
     public class ChallengeStartRequest
     {

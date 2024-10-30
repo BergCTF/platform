@@ -22,6 +22,7 @@ public class ChallengeController(IChallengeService challengeService) : Controlle
 
     [HttpGet]
     [Route("/api/v2/challenges/{name}")]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<Challenge> GetChallenge(string name)
     {
         var challenge = challengeService
