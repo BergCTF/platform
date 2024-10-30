@@ -53,7 +53,7 @@ postgresql:
 EOF
 
 echo "Deploying example challenges"
-cat <<EOF | kubectl --context kind-berg-dev-cluster create -f -
+cat <<EOF | kubectl --context kind-berg-dev-cluster apply -f -
 apiVersion: berg.norelect.ch/v1
 kind: Challenge
 metadata:
@@ -79,7 +79,7 @@ spec:
         - port: 80
           protocol: tcp
           appProtocol: http
-          type: publicTlsRoute
+          type: publicHttpRoute
 ---
 apiVersion: berg.norelect.ch/v1
 kind: Challenge
@@ -102,5 +102,5 @@ spec:
         - port: 80
           protocol: tcp
           appProtocol: http
-          type: publicTlsRoute
+          type: publicHttpRoute
 EOF

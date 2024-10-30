@@ -620,74 +620,91 @@ public class ChallengeService : IChallengeService
                 .Concat(serviceEndpoints.Select(e => new V1EnvVar($"{e.Key.ToUpperInvariant()}_ENDPOINT", e.Value)))
                 .ToList();
             env.Add(new V1EnvVar("CHALLENGE_NAMESPACE", ns.Name()));
-            var pod = new V1Pod
+            var podSpec = new V1PodSpec
+            {
+                RestartPolicy = "Always",
+                Hostname = container.Hostname,
+                EnableServiceLinks = false,
+                AutomountServiceAccountToken = false,
+                TerminationGracePeriodSeconds = 0,
+                ImagePullSecrets = new List<V1LocalObjectReference> { new(_infraConfig.PullSecretName) },
+                Containers = new List<V1Container>
+                {
+                    new()
+                    {
+                        SecurityContext = new V1SecurityContext
+                        {
+                            Privileged = false,
+                            // AllowPrivilegeEscalation has to be set to true to enable setuid or setgid
+                            // challenges, as they break without this flag. This should not introduce a security
+                            // vulnerability to the cluster as written in the docs:
+                            // - https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+                            // - https://www.kernel.org/doc/Documentation/prctl/no_new_privs.txt
+                            AllowPrivilegeEscalation = true
+                        },
+                        Name = container.Hostname,
+                        Image = container.Image,
+                        ImagePullPolicy = "Always",
+                        Resources = container.ResourceLimits != null
+                            ? new V1ResourceRequirements
+                            {
+                                Limits = container.ResourceLimits
+                                    .ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value)),
+                                Requests = new Dictionary<string, ResourceQuantity>()
+                                {
+                                    { "cpu", new ResourceQuantity("0") },
+                                    { "memory", new ResourceQuantity("1Mi") }
+                                }
+                            }
+                            : null,
+                        Env = env,
+                        Ports = container.Ports?
+                            .Select(p => new V1ContainerPort(p.Port, protocol: p.Protocol.ToUpperInvariant()))
+                            .ToList()
+                    }
+                },
+            };
+            var labels = new Dictionary<string, string>
+            {
+                { ManagedByLabel, "berg" },
+                { ComponentLabel, "challenge-container" },
+                { ChallengeLabel, challenge },
+                { PlayerIdLabel, playerId.ToString() },
+                { ContainerLabel, container.Hostname }
+            };
+            var deployment = new V1Deployment
             {
                 Metadata = new V1ObjectMeta
                 {
                     Name = container.Hostname,
-                    Labels = new Dictionary<string, string>
-                    {
-                        { ManagedByLabel, "berg" },
-                        { ComponentLabel, "challenge-container" },
-                        { ChallengeLabel, challenge },
-                        { PlayerIdLabel, playerId.ToString() },
-                        { ContainerLabel, container.Hostname }
-                    }
                 },
-                Spec = new V1PodSpec
+                Spec = new V1DeploymentSpec
                 {
-                    RestartPolicy = "Always",
-                    Hostname = container.Hostname,
-                    EnableServiceLinks = false,
-                    AutomountServiceAccountToken = false,
-                    TerminationGracePeriodSeconds = 0,
-                    ImagePullSecrets = new List<V1LocalObjectReference> { new(_infraConfig.PullSecretName) },
-                    Containers = new List<V1Container>
+                    Replicas = 1,
+                    Selector = new V1LabelSelector
                     {
-                        new()
-                        {
-                            SecurityContext = new V1SecurityContext
-                            {
-                                Privileged = false,
-                                // AllowPrivilegeEscalation has to be set to true to enable setuid or setgid
-                                // challenges, as they break without this flag. This should not introduce a security
-                                // vulnerability to the cluster as written in the docs:
-                                // - https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-                                // - https://www.kernel.org/doc/Documentation/prctl/no_new_privs.txt
-                                AllowPrivilegeEscalation = true
-                            },
-                            Name = container.Hostname,
-                            Image = container.Image,
-                            ImagePullPolicy = "Always",
-                            Resources = container.ResourceLimits != null
-                                ? new V1ResourceRequirements
-                                {
-                                    Limits = container.ResourceLimits
-                                        .ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value)),
-                                    Requests = new Dictionary<string, ResourceQuantity>()
-                                    {
-                                        { "cpu", new ResourceQuantity("0") },
-                                        { "memory", new ResourceQuantity("1Mi") }
-                                    }
-                                }
-                                : null,
-                            Env = env,
-                            Ports = container.Ports?
-                                .Select(p => new V1ContainerPort(p.Port, protocol: p.Protocol.ToUpperInvariant()))
-                                .ToList()
-                        }
+                        MatchLabels = labels
                     },
+                    Template = new V1PodTemplateSpec
+                    {
+                        Metadata = new V1ObjectMeta
+                        {
+                            Name = container.Hostname,
+                            Labels = labels
+                        },
+                        Spec = podSpec
+                    }
                 }
             };
             try
             {
-                await _kubernetes.CreateNamespacedPodAsync(pod, ns.Name(), cancellationToken: cancel);
+                await _kubernetes.CreateNamespacedDeploymentAsync(deployment, ns.Name(), cancellationToken: cancel);
             }
             catch (HttpOperationException ex)
             {
                 _logger.LogError("Got exception while creating Pod: {}", ex);
                 _logger.LogError("Response.Content: {}", ex.Response.Content);
-                _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(pod));
+                _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(deployment));
             }
         }
 
