@@ -51,3 +51,56 @@ berg:
 postgresql:
   enabled: false
 EOF
+
+echo "Deploying example challenges"
+cat <<EOF | kubectl --context kind-berg-dev-cluster create -f -
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: nginx
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: flag{test_flag}
+  description: nginx
+  difficulty: baby
+  categories:
+    - web
+    - misc
+  containers:
+    - hostname: nginx
+      image: nginx:latest
+      environment:
+        WHATEVER: Value
+      resourceLimits:
+        cpu: "1"
+        memory: "100Mi"
+      ports:
+        - port: 80
+          protocol: tcp
+          appProtocol: http
+          type: publicTlsRoute
+---
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: hidden-nginx
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: flag{test_flag_hidden}
+  description: nginx
+  difficulty: baby
+  hideUntil: "2099-01-01T00:00:00+00:00"
+  categories:
+    - web
+    - misc
+  containers:
+    - hostname: nginx
+      image: nginx:latest
+      ports:
+        - port: 80
+          protocol: tcp
+          appProtocol: http
+          type: publicTlsRoute
+EOF
