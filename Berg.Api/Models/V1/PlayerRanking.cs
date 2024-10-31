@@ -14,5 +14,5 @@ public class PlayerRanking
     public DateTime? LastSolve { get; set; }
 
     [JsonPropertyName("solves")]
-    public List<PlayerSolve> Solves { get; set; } = new();
+    public List<PlayerSolve> Solves { get; set; } = [];
 }

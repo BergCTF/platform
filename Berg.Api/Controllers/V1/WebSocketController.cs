@@ -7,16 +7,8 @@ namespace Berg.Api.Controllers.V1;
 
 [ApiController]
 [ApiExplorerSettings(GroupName = "v1")]
-public class WebSocketController : ControllerBase
+public class WebSocketController(WebSocketService webSocketService) : ControllerBase
 {
-    WebSocketService _webSocketService;
-
-    public WebSocketController(
-        WebSocketService webSocketService
-    )
-    {
-        _webSocketService = webSocketService;
-    }
 
     [HttpGet]
     [Route("/api/v1/ws")]
@@ -26,7 +18,7 @@ public class WebSocketController : ControllerBase
         {
             using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
             Guid? player = (User.Identity?.IsAuthenticated ?? false) ? Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!) : null;
-            await _webSocketService.WebSocketHandler(webSocket, player);
+            await webSocketService.WebSocketHandler(webSocket, player);
         }
         else
         {

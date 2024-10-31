@@ -11,7 +11,7 @@ public class PlayerSolve
     public DateTime SolvedAt { get; set; }
 
     [JsonPropertyName("challengeName")]
-    public string ChallengeName { get; set; } = null!;
+    public string ChallengeName { get; set; } = "";
 
     [JsonPropertyName("isFirstBlood")]
     public bool IsFirstBlood { get; set; }

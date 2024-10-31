@@ -8,17 +8,17 @@ public class Player
     public Guid Id { get; set; }
 
     [JsonPropertyName("name")]
-    public string Name { get; set; } = null!;
+    public string Name { get; set; } = "";
 
     [JsonPropertyName("teamId")]
     public Guid? TeamId { get; set; }
 
     [JsonPropertyName("federatedId")]
-    public string FederatedId { get; set; } = null!;
+    public string FederatedId { get; set; } = "";
 
     [JsonPropertyName("attributes")]
-    public Dictionary<string, string> Attributes { get; set; } = new();
+    public Dictionary<string, string> Attributes { get; set; } = [];
 
     [JsonPropertyName("requiredAttributes")]
-    public List<PlayerAttribute> RequiredAttributes { get; set; } = new();
+    public List<PlayerAttribute> RequiredAttributes { get; set; } = [];
 }

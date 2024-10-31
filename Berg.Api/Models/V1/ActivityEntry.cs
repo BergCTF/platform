@@ -14,5 +14,5 @@ public class ActivityEntry
     public Guid? TeamId { get; set; }
 
     [JsonPropertyName("challengeName")]
-    public string ChallengeName { get; set; } = null!;
+    public string ChallengeName { get; set; } = "";
 }

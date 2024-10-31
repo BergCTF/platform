@@ -14,24 +14,12 @@ namespace Berg.Api.Controllers.V1;
 
 [ApiController]
 [ApiExplorerSettings(GroupName = "v1")]
-public class TeamController : ControllerBase
+public class TeamController(
+    ILogger<TeamController> logger,
+    BergDbContext dbContext,
+    ScoringService scoringService,
+    CtfConfig ctfConfig) : ControllerBase
 {
-    private readonly ILogger<TeamController> _logger;
-    private readonly BergDbContext _dbContext;
-    private readonly ScoringService _scoringService;
-    private readonly CtfConfig _ctfConfig;
-
-    public TeamController(
-        ILogger<TeamController> logger,
-        BergDbContext dbContext,
-        ScoringService scoringService,
-        CtfConfig ctfConfig)
-    {
-        _logger = logger;
-        _dbContext = dbContext;
-        _scoringService = scoringService;
-        _ctfConfig = ctfConfig;
-    }
 
     [HttpGet]
     [Route("/api/v1/teams")]
@@ -40,10 +28,10 @@ public class TeamController : ControllerBase
         Db.Player? player = null;
         if (User.Identity?.IsAuthenticated ?? false) {
             var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-            player = _dbContext.Players.Single(p => p.Id == playerId);
+            player = dbContext.Players.Single(p => p.Id == playerId);
         }
         var teamId = player?.TeamId;
-        return (await _dbContext.Teams.Select(t => new Team
+        return (await dbContext.Teams.Select(t => new Team
         {
             Id = t.Id,
             Name = t.Name,
@@ -72,11 +60,11 @@ public class TeamController : ControllerBase
     [Route("/api/v1/teams/create")]
     public async Task<Team> CreateTeam([FromBody] TeamCreateRequest team, CancellationToken cancel)
     {
-        if(!_ctfConfig.Teams)
+        if(!ctfConfig.Teams)
             throw new ArgumentException("Teams not enabled");
 
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-        var player = await _dbContext.Players
+        var player = await dbContext.Players
             .Include(p => p.Team)
             .FirstOrDefaultAsync(p => p.Id == playerId, cancel);
         if (player == null)
@@ -91,7 +79,7 @@ public class TeamController : ControllerBase
         if (player.Team != null)
             throw new ArgumentException("Player is already in a team");
 
-        if(_dbContext.Teams.Any(t => t.Name == team.Name))
+        if(dbContext.Teams.Any(t => t.Name == team.Name))
             throw new ArgumentException("Name is already taken");
 
         // Create team
@@ -101,13 +89,13 @@ public class TeamController : ControllerBase
             Name = team.Name,
             JoinToken = CreateJoinToken()
         };
-        await _dbContext.Teams.AddAsync(dbTeam, cancel);
+        await dbContext.Teams.AddAsync(dbTeam, cancel);
 
         // Add player to team
         player.Team = dbTeam;
-        await _dbContext.SaveChangesAsync(cancel);
-        _scoringService.RefreshScores(_dbContext);
-        _logger.LogInformation("Player {} created team: {}", playerId, dbTeam.Id);
+        await dbContext.SaveChangesAsync(cancel);
+        scoringService.RefreshScores(dbContext);
+        logger.LogInformation("Player {} created team: {}", playerId, dbTeam.Id);
 
         return new Team
         {
@@ -130,7 +118,7 @@ public class TeamController : ControllerBase
     [Route("/api/v1/teams/join")]
     public async Task<Team> JoinTeam([FromBody] JoinTeamRequest req, CancellationToken cancel)
     {
-        if(!_ctfConfig.Teams)
+        if(!ctfConfig.Teams)
             throw new ArgumentException("Teams not enabled");
 
         if(req.JoinToken == null)
@@ -138,7 +126,7 @@ public class TeamController : ControllerBase
         var joinToken = req.JoinToken.Trim();
 
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-        var player = await _dbContext.Players
+        var player = await dbContext.Players
             .Include(p => p.Team)
             .FirstOrDefaultAsync(p => p.Id == playerId, cancel);
         if (player == null)
@@ -147,20 +135,20 @@ public class TeamController : ControllerBase
         if (player.Team != null)
             throw new ArgumentException("Player is already in a team");
 
-        var dbTeam = await _dbContext.Teams
+        var dbTeam = await dbContext.Teams
             .Include(t => t.Players)
             .FirstOrDefaultAsync(t => t.JoinToken == joinToken, cancel);
         if (dbTeam == null)
         {
-            _logger.LogWarning("Player {} tried to use an invalid team join token: {}", playerId, joinToken);
+            logger.LogWarning("Player {} tried to use an invalid team join token: {}", playerId, joinToken);
             throw new ArgumentException("Invalid join token");
         }
 
         // Assign the player to the team
         player.Team = dbTeam;
-        await _dbContext.SaveChangesAsync(cancel);
-        _scoringService.RefreshScores(_dbContext);
-        _logger.LogInformation("Player {} joined team: {}", playerId, dbTeam.Id);
+        await dbContext.SaveChangesAsync(cancel);
+        scoringService.RefreshScores(dbContext);
+        logger.LogInformation("Player {} joined team: {}", playerId, dbTeam.Id);
 
         // Add our new player to the list of players as we fetched the db information
         // before assigning the user to the team.
@@ -185,11 +173,11 @@ public class TeamController : ControllerBase
     [Route("/api/v1/teams/leave")]
     public async Task LeaveTeam(CancellationToken cancel)
     {
-        if(!_ctfConfig.Teams)
+        if(!ctfConfig.Teams)
             throw new ArgumentException("Teams not enabled");
 
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-        var player = await _dbContext.Players
+        var player = await dbContext.Players
             .Include(p => p.Team)
             .FirstOrDefaultAsync(p => p.Id == playerId, cancel);
         if (player == null)
@@ -200,9 +188,9 @@ public class TeamController : ControllerBase
 
         var previousTeamId = player.Team.Id;
         player.Team = null;
-        await _dbContext.SaveChangesAsync(cancel);
-        _scoringService.RefreshScores(_dbContext);
-        _logger.LogInformation("Player {} left team {}", playerId, previousTeamId);
+        await dbContext.SaveChangesAsync(cancel);
+        scoringService.RefreshScores(dbContext);
+        logger.LogInformation("Player {} left team {}", playerId, previousTeamId);
     }
 
     private static readonly RandomNumberGenerator Random = RandomNumberGenerator.Create();

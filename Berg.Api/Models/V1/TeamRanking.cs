@@ -14,5 +14,5 @@ public class TeamRanking
     public DateTime? LastSolve { get; set; }
 
     [JsonPropertyName("solves")]
-    public List<TeamSolve> Solves { get; set; } = new();
+    public List<TeamSolve> Solves { get; set; } = [];
 }

@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace Berg.Api.Models.V1;
+namespace Berg.Api.Models.V2;
 
-public class CtfChallenges
+public class Metadata
 {
     [JsonPropertyName("start")]
     public DateTime Start { get; set; }
@@ -21,7 +21,4 @@ public class CtfChallenges
 
     [JsonPropertyName("teams")]
     public bool Teams { get; set; }
-
-    [JsonPropertyName("challengesByCategory")]
-    public Dictionary<string, List<Challenge>> Challenges { get; set; } = [];
 }

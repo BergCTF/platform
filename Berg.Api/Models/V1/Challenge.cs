@@ -5,25 +5,25 @@ namespace Berg.Api.Models.V1;
 public class Challenge
 {
     [JsonPropertyName("name")]
-    public string Name { get; set; } = null!;
+    public string Name { get; set; } = "";
 
     [JsonPropertyName("author")]
-    public string Author { get; set; } = null!;
+    public string Author { get; set; } = "";
 
     [JsonPropertyName("description")]
-    public string Description { get; set; } = null!;
+    public string Description { get; set; } = "";
 
     [JsonPropertyName("categories")]
-    public List<string> Categories { get; set; } = new();
+    public List<string> Categories { get; set; } = [];
 
     [JsonPropertyName("difficulty")]
-    public string Difficulty { get; set; } = null!;
+    public string Difficulty { get; set; } = "";
 
     [JsonPropertyName("flagFormat")]
-    public string FlagFormat { get; set; } = null!;
+    public string FlagFormat { get; set; } = "";
 
     [JsonPropertyName("attachments")]
-    public List<Attachment> Attachments { get; set; } = new();
+    public List<Attachment> Attachments { get; set; } = [];
 
     [JsonPropertyName("value")]
     public int Value { get; set; }
@@ -38,8 +38,8 @@ public class Challenge
     public bool Instantiatable { get; set; }
 
     [JsonPropertyName("playerSolves")]
-    public List<PlayerSolve> PlayerSolves { get; set; } = new();
+    public List<PlayerSolve> PlayerSolves { get; set; } = [];
 
     [JsonPropertyName("teamSolves")]
-    public List<TeamSolve> TeamSolves { get; set; } = new();
+    public List<TeamSolve> TeamSolves { get; set; } = [];
 }

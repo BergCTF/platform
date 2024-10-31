@@ -13,24 +13,12 @@ namespace Berg.Api.Controllers.V1;
 
 [ApiController]
 [ApiExplorerSettings(GroupName = "v1")]
-public class CtfController : ControllerBase
+public class CtfController(
+    CtfConfig ctfConfig,
+    ScoringService scoringService,
+    IChallengeService challengeService,
+    BergDbContext dbContext) : ControllerBase
 {
-    private readonly CtfConfig _ctfConfig;
-    private readonly IChallengeService _challengeService;
-    private readonly ScoringService _scoringService;
-    private readonly BergDbContext _dbContext;
-
-    public CtfController(
-        CtfConfig ctfConfig,
-        ScoringService scoringService,
-        IChallengeService challengeService,
-        BergDbContext dbContext)
-    {
-        _ctfConfig = ctfConfig;
-        _scoringService = scoringService;
-        _challengeService = challengeService;
-        _dbContext = dbContext;
-    }
 
     [HttpGet]
     [Route("/api/v1/ctf")]
@@ -38,22 +26,22 @@ public class CtfController : ControllerBase
     {
         var ctf = new CtfChallenges
         {
-            Start = _ctfConfig.Start,
-            End = _ctfConfig.End,
+            Start = ctfConfig.Start,
+            End = ctfConfig.End,
             ServerTime = DateTime.Now,
-            FreezeStart = _ctfConfig.Scoring.FreezeStart,
-            FreezeEnd = _ctfConfig.Scoring.FreezeEnd,
-            Teams = _ctfConfig.Teams
+            FreezeStart = ctfConfig.Scoring.FreezeStart,
+            FreezeEnd = ctfConfig.Scoring.FreezeEnd,
+            Teams = ctfConfig.Teams
         };
         var now = DateTime.UtcNow;
         Db.Player? player = null;
         if (User.Identity?.IsAuthenticated ?? false) {
             var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-            player = _dbContext.Players.Single(p => p.Id == playerId);
+            player = dbContext.Players.Single(p => p.Id == playerId);
         }
-        if (_ctfConfig.Start <= now)
+        if (ctfConfig.Start <= now)
         {
-            ctf.Challenges = _challengeService.GetChallenges()
+            ctf.Challenges = challengeService.GetChallenges()
                 .Select(c => ToChallenge(c, player?.Id, player?.TeamId))
                 .ToList()
                 .GroupBy(c => c.Categories.FirstOrDefault() ?? "misc")
@@ -91,11 +79,11 @@ public class CtfController : ControllerBase
             FlagFormat = c.Spec.FlagFormat,
             Categories = c.Spec.Categories,
             Instantiatable = c.Spec.Containers?.Any() ?? false,
-            Value = _scoringService.GetChallengeValue(challengeName),
-            SolvedByPlayer = _scoringService.HasPlayerSolvedChallenge(playerId, challengeName),
-            SolvedByTeam = _scoringService.HasTeamSolvedChallenge(teamId, challengeName),
-            TeamSolves = _scoringService.GetChallengeTeamSolves(challengeName),
-            PlayerSolves = _scoringService.GetChallengePlayerSolves(challengeName),
+            Value = scoringService.GetChallengeValue(challengeName),
+            SolvedByPlayer = scoringService.HasPlayerSolvedChallenge(playerId, challengeName),
+            SolvedByTeam = scoringService.HasTeamSolvedChallenge(teamId, challengeName),
+            TeamSolves = scoringService.GetChallengeTeamSolves(challengeName),
+            PlayerSolves = scoringService.GetChallengePlayerSolves(challengeName),
             Attachments = c.Spec.Attachments?.Select(a => new Attachment
             {
                 FileName = a.FileName,

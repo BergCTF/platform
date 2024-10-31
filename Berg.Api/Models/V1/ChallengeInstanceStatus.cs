@@ -5,13 +5,13 @@ namespace Berg.Api.Models.V1;
 public class ChallengeInstanceStatus
 {
     [JsonPropertyName("name")]
-    public string Name { get; set; } = null!;
+    public string Name { get; set; } = "";
 
     [JsonPropertyName("status")]
     public ChallengeInstanceState InstanceState { get; set; } = ChallengeInstanceState.None;
 
     [JsonPropertyName("services")]
-    public List<Service> Services { get; set; } = new();
+    public List<Service> Services { get; set; } = [];
 
     [JsonPropertyName("instanceTimeout")]
     public DateTime? InstanceTimeout { get; set; }

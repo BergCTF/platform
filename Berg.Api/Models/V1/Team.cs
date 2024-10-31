@@ -8,11 +8,11 @@ public class Team
     public Guid Id { get; set; }
 
     [JsonPropertyName("name")]
-    public string Name { get; set; } = null!;
+    public string Name { get; set; } = "";
 
     [JsonPropertyName("joinToken")]
     public string? JoinToken { get; set; }
 
     [JsonPropertyName("players")]
-    public List<Guid> Players { get; set; } = new();
+    public List<Guid> Players { get; set; } = [];
 }
