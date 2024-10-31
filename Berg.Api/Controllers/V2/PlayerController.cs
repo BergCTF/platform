@@ -53,6 +53,7 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
         {
             Id = player.Id,
             Name = player.Name,
+            TeamId = player.TeamId,
             FederatedId = player.FederatedId,
             Attributes = player.Attributes.ToDictionary(a => a.Name, a => a.Value),
             ApiKeyPlaceholder = player.ApiKeyPlaceholder,

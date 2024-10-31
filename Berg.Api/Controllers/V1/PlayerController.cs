@@ -17,6 +17,7 @@ public class PlayerController(
     IChallengeService challengeService,
     CtfConfig ctfConfig,
     BergDbContext dbContext,
+    InfraConfig infraConfig,
     V2.PlayerController v2PlayerController) : ControllerBase
 {
 
@@ -69,7 +70,7 @@ public class PlayerController(
                     .ToList()
             },
             ApiKeyPlaceholder = player.ApiKeyPlaceholder,
-            ChallengeInstance = InstanceController.ToChallengeInstanceStatus(await challengeService.GetChallengeInstance(player.Id, cancel))
+            ChallengeInstance = InstanceController.ToChallengeInstanceStatus(await challengeService.GetChallengeInstance(player.Id, cancel), infraConfig)
         };
     }
 

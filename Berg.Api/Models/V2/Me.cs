@@ -10,6 +10,9 @@ public class Me
     [JsonPropertyName("name")]
     public string Name { get; set; } = "";
 
+    [JsonPropertyName("teamId")]
+    public Guid? TeamId { get; set; }
+
     [JsonPropertyName("federatedId")]
     public string FederatedId { get; set; } = "";
 

@@ -6,20 +6,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
 using Berg.Api.Models.V2;
+using Berg.Api.Configuration;
 
 namespace Berg.Api.Controllers.V1;
 
 [ApiController]
 [ApiExplorerSettings(GroupName = "v1")]
-public class InstanceController : ControllerBase
+public class InstanceController(IChallengeService challengeService, InfraConfig infraConfig) : ControllerBase
 {
-    private readonly IChallengeService _challengeService;
-
-    public InstanceController(
-        IChallengeService challengeService)
-    {
-        _challengeService = challengeService;
-    }
 
     public class ChallengeStartRequest
     {
@@ -36,11 +30,11 @@ public class InstanceController : ControllerBase
         CancellationToken cancel)
     {
         var challenge = startRequest.Challenge;
-        if (challenge == null)
-            throw new ArgumentException("Challenge can't be null");
+        if (string.IsNullOrEmpty(challenge))
+            throw new ArgumentException("Challenge must be set");
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-        var instance = await _challengeService.StartChallengeInstance(playerId, challenge, cancel);
-        return ToChallengeInstanceStatus(instance);
+        var instance = await challengeService.StartChallengeInstance(playerId, challenge, cancel);
+        return ToChallengeInstanceStatus(instance, infraConfig);
     }
 
     [HttpPost]
@@ -51,11 +45,11 @@ public class InstanceController : ControllerBase
     public async Task<ChallengeInstanceStatus> StopChallengeInstance(CancellationToken cancel)
     {
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-        var instance = await _challengeService.StopChallengeInstance(playerId, cancel);
-        return ToChallengeInstanceStatus(instance);
+        var instance = await challengeService.StopChallengeInstance(playerId, cancel);
+        return ToChallengeInstanceStatus(instance, infraConfig);
     }
 
-    internal static ChallengeInstanceStatus ToChallengeInstanceStatus(Instance instance)
+    internal static ChallengeInstanceStatus ToChallengeInstanceStatus(Instance instance, InfraConfig infraConfig)
     {
         return new ChallengeInstanceStatus
         {
@@ -76,7 +70,7 @@ public class InstanceController : ControllerBase
                 Name = s.Name,
                 Port = s.Port,
                 Protocol = s.Protocol,
-                VHost = s.VHost
+                VHost = s.Port == infraConfig.ChallengeTlsPort || s.Port == infraConfig.ChallengeHttpPort
             }).ToList()
         };
     }

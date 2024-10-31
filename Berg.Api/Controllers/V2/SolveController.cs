@@ -1,0 +1,231 @@
+using System.Security.Claims;
+using System.Text.Json.Serialization;
+using Berg.Api.Configuration;
+using Berg.Api.Db;
+using Berg.Api.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using OpenIddict.Abstractions;
+using Solve = Berg.Api.Models.V2.Solve;
+
+namespace Berg.Api.Controllers.V2;
+
+[ApiController]
+[ApiExplorerSettings(GroupName = "v2")]
+public class SolveController(
+    ILogger<SolveController> logger,
+    CtfConfig ctfConfig,
+    BergDbContext dbContext,
+    IChallengeService challengeService,
+    ScoringService scoringService) : ControllerBase
+{
+    private readonly object _submitFlagLock = new();
+
+    [HttpGet]
+    [Route("/api/v2/solves")]
+    public List<Solve> ListSolves()
+    {
+        var utcNow = DateTime.UtcNow;
+        var freezeStart = ctfConfig.Scoring.FreezeStart;
+        var freezeEnd = ctfConfig.Scoring.FreezeStart;
+        var isCurrentlyFrozen = freezeStart < utcNow && utcNow < freezeEnd;
+        var isUserLoggedIn = User.Identity?.IsAuthenticated ?? false;
+
+        if (!isCurrentlyFrozen)
+        {
+            // If we are not in a freeze, so we can show every solve
+            return ToModelSolves(dbContext.Solves);
+        }
+
+        if (!isUserLoggedIn)
+        {
+            // We are in a freeze, but not logged in, so we can only show
+            // solves that were made before the freeze
+            return ToModelSolves(dbContext.Solves.Where(s => s.SolvedAt < freezeStart));
+        }
+
+        var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
+        var teamId = dbContext.Players.Single(p => p.Id == playerId).TeamId;
+
+        // We are in a freeze, and the player wants to see all own and team solves
+        // if the player has joined a team
+        return ToModelSolves(dbContext.Solves
+            .Where(s => s.SolvedAt < freezeStart || s.PlayerId == playerId || (teamId != null && s.Player.TeamId == teamId))
+        );
+    }
+
+    private static List<Solve> ToModelSolves(IQueryable<Db.Solve> solves)
+    {
+        return [.. solves.Select(s => new Solve
+            {
+                ChallengeName = s.ChallengeId,
+                Id = s.Id,
+                PlayerId = s.PlayerId,
+                TeamId = s.Player.TeamId,
+                SolvedAt = s.SolvedAt
+            })
+        ];
+    }
+
+    public class AddSolveRequest
+    {
+        [JsonPropertyName("challenge")]
+        public string? Challenge { get; set; }
+
+        [JsonPropertyName("flag")]
+        public string? Flag { get; set; }
+    }
+
+    [HttpPost]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+    [Route("/api/v2/solves")]
+    public ActionResult<Solve> AddSolve([FromBody] AddSolveRequest addSolveRequest)
+    {
+        var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
+        var challengeName = addSolveRequest.Challenge;
+        if (string.IsNullOrEmpty(challengeName))
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Bad Request",
+                Detail = "Challenge can't be empty",
+            });
+        }
+        var challengeConfig = challengeService.GetChallengeConfig(challengeName);
+        if (challengeConfig == null)
+        {
+            logger.LogWarning("Player {PlayerId} wanted to submit a flag for an invalid challenge: {ChallengeName}", playerId, challengeName);
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Bad Request",
+                Detail = "Challenge does not exist",
+            });
+        }
+
+        if (string.IsNullOrEmpty(addSolveRequest.Flag))
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Bad Request",
+                Detail = "Flag can't be empty",
+            });
+        }
+        if (addSolveRequest.Flag.Length > 1024)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Bad Request",
+                Detail = "Submitted flag can't be longer than 1024 chars",
+            });
+        }
+
+        var now = DateTime.UtcNow;
+        if (ctfConfig.Start > now)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid submission time",
+                Detail = "CTF has not yet started"
+            });
+        }
+        if (ctfConfig.End < now)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid submission time",
+                Detail = "CTF has ended"
+            });
+        }
+
+        lock (_submitFlagLock)
+        {
+            var player = dbContext.Players
+                .Include(p => p.Submissions)
+                .Include(p => p.Solves)
+                .Include(p => p.Team)
+                .Single(p => p.Id == playerId);
+
+            if (player.Solves.Any(s => s.ChallengeId == challengeName))
+            {
+                logger.LogWarning("Player {PlayerId} has already solved challenge {ChallengeName}", playerId, challengeName);
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Already solved",
+                    Detail = "You have already solved this challenge"
+                });
+            }
+
+            var yesterday = now.Subtract(TimeSpan.FromDays(1));
+            var latestFailedSubmissions = player.Submissions
+                .Where(s => yesterday < s.SubmittedAt)
+                .ToList();
+            if (latestFailedSubmissions.Count > ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerDay)
+            {
+                logger.LogWarning("Player {PlayerId} has reached the daily submission limit", playerId);
+                return new StatusCodeResult(StatusCodes.Status429TooManyRequests);
+            }
+
+            var oneHourAgo = now.Subtract(TimeSpan.FromHours(1));
+            var submissionCountHour = latestFailedSubmissions.Count(s => oneHourAgo < s.SubmittedAt);
+            if (submissionCountHour > ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerHour)
+            {
+                logger.LogWarning("Player {PlayerId} has reached the hourly submission limit", playerId);
+                return new StatusCodeResult(StatusCodes.Status429TooManyRequests);
+            }
+
+            var oneMinuteAgo = now.Subtract(TimeSpan.FromMinutes(1));
+            var submissionCountMinute = latestFailedSubmissions.Count(s => oneMinuteAgo < s.SubmittedAt);
+            if (submissionCountMinute > ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerMinute)
+            {
+                logger.LogWarning("Player {PlayerId} has reached the minute submission limit", playerId);
+                return new StatusCodeResult(StatusCodes.Status429TooManyRequests);
+            }
+
+            var dbChallenge = dbContext.Challenges.Single(c => c.Name == challengeName);
+
+            var trimmedFlag = addSolveRequest.Flag.Trim();
+            if (challengeConfig.Spec.Flag != trimmedFlag)
+            {
+                dbContext.Submissions.Add(new Submission
+                {
+                    Id = UUIDNext.Uuid.NewSequential(),
+                    Challenge = dbChallenge,
+                    SubmittedAt = now,
+                    Player = player,
+                    Value = trimmedFlag
+                });
+                dbContext.SaveChanges();
+                logger.LogInformation("Player {PlayerId} submitted an invalid flag for challenge {ChallengeName}", playerId, challengeName);
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Invalid flag",
+                    Detail = "The flag you have provided is incorrect"
+                });
+            }
+
+            var dbSolve = new Db.Solve
+            {
+                Id = UUIDNext.Uuid.NewSequential(),
+                Challenge = dbChallenge,
+                SolvedAt = now,
+                Player = player,
+            };
+            dbContext.Solves.Add(dbSolve);
+            dbContext.SaveChanges();
+            logger.LogInformation("Player {PlayerId} has solved challenge {ChallengeName}", playerId, challengeName);
+
+            scoringService.RefreshScores(dbContext);
+
+            return Ok(new Solve
+            {
+                Id = dbSolve.Id,
+                PlayerId = player.Id,
+                ChallengeName = challengeName,
+                SolvedAt = now
+            });
+        }
+    }
+}

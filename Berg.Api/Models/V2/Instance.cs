@@ -5,7 +5,7 @@ namespace Berg.Api.Models.V2;
 public class Instance
 {
     [JsonPropertyName("name")]
-    public string Name { get; set; } = null!;
+    public string Name { get; set; } = "";
 
     [JsonPropertyName("status")]
     public InstanceState InstanceState { get; set; } = InstanceState.None;
@@ -31,17 +31,14 @@ public class Service
     public string? Name { get; set; } = null;
 
     [JsonPropertyName("hostname")]
-    public string Hostname { get; set; } = null!;
+    public string Hostname { get; set; } = "";
 
     [JsonPropertyName("port")]
     public int Port { get; set; }
 
     [JsonPropertyName("protocol")]
-    public string Protocol { get; set; } = null!;
+    public string Protocol { get; set; } = "";
 
     [JsonPropertyName("appProtocol")]
-    public string AppProtocol { get; set; } = null!;
-
-    [JsonPropertyName("vhost")]
-    public bool VHost { get; set; } = false;
+    public string AppProtocol { get; set; } = "";
 }

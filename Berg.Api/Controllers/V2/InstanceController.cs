@@ -14,7 +14,7 @@ public class InstanceController(IChallengeService challengeService) : Controller
 {
     private readonly IChallengeService _challengeService = challengeService;
 
-    public class ChallengeStartRequest
+    public class InstanceStartRequest
     {
         [JsonPropertyName("challenge")]
         public string? Challenge { get; set; }
@@ -33,7 +33,7 @@ public class InstanceController(IChallengeService challengeService) : Controller
     [Authorize]
     [Route("/api/v2/instances/own/start")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<Instance>> StartChallengeInstance([FromBody] ChallengeStartRequest startRequest,
+    public async Task<ActionResult<Instance>> StartChallengeInstance([FromBody] InstanceStartRequest startRequest,
         CancellationToken cancel)
     {
         if (string.IsNullOrEmpty(startRequest.Challenge))

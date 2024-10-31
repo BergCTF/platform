@@ -5,44 +5,35 @@ namespace Berg.Api.Models.V2;
 public class Challenge
 {
     [JsonPropertyName("name")]
-    public string Name { get; set; } = null!;
+    public string Name { get; set; } = "";
 
     [JsonPropertyName("author")]
-    public string Author { get; set; } = null!;
+    public string Author { get; set; } = "";
 
     [JsonPropertyName("description")]
-    public string Description { get; set; } = null!;
+    public string Description { get; set; } = "";
 
     [JsonPropertyName("categories")]
-    public List<string> Categories { get; set; } = new();
+    public List<string> Categories { get; set; } = [];
 
     [JsonPropertyName("difficulty")]
-    public string Difficulty { get; set; } = null!;
+    public string Difficulty { get; set; } = "";
 
     [JsonPropertyName("flagFormat")]
-    public string FlagFormat { get; set; } = null!;
+    public string FlagFormat { get; set; } = "";
 
     [JsonPropertyName("attachments")]
-    public List<Attachment> Attachments { get; set; } = new();
+    public List<Attachment> Attachments { get; set; } = [];
 
-    [JsonPropertyName("value")]
-    public int Value { get; set; }
-
-    [JsonPropertyName("solvedByTeam")]
-    public bool SolvedByTeam { get; set; }
-
-    [JsonPropertyName("solvedByPlayer")]
-    public bool SolvedByPlayer { get; set; }
-
-    [JsonPropertyName("instantiable")]
-    public bool Instantiable { get; set; }
+    [JsonPropertyName("hasRemote")]
+    public bool HasRemote { get; set; }
 }
 
 public class Attachment
 {
     [JsonPropertyName("fileName")]
-    public string FileName { get; set; } = default!;
+    public string FileName { get; set; } = "";
 
     [JsonPropertyName("downloadUrl")]
-    public string DownloadUrl { get; set; } = default!;
+    public string DownloadUrl { get; set; } = "";
 }

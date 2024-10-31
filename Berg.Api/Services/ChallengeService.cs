@@ -174,7 +174,6 @@ public class ChallengeService : IChallengeService
                     Hostname = _infraConfig.ChallengeDomain,
                     AppProtocol = port.AppProtocol,
                     Protocol = port.Protocol,
-                    VHost = false,
                 };
 
                 if (port.Type == V1ChallengePortType.PublicPort)
@@ -190,7 +189,6 @@ public class ChallengeService : IChallengeService
                         .FirstOrDefault(i => i.Name() == $"{container.Hostname}-{port.Port}");
                     service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + "." + _infraConfig.ChallengeDomain;
                     service.Port = _infraConfig.ChallengeHttpPort;
-                    service.VHost = true;
                 }
                 else if (port.Type == V1ChallengePortType.PublicTlsRoute)
                 {
@@ -198,7 +196,6 @@ public class ChallengeService : IChallengeService
                         .FirstOrDefault(i => i.Name() == $"{container.Hostname}-{port.Port}");
                     service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + "." +_infraConfig.ChallengeDomain;
                     service.Port = _infraConfig.ChallengeTlsPort;
-                    service.VHost = true;
                 }
                 services.Add(service);
             }

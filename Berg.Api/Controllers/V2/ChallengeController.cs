@@ -44,7 +44,7 @@ public class ChallengeController(IChallengeService challengeService) : Controlle
             Difficulty = c.Spec.Difficulty,
             FlagFormat = c.Spec.FlagFormat,
             Categories = c.Spec.Categories,
-            Instantiable = c.Spec.Containers?.Any() ?? false,
+            HasRemote = c.Spec.Containers?.Any() ?? false,
             Attachments = c.Spec.Attachments?.Select(a => new Attachment
             {
                 FileName = a.FileName,

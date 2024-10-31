@@ -47,6 +47,8 @@ berg:
       id: "sub"
       name: "name"
       email: "email"
+  ctf:
+    teams: true
 
 postgresql:
   enabled: false
