@@ -22,6 +22,7 @@ echo "Adding helm repos"
 helm repo add dex https://charts.dexidp.io
 helm repo add jetstack https://charts.jetstack.io
 helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
 helm repo update
 
 echo "Recreating kind cluster"
@@ -128,10 +129,17 @@ tlsOptions:
     sniStrict: false
     alpnProtocols:
       - http/1.1
+tracing:
+  otlp:
+    enabled: true
+    grpc:
+      enabled: true
+      endpoint: jaeger-operator-jaeger-collector.jaeger.svc.cluster.local:4317
+      insecure: true
 EOF
 
 echo "Installing Gateway API CRDs"
-kubectl --context kind-berg-dev-cluster apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.0/experimental-install.yaml
+kubectl --context kind-berg-dev-cluster create -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.0/experimental-install.yaml
 
 echo "Installing cert-manager"
 helm --kube-context kind-berg-dev-cluster install --wait \
@@ -177,6 +185,25 @@ spec:
     kind: ClusterIssuer
 EOF
 
+echo "Installing jaeger"
+cat <<EOF | helm --kube-context kind-berg-dev-cluster install jaeger-operator jaegertracing/jaeger-operator -n jaeger --create-namespace -f -
+rbac:
+  clusterRole: true
+jaeger:
+  create: true
+  spec:
+    ingress:
+      annotations:
+        cert-manager.io/cluster-issuer: mkcert
+      enabled: true
+      hosts:
+        - jaeger.localhost
+      tls:
+        - hosts:
+            - jaeger.localhost
+          secretName: jaeger-tls
+EOF
+
 echo "Installing dex idp"
 cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait dex dex/dex --create-namespace -n dex -f -
 config:
@@ -189,7 +216,7 @@ config:
       secret: berg-client-secret
       name: 'Berg CTF Platform'
       redirectURIs:
-        - 'https://berg.localhost/api/v1/federation-callback'
+        - 'https://berg.localhost/api/federation-callback'
   staticPasswords:
     - email: "admin@localhost"
       # bcrypt hash of the string "password": $(echo password | htpasswd -BinC 10 admin | cut -d: -f2)
@@ -212,7 +239,7 @@ ingress:
   tls:
     - hosts:
         - dex.localhost
-      secretName: dex-cert
+      secretName: dex-tls
 EOF
 
 echo "Installing postgres db"

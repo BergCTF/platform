@@ -74,26 +74,26 @@ public static class Constants
         /// <summary>
         /// Authorization endpoint
         /// </summary>
-        public const string Authorization = "/api/v1/authorize";
+        public const string Authorization = "/api/authorize";
 
         /// <summary>
         /// Token endpoint
         /// </summary>
-        public const string Token = "/api/v1/token";
+        public const string Token = "/api/token";
 
         /// <summary>
         /// Federation callback endpoint
         /// </summary>
-        public const string FederationCallback = "/api/v1/federation-callback";
+        public const string FederationCallback = "/api/federation-callback";
 
         /// <summary>
         /// Introspection endpoint
         /// </summary>
-        public const string Introspect = "/api/v1/introspect";
+        public const string Introspect = "/api/introspect";
 
         /// <summary>
         /// Logout endpoint
         /// </summary>
-        public const string Logout = "/api/v1/logout";
+        public const string Logout = "/api/logout";
     }
 }

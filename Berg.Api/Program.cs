@@ -39,6 +39,7 @@ builder.Services.AddDbContext<BergDbContext>(options => {
 
 builder.AddSwagger(infraConfig);
 builder.AddOpenIddict(discordConfig, genericOpenIdConfig);
+builder.AddOpenTelemetryExporters(infraConfig);
 
 var app = builder.Build();
 

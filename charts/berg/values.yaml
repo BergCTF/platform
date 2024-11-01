@@ -52,6 +52,11 @@ berg:
       id: "sub"
       name: "name"
       email: "email"
+  openTelemetry:
+    grpc:
+      tracingEndpoint: null
+      metricsEndpoint: null
+      loggingEndpoint: null
   redirectUris: []
   # - "https://frontend.example.com/callback"
   ctf:

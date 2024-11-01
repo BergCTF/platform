@@ -9,10 +9,10 @@ kubectl --context kind-berg-dev-cluster create secret generic berg-pull-secret \
     --type=kubernetes.io/dockerconfigjson -n berg
 
 echo "Build image"
-docker build -t kind.localhost/berg/challenge-server:local -f Berg.Api/Dockerfile .
+docker build -t kind.localhost/berg/api:local -f Berg.Api/Dockerfile .
 
 echo "Transfer image"
-kind load docker-image --name=berg-dev-cluster kind.localhost/berg/challenge-server:local
+kind load docker-image --name=berg-dev-cluster kind.localhost/berg/api:local
 
 cd charts/berg
 echo "Uninstalling berg"
@@ -25,7 +25,7 @@ gateway:
   gatewayClassName: "traefik"
 berg:
   image:
-    repository: "kind.localhost/berg/challenge-server"
+    repository: "kind.localhost/berg/api"
     tag: local
   domain: berg.localhost
   tlsSecretName: "berg-gateway-tls"
@@ -47,6 +47,9 @@ berg:
       id: "sub"
       name: "name"
       email: "email"
+  openTelemetry:
+    grpc:
+      tracingEndpoint: http://jaeger-operator-jaeger-collector.jaeger.svc.cluster.local:4317
   ctf:
     teams: true
 

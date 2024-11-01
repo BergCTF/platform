@@ -14,4 +14,7 @@ public class InfraConfig
     public List<string>? RedirectUris { get; set; }
     public TimeSpan RefreshInterval { get; set; } = TimeSpan.FromSeconds(15);
     public TimeSpan ChallengeInstanceTimeout { get; set; } = TimeSpan.FromHours(2);
+    public string? OpenTelemetryGrpcTracingEndpoint { get; set; }
+    public string? OpenTelemetryGrpcMetricsEndpoint { get; set; }
+    public string? OpenTelemetryGrpcLoggingEndpoint { get; set; }
 }
