@@ -2,7 +2,9 @@ using System.Security.Claims;
 using System.Text.Json.Serialization;
 using Berg.Api.Configuration;
 using Berg.Api.Db;
+using Berg.Api.Notifications;
 using Berg.Api.Services;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +20,7 @@ public class SolveController(
     CtfConfig ctfConfig,
     BergDbContext dbContext,
     IChallengeService challengeService,
-    ScoringService scoringService) : ControllerBase
+    IMediator mediator) : ControllerBase
 {
     private readonly object _submitFlagLock = new();
 
@@ -122,8 +124,8 @@ public class SolveController(
             });
         }
 
-        var now = DateTime.UtcNow;
-        if (ctfConfig.Start > now)
+        var utcNow = DateTime.UtcNow;
+        if (ctfConfig.Start > utcNow)
         {
             return BadRequest(new ProblemDetails
             {
@@ -131,7 +133,7 @@ public class SolveController(
                 Detail = "CTF has not yet started"
             });
         }
-        if (ctfConfig.End < now)
+        if (ctfConfig.End < utcNow)
         {
             return BadRequest(new ProblemDetails
             {
@@ -158,7 +160,7 @@ public class SolveController(
                 });
             }
 
-            var yesterday = now.Subtract(TimeSpan.FromDays(1));
+            var yesterday = utcNow.Subtract(TimeSpan.FromDays(1));
             var latestFailedSubmissions = player.Submissions
                 .Where(s => yesterday < s.SubmittedAt)
                 .ToList();
@@ -168,7 +170,7 @@ public class SolveController(
                 return new StatusCodeResult(StatusCodes.Status429TooManyRequests);
             }
 
-            var oneHourAgo = now.Subtract(TimeSpan.FromHours(1));
+            var oneHourAgo = utcNow.Subtract(TimeSpan.FromHours(1));
             var submissionCountHour = latestFailedSubmissions.Count(s => oneHourAgo < s.SubmittedAt);
             if (submissionCountHour > ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerHour)
             {
@@ -176,7 +178,7 @@ public class SolveController(
                 return new StatusCodeResult(StatusCodes.Status429TooManyRequests);
             }
 
-            var oneMinuteAgo = now.Subtract(TimeSpan.FromMinutes(1));
+            var oneMinuteAgo = utcNow.Subtract(TimeSpan.FromMinutes(1));
             var submissionCountMinute = latestFailedSubmissions.Count(s => oneMinuteAgo < s.SubmittedAt);
             if (submissionCountMinute > ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerMinute)
             {
@@ -193,7 +195,7 @@ public class SolveController(
                 {
                     Id = UUIDNext.Uuid.NewSequential(),
                     Challenge = dbChallenge,
-                    SubmittedAt = now,
+                    SubmittedAt = utcNow,
                     Player = player,
                     Value = trimmedFlag
                 });
@@ -210,21 +212,37 @@ public class SolveController(
             {
                 Id = UUIDNext.Uuid.NewSequential(),
                 Challenge = dbChallenge,
-                SolvedAt = now,
+                SolvedAt = utcNow,
                 Player = player,
             };
             dbContext.Solves.Add(dbSolve);
             dbContext.SaveChanges();
             logger.LogInformation("Player {PlayerId} has solved challenge {ChallengeName}", playerId, challengeName);
 
-            scoringService.RefreshScores(dbContext);
+            var freezeStart = ctfConfig.Scoring.FreezeStart;
+            var freezeEnd = ctfConfig.Scoring.FreezeStart;
+            var isCurrentlyFrozen = freezeStart < utcNow && utcNow < freezeEnd;
+
+            // Asynchronously let other components react to this solve
+            mediator.Publish(new SolveNotification
+            {
+                Id = dbSolve.Id,
+                PlayerId = player.Id,
+                PlayerFederatedId = player.FederatedId,
+                PlayerName = player.Name,
+                TeamId = player.TeamId,
+                TeamName = player.Team?.Name,
+                SolvedAt = dbSolve.SolvedAt,
+                Challenge = challengeName,
+                IsFrozen = isCurrentlyFrozen
+            }).ConfigureAwait(false);
 
             return Ok(new Solve
             {
                 Id = dbSolve.Id,
                 PlayerId = player.Id,
                 ChallengeName = challengeName,
-                SolvedAt = now
+                SolvedAt = utcNow
             });
         }
     }

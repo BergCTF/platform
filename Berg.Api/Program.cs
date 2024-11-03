@@ -40,6 +40,7 @@ builder.Services.AddDbContext<BergDbContext>(options => {
 builder.AddSwagger(infraConfig);
 builder.AddOpenIddict(discordConfig, genericOpenIdConfig);
 builder.AddOpenTelemetryExporters(infraConfig);
+builder.AddMediatR();
 
 var app = builder.Build();
 

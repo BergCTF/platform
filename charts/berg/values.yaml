@@ -21,6 +21,9 @@ berg:
     Default: Information
     Microsoft.AspNetCore: Warning
     Microsoft.EntityFrameworkCore.Database: Warning
+    OpenIddict: Warning
+    Quartz: Warning
+    System.Net.Http.HttpClient.OpenIddict: Warning
   resources:
     limits:
       cpu: "2"

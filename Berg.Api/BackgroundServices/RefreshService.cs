@@ -32,12 +32,14 @@ public class RefreshService : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             using var scope = _serviceScopeFactory.CreateScope();
+            using var activity = Constants.BergActivitySource.StartActivity("RefreshService");
             await using (var dbContext = scope.ServiceProvider.GetRequiredService<BergDbContext>())
             {
                 _challengeService.RefreshChallenges(dbContext);
                 _scoringService.RefreshScores(dbContext);
             }
             await _challengeService.CheckChallengeInstanceTimeout(stoppingToken);
+            activity?.Stop();
 
             await Task.Delay(_infraConfig.RefreshInterval, stoppingToken);
         }

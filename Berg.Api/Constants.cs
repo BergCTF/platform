@@ -1,8 +1,11 @@
+using System.Diagnostics;
+
 namespace Berg.Api;
 
 public static class Constants
 {
-/// <summary>
+    public readonly static ActivitySource BergActivitySource = new("Berg.Api");
+    /// <summary>
     /// Role constants
     /// </summary>
     public static class Roles

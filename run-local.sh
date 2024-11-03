@@ -30,6 +30,8 @@ berg:
   domain: berg.localhost
   tlsSecretName: "berg-gateway-tls"
   pullSecretName: "berg-pull-secret"
+  logLevel:
+    Berg.Api: Debug
   postgresql:
     host: "berg-postgresql"
     database: "berg"

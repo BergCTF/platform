@@ -1,14 +1,6 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
-using Berg.Api.Configuration;
-using Berg.Api.CustomResources;
-using Berg.Api.Db;
-using Berg.Api.Models.V1;
-using Microsoft.AspNetCore.Authorization;
-using k8s;
-using k8s.Autorest;
-using k8s.Models;
 
 namespace Berg.Api.Services;
 
@@ -16,7 +8,7 @@ public interface IWebSocketService
 {
     Task WebSocketHandler(WebSocket webSocket, Guid? playerId);
     Task PushEvent<T>(string eventType, T message, Func<Guid, bool> filter);
-    Task PushEventAll<T>(string eventType, T message);
+    Task PushEvent<T>(string eventType, T message);
 }
 
 public class BergWebSocketConnection
@@ -26,35 +18,22 @@ public class BergWebSocketConnection
     public Guid? PlayerId { get; set; }
 }
 
-public class WebSocketService : IWebSocketService
+public class WebSocketService(ILogger<ChallengeService> logger) : IWebSocketService
 {
-
-    private readonly ILogger<ChallengeService> _logger;
-    private readonly CtfConfig _ctfConfig;
-
-    private readonly object _refreshLock = new();
-    private List<BergWebSocketConnection> _websockets = new();
-
-    public WebSocketService(
-        ILogger<ChallengeService> logger,
-        CtfConfig ctfConfig)
-    {
-        _logger = logger;
-        _ctfConfig = ctfConfig;
-    }
+    private readonly List<BergWebSocketConnection> _connections = [];
 
     public async Task WebSocketHandler(WebSocket webSocket, Guid? playerId)
     {
-        _logger.LogInformation("WebSocket connection opened");
-        var ws = new BergWebSocketConnection { WebSocket = webSocket, IsAuthenticated = false };
+        logger.LogInformation("WebSocket connection opened");
+        var conn = new BergWebSocketConnection { WebSocket = webSocket, IsAuthenticated = false };
 
         if (playerId != null)
         {
-            ws.IsAuthenticated = true;
-            ws.PlayerId = playerId;
+            conn.IsAuthenticated = true;
+            conn.PlayerId = playerId;
         }
 
-        _websockets.Add(ws);
+        _connections.Add(conn);
         var buffer = new byte[1024 * 4];
         try
         {
@@ -68,35 +47,28 @@ public class WebSocketService : IWebSocketService
         }
         catch (WebSocketException)
         {
-            _websockets.Remove(ws);
+            _connections.Remove(conn);
             await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection closed", CancellationToken.None);
             return;
         }
-        _websockets.Remove(ws);
+        _connections.Remove(conn);
     }
 
     public async Task PushEvent<T>(string eventType, T message, Func<Guid, bool> filter)
     {
         var buffer = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { type = eventType, message }));
-        foreach (var ws in _websockets)
+        foreach (var conn in _connections)
         {
-            if (!ws.IsAuthenticated || !filter(ws.PlayerId!.Value)) continue;
-            if (ws.WebSocket.State == WebSocketState.Open)
-                await ws.WebSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
-            else if (ws.WebSocket.State == WebSocketState.CloseReceived || ws.WebSocket.State == WebSocketState.CloseSent)
-                _websockets.Remove(ws);
+            if (!conn.IsAuthenticated || !filter(conn.PlayerId!.Value)) continue;
+            if (conn.WebSocket.State == WebSocketState.Open)
+                await conn.WebSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
+            else if (conn.WebSocket.State == WebSocketState.CloseReceived || conn.WebSocket.State == WebSocketState.CloseSent)
+                _connections.Remove(conn);
         }
     }
 
-    public async Task PushEventAll<T>(string eventType, T message)
+    public Task PushEvent<T>(string eventType, T message)
     {
-        var buffer = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { type = eventType, message }));
-        foreach (var ws in _websockets)
-        {
-            if (ws.WebSocket.State == WebSocketState.Open)
-                await ws.WebSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
-            else if (ws.WebSocket.State == WebSocketState.CloseReceived || ws.WebSocket.State == WebSocketState.CloseSent)
-                _websockets.Remove(ws);
-        }
+        return PushEvent(eventType, message, _ => true);
     }
 }

@@ -63,6 +63,7 @@ public class ChallengeService : IChallengeService
 
     public void RefreshChallenges(BergDbContext dbContext)
     {
+        using var activity = Constants.BergActivitySource.StartActivity();
         lock (_refreshLock)
         {
             var challengeList = _challengeClient
@@ -102,6 +103,7 @@ public class ChallengeService : IChallengeService
 
     public async Task CheckChallengeInstanceTimeout(CancellationToken cancel)
     {
+        using var activity = Constants.BergActivitySource.StartActivity();
         var labelSelector = new Dictionary<string, string>
         {
             { ManagedByLabel, "berg" },

@@ -4,13 +4,12 @@ using Berg.Api.Configuration;
 using Berg.Api.Db;
 using Berg.Api.Services;
 using Berg.Api.Models.V1;
-using Discord;
-using Discord.Rest;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
-using DiscordConfig = Berg.Api.Configuration.DiscordConfig;
+using MediatR;
+using Berg.Api.Notifications;
 
 namespace Berg.Api.Controllers.V1;
 
@@ -19,11 +18,10 @@ namespace Berg.Api.Controllers.V1;
 public class ScoringController(
     ILogger<ScoringController> logger,
     CtfConfig ctfConfig,
-    DiscordConfig discordConfig,
+    IMediator mediator,
     BergDbContext dbContext,
     IChallengeService challengeService,
-    ScoringService scoringService,
-    WebSocketService webSocketService) : ControllerBase
+    ScoringService scoringService) : ControllerBase
 {
     private readonly object _submitFlagLock = new();
     public class SubmitFlagRequest
@@ -68,19 +66,6 @@ public class ScoringController(
             if (player.Solves.Any(s => s.ChallengeId == challenge))
                 return SubmitFlagResult.AlreadySolved;
 
-            if (ctfConfig.Teams)
-            {
-                // Prevent submission if team mode is enabled but player has not yet joined a team
-                if (player.TeamId == null)
-                    return SubmitFlagResult.MustJoinTeam;
-
-                // Prevent submission if the team has already solved the challenge
-                if (dbContext.Solves
-                    .Where(s => s.Player.TeamId == player.TeamId)
-                    .Any(s => s.ChallengeId == challenge))
-                    return SubmitFlagResult.AlreadySolved;
-            }
-
             var yesterday = now.Subtract(TimeSpan.FromDays(1));
             var latestFailedSubmissions = player.Submissions
                 .Where(s => yesterday < s.SubmittedAt)
@@ -115,7 +100,7 @@ public class ScoringController(
                 // Invalid submission
                 dbContext.Submissions.Add(new Submission
                 {
-                    Id = Guid.NewGuid(),
+                    Id = UUIDNext.Uuid.NewSequential(),
                     Challenge = dbChallenge,
                     SubmittedAt = now,
                     Player = player,
@@ -126,118 +111,37 @@ public class ScoringController(
                 return SubmitFlagResult.Incorrect;
             }
 
-            var firstBlood = !dbContext.Solves.Any(s => s.ChallengeId == challenge);
-
-            dbContext.Solves.Add(new Db.Solve
+            var dbSolve = new Db.Solve
             {
-                Id = Guid.NewGuid(),
+                Id = UUIDNext.Uuid.NewSequential(),
                 Challenge = dbChallenge,
                 SolvedAt = now,
                 Player = player,
-            });
+            };
+            dbContext.Solves.Add(dbSolve);
             dbContext.SaveChanges();
             logger.LogInformation("Player {} has solved challenge {}", playerId, challenge);
 
-            var solveEvent = new Berg.Api.Models.V1.Solve
-            {
-                PlayerId = player.Id,
-                TeamId = player.Team?.Id,
-                ChallengeName = challenge,
-                SolvedAt = now,
-                IsFirstBlood = firstBlood
-            };
-            // Its a valid solve!
             var freezeStart = ctfConfig.Scoring.FreezeStart;
             var freezeEnd = ctfConfig.Scoring.FreezeEnd;
             var utcNow = DateTime.UtcNow;
-            if (freezeStart != null && freezeEnd != null && utcNow > freezeStart.Value && utcNow < freezeEnd.Value)
-            {
-                // add a user filter - only send to the user who solved the challenge and their team
-                if (ctfConfig.Teams && player.TeamId != null)
-                {
-                    var teamPlayerIds = dbContext.Players.Where(p => p.TeamId == player.TeamId).Select(p => p.Id).ToHashSet();
-                    webSocketService.PushEvent("solve", solveEvent, teamPlayerIds.Contains)
-                        .ContinueWith(t => logger.LogError(t.Exception, "Error sending WebSocket Events"), TaskContinuationOptions.OnlyOnFaulted);
-                }
-                else
-                {
-                    webSocketService.PushEvent("solve", solveEvent, s => s == player.Id)
-                        .ContinueWith(t => logger.LogError(t.Exception, "Error sending WebSocket Events"), TaskContinuationOptions.OnlyOnFaulted);
-                }
-                logger.LogInformation("Announcement not sent because the scoreboard is currently frozen.");
-            }
-            else
-            {
-                webSocketService.PushEventAll("solve", solveEvent)
-                    .ContinueWith(t => logger.LogError(t.Exception, "Error sending WebSocket Events"), TaskContinuationOptions.OnlyOnFaulted);
-                SendDiscordNotification(player.FederatedId, player.Name, player.Team?.Name, challenge, firstBlood)
-                    .Wait();
-            }
+            var isCurrentlyFrozen = freezeStart < utcNow && utcNow < freezeEnd;
 
-            scoringService.RefreshScores(dbContext);
+            // Asynchronously let other components react to this solve
+            mediator.Publish(new SolveNotification
+            {
+                Id = dbSolve.Id,
+                PlayerId = player.Id,
+                PlayerFederatedId = player.FederatedId,
+                PlayerName = player.Name,
+                TeamId = player.TeamId,
+                TeamName = player.Team?.Name,
+                SolvedAt = dbSolve.SolvedAt,
+                Challenge = challenge,
+                IsFrozen = isCurrentlyFrozen
+            }).ConfigureAwait(false);
 
             return SubmitFlagResult.Correct;
-        }
-    }
-
-    private async Task SendDiscordNotification(
-        string solverDiscordId,
-        string solverDiscordUsername,
-        string? solverTeamName,
-        string solvedChallenge,
-        bool firstBlood)
-    {
-        if (discordConfig.NotificationChannelId == 0 || discordConfig.NotificationGuildId == 0)
-        {
-            logger.LogError("No channel id or guild id configured, did not send notification.");
-            return;
-        }
-
-        try
-        {
-            var client = new DiscordRestClient();
-            await client.LoginAsync(TokenType.Bot, discordConfig.BotToken);
-
-            var channel = await client.GetChannelAsync(discordConfig.NotificationChannelId) as IMessageChannel;
-            if (channel == null)
-            {
-                logger.LogError("Invalid channel id configured, did not send notification.");
-                return;
-            }
-            var guild = await client.GetGuildAsync(discordConfig.NotificationGuildId);
-            if (guild == null)
-            {
-                logger.LogError("Invalid guild id configured, did not send notification.");
-                return;
-            }
-
-            if (solverTeamName != null)
-                solverTeamName = $" ({Format.Sanitize(solverTeamName)})";
-
-            var user = await guild.GetUserAsync(ulong.Parse(solverDiscordId));
-            var username = user == null ? Format.Sanitize(solverDiscordUsername) : user.Mention;
-            var allowedMentions = new AllowedMentions
-            {
-                UserIds = new List<ulong> { ulong.Parse(solverDiscordId) }
-            };
-            if (firstBlood)
-            {
-                await channel.SendMessageAsync(
-                    $"{username}{solverTeamName} got first blood on challenge `{solvedChallenge}` :drop_of_blood:",
-                        allowedMentions: allowedMentions);
-            }
-            else
-            {
-                await channel.SendMessageAsync(
-                    $"{username}{solverTeamName} solved challenge `{solvedChallenge}` :triangular_flag_on_post:",
-                        allowedMentions: allowedMentions);
-            }
-
-            await client.LogoutAsync();
-        }
-        catch (Exception ex)
-        {
-            logger.LogError("Error while trying to send a notification: {}", ex);
         }
     }
 

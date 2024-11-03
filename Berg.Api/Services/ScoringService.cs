@@ -32,6 +32,7 @@ public class ScoringService
 
     public void RefreshScores(BergDbContext dbContext)
     {
+        using var activity = Constants.BergActivitySource.StartActivity();
         lock (CacheUpdateLock)
         {
             var utcNow = DateTime.UtcNow;

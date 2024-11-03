@@ -181,7 +181,6 @@ public class OAuthController(
     {
         var result = await HttpContext.AuthenticateAsync(Constants.Schemes.FederatedLogin);
 
-
         string? userId, username, email;
         if (string.IsNullOrEmpty(discordConfig.ClientId))
         {

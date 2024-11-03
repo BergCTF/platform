@@ -20,6 +20,7 @@ public static class OpenTelemetryExtensions
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddNpgsql()
+                .AddSource(Constants.BergActivitySource.Name)
                 .AddOtlpExporter("tracing", tracing => {
                     tracing.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
                     tracing.Endpoint = new Uri(infraConfig.OpenTelemetryGrpcTracingEndpoint);
