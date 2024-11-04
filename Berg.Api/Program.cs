@@ -25,9 +25,10 @@ var genericOpenIdConfig = new GenericOpenIdConfig();
 builder.Configuration.GetSection("GenericOpenId").Bind(genericOpenIdConfig);
 builder.Services.AddSingleton(genericOpenIdConfig);
 
+var kubernetes = new Kubernetes(KubernetesClientConfiguration.BuildDefaultConfig());
+builder.Services.AddSingleton(kubernetes);
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
-builder.Services.AddSingleton(new Kubernetes(KubernetesClientConfiguration.BuildDefaultConfig()));
 builder.Services.AddSingleton<WebSocketService>();
 builder.Services.AddSingleton<ScoringService>();
 builder.Services.AddSingleton<IChallengeService, ChallengeService>();
@@ -38,7 +39,7 @@ builder.Services.AddDbContext<BergDbContext>(options => {
 });
 
 builder.AddSwagger(infraConfig);
-builder.AddOpenIddict(discordConfig, genericOpenIdConfig);
+builder.AddOpenIddict(kubernetes, discordConfig, genericOpenIdConfig);
 builder.AddOpenTelemetryExporters(infraConfig);
 builder.AddMediatR();
 

@@ -1,6 +1,16 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Xml.Linq;
 using Berg.Api.Configuration;
 using Berg.Api.Db;
+using k8s;
+using k8s.Autorest;
+using k8s.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.AspNetCore.DataProtection.Repositories;
+using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Client;
 using Quartz;
@@ -50,8 +60,17 @@ public sealed class InternalBackChannelReplacement(IConfiguration configuration)
 
 public static class OpenIddictBuilder
 {
-    public static void AddOpenIddict(this WebApplicationBuilder builder, DiscordConfig discordConfig, GenericOpenIdConfig genericOpenIdConfig)
+    public static void AddOpenIddict(this WebApplicationBuilder builder, Kubernetes kubernetes, DiscordConfig discordConfig, GenericOpenIdConfig genericOpenIdConfig)
     {
+        var keyProvider = new KubernetesSecretKeyProvider(kubernetes);
+
+        // Store cookie encryption keys in the db
+        builder.Services.AddDataProtection()
+            .SetApplicationName("Berg");
+        builder.Services.Configure<KeyManagementOptions>(options =>
+        {
+            options.XmlRepository = keyProvider;
+        });
         builder.Services.AddQuartz(options =>
         {
             options.UseSimpleTypeLoader();
@@ -60,7 +79,6 @@ public static class OpenIddictBuilder
         builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
         builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options => {
-                // TODO: Make sure that no cookie encryption key needs to be persisted to disk
                 options.ExpireTimeSpan = TimeSpan.FromDays(14);
 
                 // Hacky workaround due to https://github.com/dotnet/aspnetcore/issues/9039
@@ -84,7 +102,6 @@ public static class OpenIddictBuilder
             {
                 options.UseEntityFrameworkCore()
                     .UseDbContext<BergDbContext>();
-
                 options.UseQuartz();
             })
             .AddClient(options =>
@@ -92,9 +109,8 @@ public static class OpenIddictBuilder
                 options.AllowAuthorizationCodeFlow()
                     .AllowRefreshTokenFlow();
 
-                // TODO: Replace ephemeral keys with configurable keys to allow multiple replicas
-                options.AddEphemeralEncryptionKey();
-                options.AddEphemeralSigningKey();
+                options.AddEncryptionKey(keyProvider.ClientEncryptionKey);
+                options.AddSigningKey(keyProvider.ClientSigningKey);
 
                 options.UseAspNetCore()
                     .EnableRedirectionEndpointPassthrough();
@@ -105,7 +121,7 @@ public static class OpenIddictBuilder
                 if (!string.IsNullOrEmpty(discordConfig.ClientId))
                 {
                     var secret = discordConfig.ClientSecret
-                                 ?? throw new InvalidOperationException("Discord:ClientSecret is required.");
+                                    ?? throw new InvalidOperationException("Discord:ClientSecret is required.");
                     options.UseWebProviders()
                         .AddDiscord(discord => discord
                                 .SetClientId(discordConfig.ClientId)
@@ -118,9 +134,9 @@ public static class OpenIddictBuilder
                 else if (!string.IsNullOrEmpty(genericOpenIdConfig.ClientId))
                 {
                     var issuer = genericOpenIdConfig.Issuer
-                                 ?? throw new InvalidOperationException("GenericOpenId:Issuer is required.");
+                                    ?? throw new InvalidOperationException("GenericOpenId:Issuer is required.");
                     var secret = genericOpenIdConfig.ClientSecret
-                                 ?? throw new InvalidOperationException("GenericOpenId:ClientSecret is required.");
+                                    ?? throw new InvalidOperationException("GenericOpenId:ClientSecret is required.");
                     var registration = new OpenIddictClientRegistration
                     {
                         ProviderName = Constants.Schemes.FederatedLogin,
@@ -158,9 +174,8 @@ public static class OpenIddictBuilder
                 options.AllowPasswordFlow();
                 options.AllowRefreshTokenFlow();
 
-                // TODO: Replace ephemeral keys with configurable keys to allow multiple replicas
-                options.AddEphemeralEncryptionKey();
-                options.AddEphemeralSigningKey();
+                options.AddEncryptionKey(keyProvider.ServerEncryptionKey);
+                options.AddSigningKey(keyProvider.ServerSigningKey);
 
                 options.UseAspNetCore()
                     .EnableAuthorizationEndpointPassthrough()
@@ -218,5 +233,125 @@ public static class OpenIddictBuilder
         {
             await appManager.UpdateAsync(existingBergApp, bergApp);
         }
+    }
+}
+
+public class KubernetesSecretKeyProvider : IXmlRepository
+{
+    public readonly SymmetricSecurityKey ClientEncryptionKey;
+    public readonly RsaSecurityKey ClientSigningKey;
+    public readonly SymmetricSecurityKey ServerEncryptionKey;
+    public readonly RsaSecurityKey ServerSigningKey;
+    private readonly Kubernetes _kubernetes;
+    private readonly string _bergNamespace;
+    private readonly string _releaseName;
+
+    public KubernetesSecretKeyProvider(Kubernetes kubernetes)
+    {
+        _kubernetes = kubernetes;
+
+        _bergNamespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
+        _releaseName = Environment.GetEnvironmentVariable("BERG_RELEASE") ?? "berg";
+        var secretName = $"{_releaseName[0..Math.Min(_releaseName.Length, 55)]}-openid";
+        var secretsLoaded = false;
+        var serverSigningRsa = RSA.Create(4096);
+        var clientSigningRsa = RSA.Create(4096);
+        ClientEncryptionKey = GenerateSymmetricSecurityKey();
+        ServerEncryptionKey = GenerateSymmetricSecurityKey();
+        do
+        {
+            try
+            {
+                var secret = kubernetes.ReadNamespacedSecret(secretName, _bergNamespace);
+                ClientEncryptionKey = new SymmetricSecurityKey(secret.Data["clientEncryptionKey"]);
+                clientSigningRsa.ImportRSAPrivateKey(secret.Data["clientSigningKey"], out _);
+                ServerEncryptionKey = new SymmetricSecurityKey(secret.Data["serverEncryptionKey"]);
+                serverSigningRsa.ImportRSAPrivateKey(secret.Data["serverSigningKey"], out _);
+                secretsLoaded = true;
+            }
+            catch (HttpOperationException)
+            {
+                Console.Error.WriteLine("Unable to load existing openid secret keys, generating new ones");
+            }
+            if(!secretsLoaded) {
+                try
+                {
+                    kubernetes.CreateNamespacedSecret(new k8s.Models.V1Secret
+                    {
+                        Metadata = new k8s.Models.V1ObjectMeta
+                        {
+                            Name = secretName
+                        },
+                        Data = new Dictionary<string, byte[]> {
+                            { "clientEncryptionKey", ClientEncryptionKey.Key },
+                            { "clientSigningKey", clientSigningRsa.ExportRSAPrivateKey() },
+                            { "serverEncryptionKey", ServerEncryptionKey.Key },
+                            { "serverSigningKey", serverSigningRsa.ExportRSAPrivateKey() },
+                        }
+                    }, _bergNamespace);
+                }
+                catch (HttpOperationException)
+                {
+                    Console.Error.WriteLine("Failed to write newly created openid keys");
+                }
+            }
+        } while(!secretsLoaded);
+
+        ClientSigningKey = new RsaSecurityKey(clientSigningRsa);
+        ServerSigningKey = new RsaSecurityKey(serverSigningRsa);
+
+        var protectSecretName = $"{_releaseName[0..Math.Min(_releaseName.Length, 55)]}-protect";
+        var secretNames = _kubernetes.ListNamespacedSecret(_bergNamespace).Items.Select(s => s.Name()).ToHashSet();
+        if(!secretNames.Contains(protectSecretName))
+        {
+            _kubernetes.CreateNamespacedSecret(new V1Secret
+            {
+                Metadata = new V1ObjectMeta
+                {
+                    Name = protectSecretName
+                },
+                Data = new Dictionary<string, byte[]>()
+            }, _bergNamespace);
+        }
+    }
+
+    public IReadOnlyCollection<XElement> GetAllElements()
+    {
+        try
+        {
+            return GetAllElementsCore().ToList().AsReadOnly();
+        }
+        catch (HttpOperationException)
+        {
+            return new List<XElement>().AsReadOnly();
+        }
+    }
+
+    private IEnumerable<XElement> GetAllElementsCore()
+    {
+        var secretName = $"{_releaseName[0..Math.Min(_releaseName.Length, 55)]}-protect";
+        var secret = _kubernetes.ReadNamespacedSecret(secretName, _bergNamespace);
+        if (secret.Data != null) {
+            foreach(var pair in secret.Data)
+            {
+                yield return XElement.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(Encoding.UTF8.GetString(pair.Value))));
+            }
+        }
+    }
+
+    public void StoreElement(XElement element, string friendlyName)
+    {
+        var secretName = $"{_releaseName[0..Math.Min(_releaseName.Length, 55)]}-protect";
+        var content = Convert.ToBase64String(Encoding.UTF8.GetBytes(element.ToString(SaveOptions.DisableFormatting)));
+        var patch = $"{{\"stringData\": {{\"{friendlyName}\": \"{content}\"}}}}";
+        _kubernetes.PatchNamespacedSecret(new V1Patch(patch, V1Patch.PatchType.MergePatch), secretName, _bergNamespace);
+    }
+
+    private static readonly RandomNumberGenerator RandomNumberGenerator = RandomNumberGenerator.Create();
+    private static SymmetricSecurityKey GenerateSymmetricSecurityKey()
+    {
+        var key = new byte[32];
+        RandomNumberGenerator.GetBytes(key);
+        return new SymmetricSecurityKey(key);
     }
 }

@@ -28,6 +28,8 @@ spec:
           env:
             - name: "BERG_NAMESPACE"
               value: {{ .Release.Namespace | quote }}
+            - name: "BERG_RELEASE"
+              value: {{ include "berg.fullname" . | quote }}
             - name: "ASPNETCORE_URLS"
               value: "http://0.0.0.0:8080"
             - name: "ASPNETCORE_FORWARDEDHEADERS_ENABLED"

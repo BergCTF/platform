@@ -17,8 +17,6 @@
       "applicationUrl": "https://localhost:5000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "BERG_NAMESPACE": "berg",
-        "KUBECONFIG": "kubeconfig.yaml"
       }
     }
   }
