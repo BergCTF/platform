@@ -139,7 +139,7 @@ tracing:
 EOF
 
 echo "Installing Gateway API CRDs"
-kubectl --context kind-berg-dev-cluster create -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.0/experimental-install.yaml
+kubectl --context kind-berg-dev-cluster apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.0/experimental-install.yaml
 
 echo "Installing cert-manager"
 helm --kube-context kind-berg-dev-cluster install --wait \
