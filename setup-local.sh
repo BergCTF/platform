@@ -24,6 +24,7 @@ helm repo add jetstack https://charts.jetstack.io
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
 helm repo add cilium https://helm.cilium.io/
+helm repo add traefik https://traefik.github.io/charts
 helm repo update
 
 echo "Recreating kind cluster"
