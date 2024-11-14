@@ -16,8 +16,8 @@ public class ChallengeController(IChallengeService challengeService) : Controlle
     public List<Challenge> ListChallenges()
     {
         return challengeService.GetChallenges()
-                .Select(ToChallenge)
-                .ToList();
+            .Select(ToChallenge)
+            .ToList();
     }
 
     [HttpGet]
@@ -44,6 +44,8 @@ public class ChallengeController(IChallengeService challengeService) : Controlle
             Difficulty = c.Spec.Difficulty,
             FlagFormat = c.Spec.FlagFormat,
             Categories = c.Spec.Categories,
+            Tags = c.Spec.Tags,
+            Event = c.Spec.Event ?? "",
             HasRemote = c.Spec.Containers?.Any() ?? false,
             Attachments = c.Spec.Attachments?.Select(a => new Attachment
             {

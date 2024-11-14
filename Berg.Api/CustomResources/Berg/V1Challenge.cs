@@ -16,31 +16,37 @@ public class V1Challenge : CustomResource<V1ChallengeSpec>
 public class V1ChallengeSpec
 {
     [JsonPropertyName("author")]
-    public string Author { get; set; } = null!;
+    public string Author { get; set; } = "";
 
     [JsonPropertyName("description")]
-    public string Description { get; set; } = null!;
+    public string Description { get; set; } = "";
 
     [JsonPropertyName("flag")]
-    public string Flag { get; set; } = null!;
+    public string Flag { get; set; } = "";
 
     [JsonPropertyName("flagFormat")]
     public string FlagFormat { get; set; } = "flag{...}";
 
     [JsonPropertyName("hideUntil")]
-    public DateTime? HideUntil { get; set; } = null;
+    public DateTime? HideUntil { get; set; }
 
     [JsonPropertyName("staticValue")]
-    public int? StaticValue { get; set; } = null;
+    public int? StaticValue { get; set; }
 
     [JsonPropertyName("difficulty")]
-    public string Difficulty { get; set; } = null!;
+    public string Difficulty { get; set; } = "";
 
     [JsonPropertyName("allowOutboundTraffic")]
-    public bool AllowOutboundTraffic { get; set; } = false;
+    public bool AllowOutboundTraffic { get; set; }
 
     [JsonPropertyName("categories")]
-    public List<string> Categories { get; set; } = new();
+    public List<string> Categories { get; set; } = [];
+
+    [JsonPropertyName("tags")]
+    public List<string> Tags { get; set; } = [];
+
+    [JsonPropertyName("event")]
+    public string? Event { get; set; }
 
     [JsonPropertyName("containers")]
     public List<V1ChallengeContainer>? Containers { get; set; }

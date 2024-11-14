@@ -5,6 +5,15 @@ metadata:
   name: challenges.berg.norelect.ch
 spec:
   group: berg.norelect.ch
+  scope: Namespaced
+  names:
+    plural: challenges
+    singular: challenge
+    kind: Challenge
+    shortNames:
+      - chall
+    categories:
+    - all
   versions:
     - name: v1
       served: true
@@ -36,6 +45,12 @@ spec:
                   type: array
                   items:
                     type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+                event:
+                  type: string
                 allowOutboundTraffic:
                   type: boolean
                 containers:
@@ -86,10 +101,25 @@ spec:
                         type: string
                       downloadUrl:
                         type: string
-  scope: Namespaced
-  names:
-    plural: challenges
-    singular: challenge
-    kind: Challenge
-    shortNames:
-      - chall
+      additionalPrinterColumns:
+        - name: Event
+          type: string
+          jsonPath: .spec.event
+        - name: Category
+          type: string
+          jsonPath: .spec.categories[0]
+        - name: Author
+          type: string
+          description: The challenge author
+          jsonPath: .spec.author
+        - name: Outbound Traffic
+          type: boolean
+          description: If outbound traffic is allowed
+          jsonPath: .spec.allowOutboundTraffic
+        - name: Hidden Until
+          type: date
+          jsonPath: .spec.hideUntil
+        - name: Static Value
+          type: integer
+          description: The static value assigned to the challenge
+          jsonPath: .spec.staticValue

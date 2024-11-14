@@ -16,6 +16,12 @@ public class Challenge
     [JsonPropertyName("categories")]
     public List<string> Categories { get; set; } = [];
 
+    [JsonPropertyName("tags")]
+    public List<string> Tags { get; set; } = [];
+
+    [JsonPropertyName("event")]
+    public string Event { get; set; } = "";
+
     [JsonPropertyName("difficulty")]
     public string Difficulty { get; set; } = "";
 

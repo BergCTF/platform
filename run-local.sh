@@ -74,6 +74,10 @@ spec:
   categories:
     - web
     - misc
+  tags:
+    - nginx
+    - http
+  event: development
   containers:
     - hostname: nginx
       image: nginx:latest
@@ -102,6 +106,10 @@ spec:
   categories:
     - web
     - misc
+  tags:
+    - nginx
+    - http
+  event: development
   containers:
     - hostname: nginx
       image: nginx:latest
