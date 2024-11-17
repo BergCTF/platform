@@ -86,7 +86,7 @@ public class PlayerController(
     [Route("/api/v1/self")]
     public void UpdatePlayerSelf(PlayerUpdateRequest playerUpdate)
     {
-        v2PlayerController.UpdatePlayerAttributes(new V2.PlayerController.AttributesUpdateRequest{
+        v2PlayerController.UpdateCurrentPlayerAttributes(new V2.PlayerController.AttributesUpdateRequest{
             Attributes = playerUpdate.Attributes,
         });
     }
@@ -108,6 +108,6 @@ public class PlayerController(
     [Route("/api/v1/self")]
     public IActionResult DeleteSelf()
     {
-        return v2PlayerController.DeleteMe();
+        return v2PlayerController.DeleteCurrentPlayer();
     }
 }

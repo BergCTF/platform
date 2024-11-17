@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Berg.Api.Models.V2;
 
-public class OwnTeam
+public class CurrentTeam
 {
     [JsonPropertyName("id")]
     public Guid Id { get; set; }

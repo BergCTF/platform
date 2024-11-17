@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using Team = Berg.Api.Models.V2.Team;
-using OwnTeam = Berg.Api.Models.V2.OwnTeam;
+using CurrentTeam = Berg.Api.Models.V2.CurrentTeam;
 
 namespace Berg.Api.Controllers.V2;
 
@@ -25,8 +25,14 @@ public partial class TeamController(
 
     [HttpGet]
     [Route("/api/v2/teams")]
-    public async Task<List<Team>> ListTeams(CancellationToken cancel)
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<List<Team>>> ListTeams(CancellationToken cancel)
     {
+        if (!ctfConfig.AllowAnonymousAccess &&
+            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
+        {
+            return Forbid();
+        }
         return await dbContext.Teams.Select(t => new Team
         {
             Id = t.Id,
@@ -36,10 +42,10 @@ public partial class TeamController(
     }
 
     [HttpGet]
-    [Authorize]
-    [Route("/api/v2/teams/own")]
+    [Authorize(Policy = Constants.Policies.Player)]
+    [Route("/api/v2/teams/current")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<OwnTeam>> GetOwnTeam(CancellationToken cancel)
+    public async Task<ActionResult<CurrentTeam>> GetCurrentTeam(CancellationToken cancel)
     {
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
         var player = await dbContext.Players
@@ -65,7 +71,7 @@ public partial class TeamController(
         var dbTeam = dbContext.Teams
             .Include(t => t.Players)
             .Single(t => t.Id == player.TeamId);
-        return Ok(new OwnTeam
+        return Ok(new CurrentTeam
         {
             Id = player.Team.Id,
             Name = player.Team.Name,
@@ -84,10 +90,10 @@ public partial class TeamController(
     private static partial Regex TeamNameRegex();
 
     [HttpPost]
-    [Authorize]
-    [Route("/api/v2/teams/own")]
+    [Authorize(Policy = Constants.Policies.Player)]
+    [Route("/api/v2/teams/create")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<OwnTeam>> CreateTeam([FromBody] TeamCreateRequest teamCreateRequest, CancellationToken cancel)
+    public async Task<ActionResult<CurrentTeam>> CreateTeam([FromBody] TeamCreateRequest teamCreateRequest, CancellationToken cancel)
     {
         var teamName = teamCreateRequest.Name;
         if(!ctfConfig.Teams)
@@ -153,7 +159,7 @@ public partial class TeamController(
         scoringService.RefreshScores(dbContext);
         logger.LogInformation("Player {PlayerId} created team: {TeamId}", playerId, dbTeam.Id);
 
-        return Ok(new OwnTeam
+        return Ok(new CurrentTeam
         {
             Id = dbTeam.Id,
             JoinToken = dbTeam.JoinToken,
@@ -167,11 +173,11 @@ public partial class TeamController(
         public string? JoinToken { get; set; }
     }
 
-    [HttpPatch]
-    [Authorize]
-    [Route("/api/v2/teams/own")]
+    [HttpPost]
+    [Authorize(Policy = Constants.Policies.Player)]
+    [Route("/api/v2/teams/join")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<OwnTeam>> JoinTeam([FromBody] JoinTeamRequest req, CancellationToken cancel)
+    public async Task<ActionResult<CurrentTeam>> JoinTeam([FromBody] JoinTeamRequest req, CancellationToken cancel)
     {
         if(!ctfConfig.Teams)
         {
@@ -229,7 +235,7 @@ public partial class TeamController(
         var playerIds = dbTeam.Players.Select(p => p.Id).ToList();
         playerIds.Add(player.Id);
 
-        return Ok(new OwnTeam
+        return Ok(new CurrentTeam
         {
             Id = dbTeam.Id,
             Name = dbTeam.Name,
@@ -239,10 +245,10 @@ public partial class TeamController(
     }
 
     [HttpDelete]
-    [Authorize]
-    [Route("/api/v2/teams/own")]
+    [Authorize(Policy = Constants.Policies.Player)]
+    [Route("/api/v2/teams/current")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult> LeaveTeam(CancellationToken cancel)
+    public async Task<ActionResult> LeaveCurrentTeam(CancellationToken cancel)
     {
         if(!ctfConfig.Teams)
         {

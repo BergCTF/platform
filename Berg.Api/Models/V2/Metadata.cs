@@ -13,6 +13,9 @@ public class Metadata
     [JsonPropertyName("serverTime")]
     public DateTime ServerTime { get; set; }
 
+    [JsonPropertyName("allowAnonymousAccess")]
+    public bool AllowAnonymousAccess { get; set; }
+
     [JsonPropertyName("freezeStart")]
     public DateTime? FreezeStart { get; set; }
 

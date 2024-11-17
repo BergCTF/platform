@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Berg.Api.Models.V2;
 
-public class Me
+public class CurrentPlayer
 {
     [JsonPropertyName("id")]
     public Guid Id { get; set; }

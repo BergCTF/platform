@@ -72,9 +72,7 @@ public class OAuthController(
             }
             var apiKeyHash = Helpers.GetApiKeyHash(request.Password ?? "", userId);
 
-            var player = bergDbContext.Players
-                .Include(p => p.Roles)
-                .SingleOrDefault(u => u.Id == userId && u.ApiKeyHash == apiKeyHash);
+            var player = bergDbContext.Players.SingleOrDefault(u => u.Id == userId && u.ApiKeyHash == apiKeyHash);
             if (player == null)
             {
                 var properties = new AuthenticationProperties(new Dictionary<string, string?>
@@ -100,7 +98,7 @@ public class OAuthController(
             var playerId = Guid.Parse(result.Principal?.FindFirstValue(OpenIddictConstants.Claims.Subject)
                                     ?? Guid.Empty.ToString());
 
-            var player = bergDbContext.Players.Include(p => p.Roles).SingleOrDefault(u => u.Id == playerId);
+            var player = bergDbContext.Players.SingleOrDefault(u => u.Id == playerId);
             if (player == null)
             {
                 var properties = new AuthenticationProperties(new Dictionary<string, string?>
@@ -174,7 +172,7 @@ public class OAuthController(
         }
 
         var playerId = Guid.Parse(principal.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-        var player = await bergDbContext.Players.Include(p => p.Roles).SingleOrDefaultAsync(u => u.Id == playerId, cancellationToken);
+        var player = await bergDbContext.Players.SingleOrDefaultAsync(u => u.Id == playerId, cancellationToken);
 
         if (player == null)
         {
@@ -329,7 +327,7 @@ public class OAuthController(
     {
         using var activity = Constants.BergActivitySource.StartActivity();
         await bergDbContext.Database.BeginTransactionAsync(cancellationToken);
-        var player = bergDbContext.Players.Include(p => p.Roles).SingleOrDefault(u => u.FederatedId == federatedId);
+        var player = bergDbContext.Players.SingleOrDefault(u => u.FederatedId == federatedId);
 
         if (player == null)
         {

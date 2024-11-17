@@ -20,6 +20,7 @@ public class MetadataController(CtfConfig ctfConfig) : ControllerBase
             ServerTime = DateTime.UtcNow,
             FreezeStart = ctfConfig.Scoring.FreezeStart,
             FreezeEnd = ctfConfig.Scoring.FreezeEnd,
+            AllowAnonymousAccess = ctfConfig.AllowAnonymousAccess,
             Teams = ctfConfig.Teams,
         };
     }

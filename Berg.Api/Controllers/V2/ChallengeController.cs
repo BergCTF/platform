@@ -4,17 +4,24 @@ using k8s.Models;
 using Microsoft.AspNetCore.Mvc;
 using Challenge = Berg.Api.Models.V2.Challenge;
 using Attachment = Berg.Api.Models.V2.Attachment;
+using Berg.Api.Configuration;
 
 namespace Berg.Api.Controllers.V2;
 
 [ApiController]
 [ApiExplorerSettings(GroupName = "v2")]
-public class ChallengeController(IChallengeService challengeService) : ControllerBase
+public class ChallengeController(IChallengeService challengeService, CtfConfig ctfConfig) : ControllerBase
 {
     [HttpGet]
     [Route("/api/v2/challenges")]
-    public List<Challenge> ListChallenges()
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public ActionResult<List<Challenge>> ListChallenges()
     {
+        if (!ctfConfig.AllowAnonymousAccess &&
+            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
+        {
+            return Forbid();
+        }
         return challengeService.GetChallenges()
             .Select(ToChallenge)
             .ToList();
@@ -22,9 +29,15 @@ public class ChallengeController(IChallengeService challengeService) : Controlle
 
     [HttpGet]
     [Route("/api/v2/challenges/{name}")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<Challenge> GetChallenge(string name)
     {
+        if (!ctfConfig.AllowAnonymousAccess &&
+            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
+        {
+            return Forbid();
+        }
         var challenge = challengeService
             .GetChallenges()
             .FirstOrDefault(c => c.Name() == name);

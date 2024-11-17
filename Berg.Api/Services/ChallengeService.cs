@@ -19,6 +19,7 @@ public interface IChallengeService
     void RefreshChallenges(BergDbContext dbContext);
     Task CheckChallengeInstanceTimeout(CancellationToken cancel);
     Task<Instance> GetChallengeInstance(Guid playerId, CancellationToken cancel);
+    Task<List<Instance>> GetChallengeInstances(CancellationToken cancel);
     Task<Instance> StartChallengeInstance(Guid playerId, string challenge, CancellationToken cancel);
     Task<Instance> StopChallengeInstance(Guid playerId, CancellationToken cancel);
 }
@@ -120,8 +121,30 @@ public class ChallengeService : IChallengeService
         }
     }
 
+    public async Task<List<Instance>> GetChallengeInstances(CancellationToken cancel)
+    {
+        using var activity = Constants.BergActivitySource.StartActivity();
+
+        var labelSelector = new Dictionary<string, string>
+        {
+            { ManagedByLabel, "berg" },
+            { ComponentLabel, "challenge" },
+        };
+        var nsList = await _kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(labelSelector),
+            cancellationToken: cancel);
+
+        var playersWithActiveInstances = nsList.Items.Select(ns => Guid.Parse(ns.GetLabel(PlayerIdLabel)));
+        var instances = new List<Instance>();
+        foreach(var playerId in playersWithActiveInstances)
+        {
+            instances.Add(await GetChallengeInstance(playerId, cancel));
+        }
+        return instances;
+    }
+
     public async Task<Instance> GetChallengeInstance(Guid playerId, CancellationToken cancel)
     {
+        using var activity = Constants.BergActivitySource.StartActivity();
         var now = DateTime.UtcNow;
         if (_ctfConfig.Start > now)
             return new Instance();

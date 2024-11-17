@@ -17,23 +17,37 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
 {
     [HttpGet]
     [Route("/api/v2/players")]
-    public async Task<List<Player>> ListPlayers(CancellationToken cancel)
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<List<Player>>> ListPlayers(CancellationToken cancel)
     {
+        if (!ctfConfig.AllowAnonymousAccess &&
+            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
+        {
+            return Forbid();
+        }
         var publicCustomAttributes = GetPublicCustomAttributes();
         var players = await dbContext.Players
             .Include(p => p.Attributes)
+            .Where(p => p.Roles != null && !p.Roles.Contains(Constants.Roles.Admin))
             .ToListAsync(cancel);
         return players.Select(p => ToModelPlayer(p, publicCustomAttributes)).ToList();
     }
 
     [HttpGet]
     [Route("/api/v2/players/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Player>> GetPlayer(Guid id, CancellationToken cancel)
     {
+        if (!ctfConfig.AllowAnonymousAccess &&
+            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
+        {
+            return Forbid();
+        }
         var publicCustomAttributes = GetPublicCustomAttributes();
         var player = await dbContext.Players
             .Include(p => p.Attributes)
+            .Where(p => p.Roles != null && !p.Roles.Contains(Constants.Roles.Admin))
             .FirstOrDefaultAsync(p => p.Id == id, cancel);
         if (player == null)
             return NotFound();
@@ -41,15 +55,15 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
     }
 
     [HttpGet]
-    [Authorize]
-    [Route("/api/v2/players/me")]
-    public async Task<ActionResult<Me>> GetMe(CancellationToken cancel)
+    [Authorize(Policy = Constants.Policies.Player)]
+    [Route("/api/v2/players/current")]
+    public async Task<ActionResult<CurrentPlayer>> GetCurrentPlayer(CancellationToken cancel)
     {
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
         var player = await dbContext.Players
             .Include(p => p.Attributes)
             .SingleAsync(p => p.Id == playerId, cancel);
-        return Ok(new Me
+        return Ok(new CurrentPlayer
         {
             Id = player.Id,
             Name = player.Name,
@@ -66,10 +80,10 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
     }
 
     [HttpPatch]
-    [Authorize]
-    [Route("/api/v2/players/me")]
+    [Authorize(Policy = Constants.Policies.Player)]
+    [Route("/api/v2/players/current")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public ActionResult UpdatePlayerAttributes(AttributesUpdateRequest attrUpdate)
+    public ActionResult UpdateCurrentPlayerAttributes(AttributesUpdateRequest attrUpdate)
     {
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
         var player = dbContext.Players
@@ -108,10 +122,10 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
 
 
     [HttpDelete]
-    [Authorize]
-    [Route("/api/v2/players/me")]
+    [Authorize(Policy = Constants.Policies.Player)]
+    [Route("/api/v2/players/current")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public ActionResult DeleteMe()
+    public ActionResult DeleteCurrentPlayer()
     {
         var loginType = User.FindFirstValue(Constants.Claims.LoginType)!;
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
@@ -132,8 +146,8 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
     }
 
     [HttpDelete]
-    [Authorize]
-    [Route("/api/v2/players/me/api-key")]
+    [Authorize(Policy = Constants.Policies.Player)]
+    [Route("/api/v2/players/current/api-key")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public ActionResult<string> ResetApiKey()
     {

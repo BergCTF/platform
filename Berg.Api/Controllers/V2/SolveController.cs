@@ -26,8 +26,14 @@ public class SolveController(
 
     [HttpGet]
     [Route("/api/v2/solves")]
-    public List<Solve> ListSolves()
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public ActionResult<List<Solve>> ListSolves()
     {
+        if (!ctfConfig.AllowAnonymousAccess &&
+            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
+        {
+            return Forbid();
+        }
         var utcNow = DateTime.UtcNow;
         var freezeStart = ctfConfig.Scoring.FreezeStart;
         var freezeEnd = ctfConfig.Scoring.FreezeStart;
@@ -80,7 +86,7 @@ public class SolveController(
     }
 
     [HttpPost]
-    [Authorize]
+    [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     [Route("/api/v2/solves")]
