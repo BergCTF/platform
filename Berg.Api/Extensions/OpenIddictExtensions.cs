@@ -45,6 +45,8 @@ public sealed class InternalBackChannelReplacement(IConfiguration configuration)
             context.Configuration.IntrospectionEndpoint = ReplaceBaseUri(baseUri, context.Configuration.IntrospectionEndpoint);
         if(context.Configuration.TokenEndpoint != null)
             context.Configuration.TokenEndpoint = ReplaceBaseUri(baseUri, context.Configuration.TokenEndpoint);
+        if(context.Configuration.AuthorizationEndpoint != null && context.Configuration.Issuer != null)
+            context.Configuration.AuthorizationEndpoint = ReplaceBaseUri(context.Configuration.Issuer, context.Configuration.AuthorizationEndpoint);
         return default;
     }
 
@@ -64,7 +66,6 @@ public static class OpenIddictBuilder
     {
         var keyProvider = new KubernetesSecretKeyProvider(kubernetes);
 
-        // Store cookie encryption keys in the db
         builder.Services.AddDataProtection()
             .SetApplicationName("Berg");
         builder.Services.Configure<KeyManagementOptions>(options =>
@@ -79,6 +80,7 @@ public static class OpenIddictBuilder
         builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
         builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options => {
+                options.Cookie.Name = "berg-idp-session";
                 options.ExpireTimeSpan = TimeSpan.FromDays(14);
 
                 // Hacky workaround due to https://github.com/dotnet/aspnetcore/issues/9039

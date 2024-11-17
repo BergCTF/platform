@@ -206,42 +206,38 @@ jaeger:
           secretName: jaeger-tls
 EOF
 
-echo "Installing dex idp"
-cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait dex dex/dex --create-namespace -n dex -f -
-config:
-  issuer: https://dex.localhost
-  storage:
-    type: memory
-  enablePasswordDB: true
-  staticClients:
-    - id: berg-client
-      secret: berg-client-secret
-      name: 'Berg CTF Platform'
-      redirectURIs:
-        - 'https://berg.localhost/api/federation-callback'
-  staticPasswords:
-    - email: "admin@localhost"
-      # bcrypt hash of the string "password": $(echo password | htpasswd -BinC 10 admin | cut -d: -f2)
-      hash: "\$2a\$10\$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
-      username: "admin"
-      userID: "00000000-0000-0000-0000-000000000001"
-  enablePasswordDB: true
-  oauth2:
-    passwordConnector: local
-    skipApprovalScreen: true
+echo "Installing mock idp"
+cat <<'EOF' | helm --kube-context kind-berg-dev-cluster install --wait idp oci://ghcr.io/norelect/charts/mock-identity-provider --create-namespace -n mock-idp -f -
+issuer: https://idp.localhost
+users:
+  - id: player
+    name: Player
+    email: player@mock.idp
+    roles:
+      - players
+  - id: author
+    name: Author
+    email: author@mock.idp
+    roles:
+      - authors
+  - id: admin
+    name: Admin
+    email: admin@mock.idp
+    roles:
+      - admins
 ingress:
   annotations:
     cert-manager.io/cluster-issuer: mkcert
   enabled: true
   hosts:
-    - host: dex.localhost
+    - host: idp.localhost
       paths:
         - path: /
           pathType: ImplementationSpecific
   tls:
     - hosts:
-        - dex.localhost
-      secretName: dex-tls
+        - idp.localhost
+      secretName: idp-tls
 EOF
 
 echo "Installing postgres db"

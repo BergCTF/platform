@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Primitives;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using UUIDNext;
@@ -145,6 +146,21 @@ public class OAuthController(
             return Results.Challenge(properties, [Constants.Schemes.FederatedLogin]);
         }
 
+        var openIdRequest = HttpContext.GetOpenIddictServerRequest();
+        if (openIdRequest != null && openIdRequest.HasPrompt("login"))
+        {
+            // Remove prompt property from redirect url to prevent infinite loop
+            var newQuery = new Dictionary<string, StringValues>(HttpContext.Request.Query);
+            newQuery.Remove("prompt");
+            HttpContext.Request.Query = new QueryCollection(newQuery);
+
+            // Logout the user and force new authentication
+            return Results.SignOut(new AuthenticationProperties
+            {
+                RedirectUri = HttpContext.Request.GetEncodedUrl()
+            });
+        }
+
         var playerId = Guid.Parse(principal.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
         var player = await bergDbContext.Players.SingleOrDefaultAsync(u => u.Id == playerId, cancellationToken);
 
@@ -261,9 +277,8 @@ public class OAuthController(
             });
         }
 
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-        return SignOut(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        return SignOut(CookieAuthenticationDefaults.AuthenticationScheme,
+            OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
     /// <summary>

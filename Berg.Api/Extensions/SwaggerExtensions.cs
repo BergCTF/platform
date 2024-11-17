@@ -48,7 +48,8 @@ public static class SwaggerExtensions
             // See https://github.com/swagger-api/swagger-ui/issues/8315 for details.
             options.OAuthConfigObject.AdditionalQueryStringParams = new Dictionary<string, string>
             {
-                { "nonce", "hardcoded" }
+                { "nonce", "hardcoded" },
+                { "prompt", "login" },
             };
 
             options.SwaggerEndpoint("/swagger/v2/swagger.json", "Berg.API v2");

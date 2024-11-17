@@ -38,13 +38,14 @@ berg:
     username: "berg"
     password: "password"
   genericOpenId:
-    issuer: "https://dex.localhost"
-    internalIssuer: "http://dex.dex.svc.cluster.local:5556"
+    issuer: "https://idp.localhost"
+    internalIssuer: "http://idp-mock-identity-provider.mock-idp.svc.cluster.local:80"
     clientId: "berg-client"
     clientSecret: "berg-client-secret"
     scopes:
       - "profile"
       - "email"
+      - "role"
     claims:
       id: "sub"
       name: "name"
