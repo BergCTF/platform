@@ -3,15 +3,16 @@ using Berg.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
 
-namespace Berg.Api.Controllers.V1;
+namespace Berg.Api.Controllers.V2;
 
 [ApiController]
-[ApiExplorerSettings(GroupName = "v1")]
+[ApiExplorerSettings(GroupName = "v2")]
 public class WebSocketController(WebSocketService webSocketService) : ControllerBase
 {
 
     [HttpGet]
-    [Route("/api/v1/ws")]
+    [Route("/api/v2/ws")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task OpenWebSocketConnection()
     {
         if (HttpContext.WebSockets.IsWebSocketRequest)

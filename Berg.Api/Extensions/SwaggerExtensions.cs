@@ -1,7 +1,5 @@
-using System;
 using Berg.Api.Configuration;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -29,10 +27,6 @@ public static class SwaggerExtensions
                 Title = "Berg.API v2",
                 Version = "v2"
             });
-            options.SwaggerDoc("v1", new OpenApiInfo {
-                Title = "Berg.API v1",
-                Version = "v1"
-            });
         });
     }
 
@@ -53,7 +47,6 @@ public static class SwaggerExtensions
             };
 
             options.SwaggerEndpoint("/swagger/v2/swagger.json", "Berg.API v2");
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Berg.API v1");
         });
     }
 
