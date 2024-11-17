@@ -30,7 +30,6 @@ builder.Services.AddSingleton(kubernetes);
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 builder.Services.AddSingleton<WebSocketService>();
-builder.Services.AddSingleton<ScoringService>();
 builder.Services.AddSingleton<IChallengeService, ChallengeService>();
 builder.Services.AddHostedService<RefreshService>();
 builder.Services.AddDbContext<BergDbContext>(options => {

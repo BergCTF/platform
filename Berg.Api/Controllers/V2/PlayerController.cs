@@ -108,7 +108,7 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
             }
             else
             {
-                player.Attributes.Add(new PlayerAttribute()
+                player.Attributes.Add(new Db.PlayerAttribute()
                 {
                     Player = player,
                     Name = pair.Key,

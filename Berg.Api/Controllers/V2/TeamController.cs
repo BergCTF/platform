@@ -4,7 +4,6 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Berg.Api.Configuration;
 using Berg.Api.Db;
-using Berg.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +18,6 @@ namespace Berg.Api.Controllers.V2;
 public partial class TeamController(
     ILogger<TeamController> logger,
     BergDbContext dbContext,
-    ScoringService scoringService,
     CtfConfig ctfConfig) : ControllerBase
 {
 
@@ -33,12 +31,12 @@ public partial class TeamController(
         {
             return Forbid();
         }
-        return await dbContext.Teams.Select(t => new Team
+        return Ok(await dbContext.Teams.Select(t => new Team
         {
             Id = t.Id,
             Name = t.Name,
             Players = t.Players.Select(p => p.Id).ToList()
-        }).ToListAsync(cancel);
+        }).ToListAsync(cancel));
     }
 
     [HttpGet]
@@ -156,7 +154,6 @@ public partial class TeamController(
         // Add player to team
         player.Team = dbTeam;
         await dbContext.SaveChangesAsync(cancel);
-        scoringService.RefreshScores(dbContext);
         logger.LogInformation("Player {PlayerId} created team: {TeamId}", playerId, dbTeam.Id);
 
         return Ok(new CurrentTeam
@@ -227,7 +224,6 @@ public partial class TeamController(
         // Assign the player to the team
         player.Team = dbTeam;
         await dbContext.SaveChangesAsync(cancel);
-        scoringService.RefreshScores(dbContext);
         logger.LogInformation("Player {PlayerId} joined team: {TeamId}", playerId, dbTeam.Id);
 
         // Add our new player to the list of players as we fetched the db information
@@ -276,7 +272,6 @@ public partial class TeamController(
         var previousTeamId = player.Team.Id;
         player.Team = null;
         await dbContext.SaveChangesAsync(cancel);
-        scoringService.RefreshScores(dbContext);
         logger.LogInformation("Player {PlayerId} left team {TeamId}", playerId, previousTeamId);
         return Ok();
     }
