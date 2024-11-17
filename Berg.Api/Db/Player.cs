@@ -28,6 +28,7 @@ public class Player
 
     public DateTime CreatedAt { get; set; }
 
+    public List<string>? Roles { get; set; }
     public List<Solve> Solves { get; set; } = default!;
 
     public List<Submission> Submissions { get; set; } = default!;

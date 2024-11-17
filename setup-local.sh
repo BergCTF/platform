@@ -214,17 +214,17 @@ users:
     name: Player
     email: player@mock.idp
     roles:
-      - players
+      - player
   - id: author
     name: Author
     email: author@mock.idp
     roles:
-      - authors
+      - author
   - id: admin
     name: Admin
     email: admin@mock.idp
     roles:
-      - admins
+      - admin
 ingress:
   annotations:
     cert-manager.io/cluster-issuer: mkcert

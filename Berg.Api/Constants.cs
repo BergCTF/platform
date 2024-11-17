@@ -5,6 +5,7 @@ namespace Berg.Api;
 public static class Constants
 {
     public readonly static ActivitySource BergActivitySource = new("Berg.Api");
+
     /// <summary>
     /// Role constants
     /// </summary>
@@ -19,6 +20,32 @@ public static class Constants
         /// The name of the author role
         /// </summary>
         public const string Author = "author";
+
+        /// <summary>
+        /// The name of the admin role
+        /// </summary>
+        public const string Admin = "admin";
+    }
+
+    /// <summary>
+    /// Policy constants
+    /// </summary>
+    public static class Policies
+    {
+        /// <summary>
+        /// The name of the player policy
+        /// </summary>
+        public const string Player = "player";
+
+        /// <summary>
+        /// The name of the author policy
+        /// </summary>
+        public const string Author = "author";
+
+        /// <summary>
+        /// The name of the admin policy
+        /// </summary>
+        public const string Admin = "admin";
     }
 
     /// <summary>
@@ -32,6 +59,11 @@ public static class Constants
         /// The name of the LoginType claim
         /// </summary>
         public const string LoginType = Prefix + "login_type";
+
+        /// <summary>
+        /// The name of the DiscordMappedRoles claim
+        /// </summary>
+        public const string DiscordMappedRoles = Prefix + "discord_mapped_roles";
     }
 
     /// <summary>

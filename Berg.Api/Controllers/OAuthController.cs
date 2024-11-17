@@ -34,7 +34,10 @@ public class OAuthController(
         public string Username { get; set; } = default!;
 
         [JsonPropertyName("email")]
-        public string Email { get; set; } = default!;
+        public string? Email { get; set; }
+
+        [JsonPropertyName("verified")]
+        public bool? Verified { get; set; }
     }
 
     [HttpPost]
@@ -70,6 +73,7 @@ public class OAuthController(
             var apiKeyHash = Helpers.GetApiKeyHash(request.Password ?? "", userId);
 
             var player = bergDbContext.Players
+                .Include(p => p.Roles)
                 .SingleOrDefault(u => u.Id == userId && u.ApiKeyHash == apiKeyHash);
             if (player == null)
             {
@@ -86,7 +90,7 @@ public class OAuthController(
             }
 
             var identity = CreateClaimsIdentityForPlayer(player, Constants.LoginTypes.ApiKey,
-                [Constants.Roles.Player], request.GetScopes());
+                player.Roles ?? []);
 
             return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
@@ -96,7 +100,7 @@ public class OAuthController(
             var playerId = Guid.Parse(result.Principal?.FindFirstValue(OpenIddictConstants.Claims.Subject)
                                     ?? Guid.Empty.ToString());
 
-            var player = bergDbContext.Players.SingleOrDefault(u => u.Id == playerId);
+            var player = bergDbContext.Players.Include(p => p.Roles).SingleOrDefault(u => u.Id == playerId);
             if (player == null)
             {
                 var properties = new AuthenticationProperties(new Dictionary<string, string?>
@@ -111,8 +115,7 @@ public class OAuthController(
 
             var loginType = result.Principal?.FindFirstValue(Constants.Claims.LoginType)
                             ?? "refresh-token";
-            var identity = CreateClaimsIdentityForPlayer(player, loginType, [Constants.Roles.Player],
-                request.GetScopes());
+            var identity = CreateClaimsIdentityForPlayer(player, loginType, player.Roles ?? []);
 
             return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
@@ -130,6 +133,16 @@ public class OAuthController(
     [Route(Constants.Endpoints.Authorization)]
     public async Task<IResult> Authorize(CancellationToken cancellationToken)
     {
+        var oauthRequest = HttpContext.GetOpenIddictServerRequest();
+        if (oauthRequest == null)
+        {
+            return Results.BadRequest(new ProblemDetails
+            {
+                Title = "Invalid request",
+                Detail = "The request is not a valid OAuth 2.0 request"
+            });
+        }
+
         // Resolve the claims stored in the cookie created after the federated authentication dance.
         // If the principal cannot be found, trigger a new challenge to redirect the user to the federated login.
         //
@@ -146,15 +159,14 @@ public class OAuthController(
             return Results.Challenge(properties, [Constants.Schemes.FederatedLogin]);
         }
 
-        var openIdRequest = HttpContext.GetOpenIddictServerRequest();
-        if (openIdRequest != null && openIdRequest.HasPrompt("login"))
+        if (oauthRequest.HasPrompt("login"))
         {
             // Remove prompt property from redirect url to prevent infinite loop
             var newQuery = new Dictionary<string, StringValues>(HttpContext.Request.Query);
             newQuery.Remove("prompt");
             HttpContext.Request.Query = new QueryCollection(newQuery);
 
-            // Logout the user and force new authentication
+            // Logout the user to force new authentication
             return Results.SignOut(new AuthenticationProperties
             {
                 RedirectUri = HttpContext.Request.GetEncodedUrl()
@@ -162,7 +174,7 @@ public class OAuthController(
         }
 
         var playerId = Guid.Parse(principal.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-        var player = await bergDbContext.Players.SingleOrDefaultAsync(u => u.Id == playerId, cancellationToken);
+        var player = await bergDbContext.Players.Include(p => p.Roles).SingleOrDefaultAsync(u => u.Id == playerId, cancellationToken);
 
         if (player == null)
         {
@@ -175,7 +187,7 @@ public class OAuthController(
         }
 
         var identity = CreateClaimsIdentityForPlayer(player, Constants.LoginTypes.Federation,
-            [Constants.Roles.Player], []);
+            player.Roles ?? []);
         return Results.SignIn(new ClaimsPrincipal(identity), properties: null,
             OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
@@ -198,25 +210,47 @@ public class OAuthController(
         var result = await HttpContext.AuthenticateAsync(Constants.Schemes.FederatedLogin);
 
         string? userId, username, email;
+        List<string> roles = [];
         if (string.IsNullOrEmpty(discordConfig.ClientId))
         {
-            var userIdClaim = genericOpenIdConfig.Claims?.Id ??
-                              throw new InvalidOperationException("Could not find `GenericOpenId:Claims:Id` claim.");
-            var userNameClaim = genericOpenIdConfig.Claims?.Name ??
-                                throw new InvalidOperationException("Could not find `GenericOpenId:Claims:Name` claim.");
-            var userEmailClaim = genericOpenIdConfig.Claims?.Email ??
-                                 throw new InvalidOperationException("Could not find `GenericOpenId:Claims:Email` claim.");
-            userId = result.Principal!.FindFirstValue(userIdClaim);
-            username = result.Principal!.FindFirstValue(userNameClaim);
-            email = result.Principal!.FindFirstValue(userEmailClaim);
+            // Read claims from generic openid issued token
+            userId = result.Principal!.FindFirstValue(genericOpenIdConfig.Claims.Id);
+            username = result.Principal!.FindFirstValue(genericOpenIdConfig.Claims.Name);
+            email = result.Principal!.FindFirstValue(genericOpenIdConfig.Claims.Email);
+            roles = result.Principal!.FindAll(genericOpenIdConfig.Claims.Role)
+                .Select(c => {
+                    if (genericOpenIdConfig.Roles.Player == c.Value)
+                        return Constants.Roles.Player;
+                    else if (genericOpenIdConfig.Roles.Author == c.Value)
+                        return Constants.Roles.Author;
+                    else if (genericOpenIdConfig.Roles.Admin == c.Value)
+                        return Constants.Roles.Admin;
+                    return "";
+                })
+                .Where(v => v != "")
+                .ToList();
         }
         else
         {
+            // Read claims from discord
             var userClaim = result.Principal!.FindFirst("user")!;
             var federatedUser = JsonSerializer.Deserialize<DiscordUserClaim>(userClaim.Value)!;
+
+            if(federatedUser.Verified ?? false)
+            {
+                return Results.Problem(new ProblemDetails
+                {
+                    Title = "Account not verified",
+                    Detail = "Your discord account email needs to be verified."
+                });
+            }
+
             userId = federatedUser.Id;
             username = federatedUser.Username;
             email = federatedUser.Email;
+
+            roles = (result.Principal?.FindAll(Constants.Claims.DiscordMappedRoles) ?? [])
+                .Select(c => c.Value).ToList();
         }
 
         if (string.IsNullOrEmpty(userId))
@@ -244,10 +278,10 @@ public class OAuthController(
             });
         }
 
-        var user = await GetOrCreatePlayerByFederatedId(userId, username, email, cancellationToken);
+        var player = await GetOrCreatePlayerByFederatedId(userId, username, email, roles, cancellationToken);
 
-        var identity = CreateClaimsIdentityForPlayer(user, Constants.LoginTypes.Federation,
-            [Constants.Roles.Player], []);
+        var identity = CreateClaimsIdentityForPlayer(player, Constants.LoginTypes.Federation,
+            roles);
         var properties = new AuthenticationProperties
         {
             RedirectUri = result.Properties!.RedirectUri
@@ -287,13 +321,15 @@ public class OAuthController(
     /// <param name="federatedId">The federated id of the player</param>
     /// <param name="federatedUsername">The federated username of the player</param>
     /// <param name="federatedEmail">The federated email of the player</param>
+    /// <param name="roles">The roles of the player</param>
     /// <param name="cancellationToken">The CancellationToken of the request</param>
     /// <returns>The player object corresponding to the federated id</returns>
     private async Task<Player> GetOrCreatePlayerByFederatedId(string federatedId, string federatedUsername,
-        string federatedEmail, CancellationToken cancellationToken)
+        string federatedEmail, List<string> roles, CancellationToken cancellationToken)
     {
+        using var activity = Constants.BergActivitySource.StartActivity();
         await bergDbContext.Database.BeginTransactionAsync(cancellationToken);
-        var player = bergDbContext.Players.SingleOrDefault(u => u.FederatedId == federatedId);
+        var player = bergDbContext.Players.Include(p => p.Roles).SingleOrDefault(u => u.FederatedId == federatedId);
 
         if (player == null)
         {
@@ -303,13 +339,17 @@ public class OAuthController(
                 Name = federatedUsername,
                 Email = federatedEmail,
                 FederatedId = federatedId,
+                Roles = roles,
                 CreatedAt = DateTime.UtcNow
             };
             bergDbContext.Players.Add(player);
-        } else {
+        }
+        else
+        {
             // Update properties every login if they change in the federated idp
             player.Name = federatedUsername;
             player.Email = federatedEmail;
+            player.Roles = roles;
         }
         await bergDbContext.SaveChangesAsync(cancellationToken);
         await bergDbContext.Database.CommitTransactionAsync(cancellationToken);
@@ -322,11 +362,11 @@ public class OAuthController(
     /// <param name="player">The player to create the ClaimsIdentity for</param>
     /// <param name="loginType">The type of authentication that was performed</param>
     /// <param name="roles">The list of roles that should be granted</param>
-    /// <param name="requestedScopes">The list of scopes requested</param>
     /// <returns>The ClaimsIdentity for the given player</returns>
     private static ClaimsIdentity CreateClaimsIdentityForPlayer(Player player, string loginType,
-        IEnumerable<string> roles, IEnumerable<string> requestedScopes)
+        IEnumerable<string> roles)
     {
+        using var activity = Constants.BergActivitySource.StartActivity();
         var identity = new ClaimsIdentity(
             authenticationType: loginType,
             nameType: OpenIddictConstants.Claims.Name,
@@ -337,14 +377,13 @@ public class OAuthController(
         identity.SetClaim(Constants.Claims.LoginType, loginType);
         identity.SetClaims(OpenIddictConstants.Claims.Role, [..roles]);
         identity.SetAudiences(Constants.ClientIds.Berg);
-        var allowedScopes = new HashSet<string>
+        var scopes = new HashSet<string>
         {
             OpenIddictConstants.Scopes.Profile,
             OpenIddictConstants.Scopes.Roles, OpenIddictConstants.Scopes.OpenId,
             OpenIddictConstants.Scopes.OfflineAccess
         };
-        allowedScopes.IntersectWith(requestedScopes);
-        identity.SetScopes(allowedScopes);
+        identity.SetScopes(scopes);
         identity.SetDestinations(claim =>
         {
             var nowhere = Array.Empty<string>();

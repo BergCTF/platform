@@ -14,6 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Client;
 using Quartz;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Berg.Api.Extensions;
 
@@ -98,7 +99,20 @@ public static class OpenIddictBuilder
                     }
                 };
             });
-        builder.Services.AddAuthorization();
+        builder.Services.AddAuthorization(options => {
+            options.AddPolicy(Constants.Policies.Player, policy =>
+                policy
+                .RequireAuthenticatedUser()
+                .RequireClaim(Claims.Role, [Constants.Roles.Player, Constants.Roles.Author, Constants.Roles.Admin]));
+            options.AddPolicy(Constants.Policies.Author, policy =>
+                policy
+                .RequireAuthenticatedUser()
+                .RequireClaim(Claims.Role, [Constants.Roles.Author, Constants.Roles.Admin]));
+            options.AddPolicy(Constants.Policies.Admin, policy =>
+                policy
+                .RequireAuthenticatedUser()
+                .RequireClaim(Claims.Role, [Constants.Roles.Admin]));
+        });
         builder.Services.AddOpenIddict()
             .AddCore(options =>
             {
@@ -201,20 +215,20 @@ public static class OpenIddictBuilder
 
         var bergApp = new OpenIddictApplicationDescriptor
         {
-            ApplicationType = OpenIddictConstants.ApplicationTypes.Web,
+            ApplicationType = ApplicationTypes.Web,
             ClientId = Constants.ClientIds.Berg,
-            ClientType = OpenIddictConstants.ClientTypes.Public,
+            ClientType = ClientTypes.Public,
             Permissions =
             {
-                OpenIddictConstants.Permissions.Endpoints.Authorization,
-                OpenIddictConstants.Permissions.Endpoints.Token,
-                OpenIddictConstants.Permissions.Endpoints.Logout,
-                OpenIddictConstants.Permissions.GrantTypes.Implicit,
-                OpenIddictConstants.Permissions.GrantTypes.Password,
-                OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
-                OpenIddictConstants.Permissions.ResponseTypes.Token,
-                OpenIddictConstants.Permissions.ResponseTypes.IdToken,
-                OpenIddictConstants.Permissions.ResponseTypes.IdTokenToken,
+                Permissions.Endpoints.Authorization,
+                Permissions.Endpoints.Token,
+                Permissions.Endpoints.Logout,
+                Permissions.GrantTypes.Implicit,
+                Permissions.GrantTypes.Password,
+                Permissions.GrantTypes.RefreshToken,
+                Permissions.ResponseTypes.Token,
+                Permissions.ResponseTypes.IdToken,
+                Permissions.ResponseTypes.IdTokenToken,
             },
             RedirectUris = {
                 new Uri($"https://{infraConfig.PlatformDomain}/swagger/oauth2-redirect.html"),
@@ -252,7 +266,7 @@ public class KubernetesSecretKeyProvider : IXmlRepository
     {
         _kubernetes = kubernetes;
 
-        _bergNamespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
+        _bergNamespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "berg";
         _releaseName = Environment.GetEnvironmentVariable("BERG_RELEASE") ?? "berg";
         var secretName = $"{_releaseName[0..Math.Min(_releaseName.Length, 55)]}-openid";
         var secretsLoaded = false;
