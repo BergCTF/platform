@@ -26,6 +26,7 @@ public class SolveController(
 
     [HttpGet]
     [Route("/api/v2/solves")]
+    [ProducesResponseType(typeof(List<Solve>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public ActionResult<List<Solve>> ListSolves()
     {
@@ -87,7 +88,8 @@ public class SolveController(
 
     [HttpPost]
     [Authorize(Policy = Constants.Policies.Player)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(Solve), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     [Route("/api/v2/solves")]
     public ActionResult<Solve> AddSolve([FromBody] AddSolveRequest addSolveRequest)

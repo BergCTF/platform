@@ -23,6 +23,7 @@ public class InstanceController(IChallengeService challengeService) : Controller
     [HttpGet]
     [Authorize(Policy = Constants.Policies.Admin)]
     [Route("/api/v2/instances")]
+    [ProducesResponseType(typeof(List<Instance>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<Instance>>> GetAllChallengeInstances(CancellationToken cancel)
     {
         return await _challengeService.GetChallengeInstances(cancel);
@@ -31,6 +32,7 @@ public class InstanceController(IChallengeService challengeService) : Controller
     [HttpGet]
     [Authorize(Policy = Constants.Policies.Player)]
     [Route("/api/v2/instances/current")]
+    [ProducesResponseType(typeof(Instance), StatusCodes.Status200OK)]
     public async Task<ActionResult<Instance>> GetChallengeInstance(CancellationToken cancel)
     {
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
@@ -40,6 +42,7 @@ public class InstanceController(IChallengeService challengeService) : Controller
     [HttpPost]
     [Authorize(Policy = Constants.Policies.Player)]
     [Route("/api/v2/instances/current/start")]
+    [ProducesResponseType(typeof(Instance), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Instance>> StartChallengeInstance([FromBody] InstanceStartRequest startRequest,
         CancellationToken cancel)
@@ -58,6 +61,7 @@ public class InstanceController(IChallengeService challengeService) : Controller
     [HttpPost]
     [Authorize(Policy = Constants.Policies.Player)]
     [Route("/api/v2/instances/current/stop")]
+    [ProducesResponseType(typeof(Instance), StatusCodes.Status200OK)]
     public async Task<ActionResult<Instance>> StopChallengeInstance(CancellationToken cancel)
     {
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);

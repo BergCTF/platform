@@ -17,6 +17,7 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
 {
     [HttpGet]
     [Route("/api/v2/players")]
+    [ProducesResponseType(typeof(List<Player>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<List<Player>>> ListPlayers(CancellationToken cancel)
     {
@@ -35,6 +36,7 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
 
     [HttpGet]
     [Route("/api/v2/players/{id:guid}")]
+    [ProducesResponseType(typeof(CurrentPlayer), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Player>> GetPlayer(Guid id, CancellationToken cancel)
@@ -57,6 +59,7 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
     [HttpGet]
     [Authorize(Policy = Constants.Policies.Player)]
     [Route("/api/v2/players/current")]
+    [ProducesResponseType(typeof(CurrentPlayer), StatusCodes.Status200OK)]
     public async Task<ActionResult<CurrentPlayer>> GetCurrentPlayer(CancellationToken cancel)
     {
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
@@ -148,7 +151,8 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
     [HttpDelete]
     [Authorize(Policy = Constants.Policies.Player)]
     [Route("/api/v2/players/current/api-key")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public ActionResult<string> ResetApiKey()
     {
         var loginType = User.FindFirstValue(Constants.Claims.LoginType)!;

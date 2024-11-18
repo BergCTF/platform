@@ -23,6 +23,7 @@ public partial class TeamController(
 
     [HttpGet]
     [Route("/api/v2/teams")]
+    [ProducesResponseType(typeof(List<Team>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<List<Team>>> ListTeams(CancellationToken cancel)
     {
@@ -42,7 +43,8 @@ public partial class TeamController(
     [HttpGet]
     [Authorize(Policy = Constants.Policies.Player)]
     [Route("/api/v2/teams/current")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CurrentTeam>> GetCurrentTeam(CancellationToken cancel)
     {
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
@@ -90,7 +92,8 @@ public partial class TeamController(
     [HttpPost]
     [Authorize(Policy = Constants.Policies.Player)]
     [Route("/api/v2/teams/create")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CurrentTeam>> CreateTeam([FromBody] TeamCreateRequest teamCreateRequest, CancellationToken cancel)
     {
         var teamName = teamCreateRequest.Name;
@@ -173,7 +176,8 @@ public partial class TeamController(
     [HttpPost]
     [Authorize(Policy = Constants.Policies.Player)]
     [Route("/api/v2/teams/join")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CurrentTeam>> JoinTeam([FromBody] JoinTeamRequest req, CancellationToken cancel)
     {
         if(!ctfConfig.Teams)
@@ -243,7 +247,8 @@ public partial class TeamController(
     [HttpDelete]
     [Authorize(Policy = Constants.Policies.Player)]
     [Route("/api/v2/teams/current")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> LeaveCurrentTeam(CancellationToken cancel)
     {
         if(!ctfConfig.Teams)

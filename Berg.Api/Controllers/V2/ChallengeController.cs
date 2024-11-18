@@ -14,6 +14,7 @@ public class ChallengeController(IChallengeService challengeService, CtfConfig c
 {
     [HttpGet]
     [Route("/api/v2/challenges")]
+    [ProducesResponseType(typeof(List<Challenge>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public ActionResult<List<Challenge>> ListChallenges()
     {
@@ -29,6 +30,7 @@ public class ChallengeController(IChallengeService challengeService, CtfConfig c
 
     [HttpGet]
     [Route("/api/v2/challenges/{name}")]
+    [ProducesResponseType(typeof(Challenge), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<Challenge> GetChallenge(string name)
