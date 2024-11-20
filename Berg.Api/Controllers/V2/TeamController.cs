@@ -25,13 +25,13 @@ public partial class TeamController(
     [HttpGet]
     [Route("/api/v2/teams")]
     [ProducesResponseType(typeof(List<Team>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<Team>>> ListTeams(CancellationToken cancel)
     {
         if (!ctfConfig.AllowAnonymousAccess &&
             !(HttpContext.User.Identity?.IsAuthenticated ?? false))
         {
-            return Forbid();
+            return Unauthorized();
         }
         return Ok(await dbContext.Teams.Select(t => new Team
         {

@@ -19,13 +19,13 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
     [HttpGet]
     [Route("/api/v2/players")]
     [ProducesResponseType(typeof(List<Player>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<Player>>> ListPlayers(CancellationToken cancel)
     {
         if (!ctfConfig.AllowAnonymousAccess &&
             !(HttpContext.User.Identity?.IsAuthenticated ?? false))
         {
-            return Forbid();
+            return Unauthorized();
         }
         var publicCustomAttributes = GetPublicCustomAttributes();
         var players = await dbContext.Players
@@ -38,14 +38,14 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
     [HttpGet]
     [Route("/api/v2/players/{id:guid}")]
     [ProducesResponseType(typeof(CurrentPlayer), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Player>> GetPlayer(Guid id, CancellationToken cancel)
     {
         if (!ctfConfig.AllowAnonymousAccess &&
             !(HttpContext.User.Identity?.IsAuthenticated ?? false))
         {
-            return Forbid();
+            return Unauthorized();
         }
         var publicCustomAttributes = GetPublicCustomAttributes();
         var player = await dbContext.Players

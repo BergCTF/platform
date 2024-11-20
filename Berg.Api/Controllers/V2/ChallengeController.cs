@@ -15,13 +15,13 @@ public class ChallengeController(IChallengeService challengeService, CtfConfig c
     [HttpGet]
     [Route("/api/v2/challenges")]
     [ProducesResponseType(typeof(List<Challenge>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public ActionResult<List<Challenge>> ListChallenges()
     {
         if (!ctfConfig.AllowAnonymousAccess &&
             !(HttpContext.User.Identity?.IsAuthenticated ?? false))
         {
-            return Forbid();
+            return Unauthorized();
         }
         return challengeService.GetChallenges()
             .Select(ToChallenge)
@@ -31,14 +31,14 @@ public class ChallengeController(IChallengeService challengeService, CtfConfig c
     [HttpGet]
     [Route("/api/v2/challenges/{name}")]
     [ProducesResponseType(typeof(Challenge), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<Challenge> GetChallenge(string name)
     {
         if (!ctfConfig.AllowAnonymousAccess &&
             !(HttpContext.User.Identity?.IsAuthenticated ?? false))
         {
-            return Forbid();
+            return Unauthorized();
         }
         var challenge = challengeService
             .GetChallenges()
