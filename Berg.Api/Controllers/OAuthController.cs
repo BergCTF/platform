@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Berg.Api.Configuration;
 using Berg.Api.Db;
+using Discord.Rest;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -20,26 +21,12 @@ namespace Berg.Api.Controllers;
 [ApiController]
 [ApiExplorerSettings(IgnoreApi = true)]
 public class OAuthController(
+    ILogger<OAuthController> logger,
     BergDbContext bergDbContext,
     InfraConfig infraConfig,
     DiscordConfig discordConfig,
     GenericOpenIdConfig genericOpenIdConfig) : Controller
 {
-    public class DiscordUserClaim
-    {
-        [JsonPropertyName("id")]
-        public string Id { get; set; } = default!;
-
-        [JsonPropertyName("username")]
-        public string Username { get; set; } = default!;
-
-        [JsonPropertyName("email")]
-        public string? Email { get; set; }
-
-        [JsonPropertyName("verified")]
-        public bool? Verified { get; set; }
-    }
-
     [HttpPost]
     [Route(Constants.Endpoints.Token)]
     [IgnoreAntiforgeryToken]
@@ -51,7 +38,6 @@ public class OAuthController(
         var request = HttpContext.GetOpenIddictServerRequest();
         if (request == null)
         {
-
             return BadRequest(new ProblemDetails
             {
                 Title = "Invalid request",
@@ -167,7 +153,7 @@ public class OAuthController(
             // Fore reauthentication via challenge
             var properties = new AuthenticationProperties
             {
-                RedirectUri = HttpContext.Request.GetEncodedUrl(),
+                RedirectUri = HttpContext.Request.GetEncodedUrl()
             };
             return Results.Challenge(properties, [Constants.Schemes.FederatedLogin]);
         }
@@ -232,24 +218,72 @@ public class OAuthController(
         else
         {
             // Read claims from discord
-            var userClaim = result.Principal!.FindFirst("user")!;
-            var federatedUser = JsonSerializer.Deserialize<DiscordUserClaim>(userClaim.Value)!;
-
-            if(federatedUser.Verified ?? false)
+            if(result.Principal == null)
             {
                 return Results.Problem(new ProblemDetails
+                {
+                    Title = "Invalid principal",
+                    Detail = "Could not read principal information from authentication result."
+                });
+            }
+
+            if(result.Principal.FindFirstValue("verified")?.ToLowerInvariant() != "true")
+            {
+                return Results.BadRequest(new ProblemDetails
                 {
                     Title = "Account not verified",
                     Detail = "Your discord account email needs to be verified."
                 });
             }
 
-            userId = federatedUser.Id;
-            username = federatedUser.Username;
-            email = federatedUser.Email;
+            userId = result.Principal.FindFirstValue("id");
+            username = result.Principal.FindFirstValue("username");
+            email = result.Principal.FindFirstValue("email");
 
-            roles = (result.Principal?.FindAll(Constants.Claims.DiscordMappedRoles) ?? [])
-                .Select(c => c.Value).ToList();
+            var discordUserId = ulong.Parse(userId ?? "0");
+
+            var discordClient = new DiscordRestClient();
+            await discordClient.LoginAsync(Discord.TokenType.Bot, discordConfig.BotToken);
+
+            if (discordConfig.GuildIdRequirement != 0)
+            {
+                // Apply discord server membership check
+                var guildUser = await discordClient.GetGuildUserAsync(discordConfig.GuildIdRequirement, discordUserId);
+                if (guildUser == null)
+                {
+                    logger.LogDebug("Prevented discord user {DiscordId} from logging in because the guild membership requirement is not met.", discordUserId);
+                    return Results.Problem(new ProblemDetails
+                    {
+                        Title = "Missing discord server membership",
+                        Detail = "This event requires players to be members of a specific discord server."
+                    });
+                }
+            }
+
+            if (discordConfig.AuthorGuildId != 0 && discordConfig.AuthorRoleId != 0)
+            {
+                // If configured, assign the author role based on a specific discord role
+                var guildUser = await discordClient.GetGuildUserAsync(discordConfig.AuthorGuildId, discordUserId);
+                if (guildUser != null && guildUser.RoleIds.Contains(discordConfig.AuthorRoleId))
+                {
+                    roles.Add(Constants.Roles.Author);
+                }
+            }
+
+            if (discordConfig.AdminGuildId != 0 && discordConfig.AdminRoleId != 0)
+            {
+                // If configured, assign the admin role based on a specific discord role
+                var guildUser = await discordClient.GetGuildUserAsync(discordConfig.AdminGuildId, discordUserId);
+                if (guildUser != null && guildUser.RoleIds.Contains(discordConfig.AdminRoleId))
+                {
+                    roles.Add(Constants.Roles.Admin);
+                }
+            }
+
+            await discordClient.LogoutAsync();
+
+            // Every user that logs in with discord gets at least the player role
+            roles.Add(Constants.Roles.Player);
         }
 
         if (string.IsNullOrEmpty(userId))

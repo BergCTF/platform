@@ -10,6 +10,9 @@ public class CurrentPlayer
     [JsonPropertyName("name")]
     public string Name { get; set; } = "";
 
+    [JsonPropertyName("roles")]
+    public List<string> Roles { get; set; } = [];
+
     [JsonPropertyName("teamId")]
     public Guid? TeamId { get; set; }
 

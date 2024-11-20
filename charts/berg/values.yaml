@@ -41,8 +41,13 @@ berg:
     clientId: ""
     clientSecret: ""
     botToken: ""
-    notificationGuildId: 0
-    notificationChannelId: 0
+    notificationGuildId: "0"
+    notificationChannelId: "0"
+    guildIdRequirement: "0"
+    authorGuildId: "0"
+    authorRoleId: "0"
+    adminGuildId: "0"
+    adminRoleId: "0"
   genericOpenId:
     issuer: ""
     internalIssuer: ""

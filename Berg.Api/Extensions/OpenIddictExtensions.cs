@@ -9,20 +9,21 @@ using OpenIddict.Abstractions;
 using OpenIddict.Client;
 using Quartz;
 using static OpenIddict.Abstractions.OpenIddictConstants;
+using static OpenIddict.Client.OpenIddictClientEvents;
 
 namespace Berg.Api.Extensions;
 
 public sealed class InternalBackChannelReplacement(IConfiguration configuration) :
-    IOpenIddictClientHandler<OpenIddictClientEvents.HandleConfigurationResponseContext>
+    IOpenIddictClientHandler<HandleConfigurationResponseContext>
 {
     public static OpenIddictClientHandlerDescriptor Descriptor { get; }
-        = OpenIddictClientHandlerDescriptor.CreateBuilder<OpenIddictClientEvents.HandleConfigurationResponseContext>()
+        = OpenIddictClientHandlerDescriptor.CreateBuilder<HandleConfigurationResponseContext>()
             .UseSingletonHandler<InternalBackChannelReplacement>()
             .SetOrder(OpenIddictClientHandlers.Discovery.ExtractTokenEndpointClientAuthenticationMethods.Descriptor.Order + 500)
             .SetType(OpenIddictClientHandlerType.Custom)
             .Build();
 
-    public ValueTask HandleAsync(OpenIddictClientEvents.HandleConfigurationResponseContext context)
+    public ValueTask HandleAsync(HandleConfigurationResponseContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
@@ -130,16 +131,31 @@ public static class OpenIddictBuilder
 
                 if (!string.IsNullOrEmpty(discordConfig.ClientId))
                 {
-                    var secret = discordConfig.ClientSecret
-                                    ?? throw new InvalidOperationException("Discord:ClientSecret is required.");
-                    options.UseWebProviders()
-                        .AddDiscord(discord => discord
-                                .SetClientId(discordConfig.ClientId)
-                                .SetProviderName(Constants.Schemes.FederatedLogin)
-                                .SetClientSecret(secret)
-                                .AddScopes("identify", "email")
-                                .SetRedirectUri(Constants.Endpoints.FederationCallback)
-                        );
+                    var registration = new OpenIddictClientRegistration()
+                    {
+                        ProviderName = Constants.Schemes.FederatedLogin,
+                        Issuer = new Uri("https://discord.com/"),
+                        ClientId = discordConfig.ClientId,
+                        ClientSecret = discordConfig.ClientSecret
+                                    ?? throw new InvalidOperationException("Discord:ClientSecret is required."),
+                        Configuration = new OpenIddictConfiguration()
+                        {
+                            Issuer = new Uri("https://discord.com/"),
+                            AuthorizationEndpoint = new Uri("https://discord.com/oauth2/authorize"),
+                            RevocationEndpoint = new Uri("https://discord.com/api/oauth2/token/revoke"),
+                            TokenEndpoint = new Uri("https://discord.com/api/oauth2/token"),
+                            UserinfoEndpoint = new Uri("https://discord.com/api/users/@me")
+                        },
+                        RedirectUri = new Uri(Constants.Endpoints.FederationCallback, UriKind.RelativeOrAbsolute)
+                    };
+                    registration.Configuration.CodeChallengeMethodsSupported.Add("S256");
+                    registration.Configuration.ResponseTypesSupported.Add("code");
+                    registration.Configuration.GrantTypesSupported.Add("authorization_code");
+                    registration.Configuration.ScopesSupported.Add("identify");
+                    registration.Configuration.ScopesSupported.Add("email");
+                    registration.Scopes.Add("identify");
+                    registration.Scopes.Add("email");
+                    options.AddRegistration(registration);
                 }
                 else if (!string.IsNullOrEmpty(genericOpenIdConfig.ClientId))
                 {

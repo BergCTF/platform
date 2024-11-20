@@ -37,7 +37,7 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
 
     [HttpGet]
     [Route("/api/v2/players/{id:guid}")]
-    [ProducesResponseType(typeof(CurrentPlayer), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Player), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Player>> GetPlayer(Guid id, CancellationToken cancel)
@@ -71,6 +71,7 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
         {
             Id = player.Id,
             Name = player.Name,
+            Roles = player.Roles ?? [],
             TeamId = player.TeamId,
             FederatedId = player.FederatedId,
             Attributes = player.Attributes.ToDictionary(a => a.Name, a => a.Value),
