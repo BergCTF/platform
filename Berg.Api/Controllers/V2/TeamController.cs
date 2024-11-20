@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using Team = Berg.Api.Models.V2.Team;
 using CurrentTeam = Berg.Api.Models.V2.CurrentTeam;
+using OpenIddict.Validation.AspNetCore;
 
 namespace Berg.Api.Controllers.V2;
 
@@ -41,7 +42,7 @@ public partial class TeamController(
     }
 
     [HttpGet]
-    [Authorize(Policy = Constants.Policies.Player)]
+    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/teams/current")]
     [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -90,7 +91,7 @@ public partial class TeamController(
     private static partial Regex TeamNameRegex();
 
     [HttpPost]
-    [Authorize(Policy = Constants.Policies.Player)]
+    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/teams/create")]
     [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -174,7 +175,7 @@ public partial class TeamController(
     }
 
     [HttpPost]
-    [Authorize(Policy = Constants.Policies.Player)]
+    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/teams/join")]
     [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -245,7 +246,7 @@ public partial class TeamController(
     }
 
     [HttpDelete]
-    [Authorize(Policy = Constants.Policies.Player)]
+    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/teams/current")]
     [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

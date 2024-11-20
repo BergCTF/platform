@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
+using OpenIddict.Validation.AspNetCore;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using Player = Berg.Api.Models.V2.Player;
@@ -57,7 +58,7 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
     }
 
     [HttpGet]
-    [Authorize(Policy = Constants.Policies.Player)]
+    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/players/current")]
     [ProducesResponseType(typeof(CurrentPlayer), StatusCodes.Status200OK)]
     public async Task<ActionResult<CurrentPlayer>> GetCurrentPlayer(CancellationToken cancel)
@@ -83,7 +84,7 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
     }
 
     [HttpPatch]
-    [Authorize(Policy = Constants.Policies.Player)]
+    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/players/current")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public ActionResult UpdateCurrentPlayerAttributes(AttributesUpdateRequest attrUpdate)
@@ -125,7 +126,7 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
 
 
     [HttpDelete]
-    [Authorize(Policy = Constants.Policies.Player)]
+    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/players/current")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public ActionResult DeleteCurrentPlayer()
@@ -149,7 +150,7 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
     }
 
     [HttpDelete]
-    [Authorize(Policy = Constants.Policies.Player)]
+    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/players/current/api-key")]
     [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

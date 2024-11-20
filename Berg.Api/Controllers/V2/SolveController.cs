@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
+using OpenIddict.Validation.AspNetCore;
 using Solve = Berg.Api.Models.V2.Solve;
 
 namespace Berg.Api.Controllers.V2;
@@ -87,7 +88,7 @@ public class SolveController(
     }
 
     [HttpPost]
-    [Authorize(Policy = Constants.Policies.Player)]
+    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(Solve), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
