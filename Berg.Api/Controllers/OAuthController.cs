@@ -164,11 +164,12 @@ public class OAuthController(
             newQuery.Remove("prompt");
             HttpContext.Request.Query = new QueryCollection(newQuery);
 
-            // Logout the user to force new authentication
-            return Results.SignOut(new AuthenticationProperties
+            // Fore reauthentication via challenge
+            var properties = new AuthenticationProperties
             {
-                RedirectUri = HttpContext.Request.GetEncodedUrl()
-            });
+                RedirectUri = HttpContext.Request.GetEncodedUrl(),
+            };
+            return Results.Challenge(properties, [Constants.Schemes.FederatedLogin]);
         }
 
         var playerId = Guid.Parse(principal.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
@@ -290,14 +291,13 @@ public class OAuthController(
     /// <summary>
     /// Handle user logout
     /// </summary>
-    /// <param name="cancellationToken">The CancellationToken of the request</param>
     /// <returns>The logout response</returns>
     [HttpGet]
     [HttpPost]
     [Route(Constants.Endpoints.Logout)]
     [AllowAnonymous]
     [IgnoreAntiforgeryToken]
-    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
+    public async Task<IActionResult> Logout()
     {
         var result = await HttpContext.AuthenticateAsync();
         if (!result.Succeeded)
