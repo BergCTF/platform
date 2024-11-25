@@ -1,9 +1,8 @@
-using Berg.Api.Notifications;
 using Discord;
 using Discord.Rest;
 using MediatR;
 
-namespace Berg.Api.Handlers;
+namespace Berg.Api.Notifications.Handlers;
 
 public class DiscordSolveNotificationHandler(
     ILogger<DiscordSolveNotificationHandler> logger,

@@ -1,11 +1,10 @@
 using Berg.Api.Configuration;
 using Berg.Api.Controllers.V2;
 using Berg.Api.Db;
-using Berg.Api.Notifications;
 using Berg.Api.Services;
 using MediatR;
 
-namespace Berg.Api.Handlers;
+namespace Berg.Api.Notifications.Handlers;
 
 public class WebSocketSolveNotificationHandler(WebSocketService webSocketService,
     CtfConfig ctfConfig,

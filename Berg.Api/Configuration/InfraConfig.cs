@@ -12,7 +12,7 @@ public class InfraConfig
     public string ChallengeTlsListenerName { get; set; } = "";
     public Guid PlayerIdNamespace { get; set; } = Guid.Empty;
     public List<string>? RedirectUris { get; set; }
-    public TimeSpan RefreshInterval { get; set; } = TimeSpan.FromSeconds(15);
+    public TimeSpan RefreshInterval { get; set; } = TimeSpan.FromSeconds(5);
     public TimeSpan ChallengeInstanceTimeout { get; set; } = TimeSpan.FromHours(2);
     public string? OpenTelemetryGrpcTracingEndpoint { get; set; }
     public string? OpenTelemetryGrpcMetricsEndpoint { get; set; }
