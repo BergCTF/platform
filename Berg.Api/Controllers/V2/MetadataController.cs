@@ -21,6 +21,13 @@ public class MetadataController(CtfConfig ctfConfig) : ControllerBase
             FreezeStart = ctfConfig.Scoring.FreezeStart,
             FreezeEnd = ctfConfig.Scoring.FreezeEnd,
             AllowAnonymousAccess = ctfConfig.AllowAnonymousAccess,
+            PlayerAttributes = ctfConfig.PlayerAttributes?.Select(a => new Models.V2.PlayerAttribute
+            {
+                Name = a.Name,
+                Public = a.Public,
+                Required = a.Required,
+                Values = a.Values,
+            }).ToList() ?? [],
             Teams = ctfConfig.Teams,
         };
     }

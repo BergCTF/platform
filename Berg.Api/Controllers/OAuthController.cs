@@ -1,9 +1,9 @@
 using System.Security.Claims;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Berg.Api.Configuration;
 using Berg.Api.Db;
+using Berg.Api.Notifications;
 using Discord.Rest;
+using MediatR;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -25,7 +25,8 @@ public class OAuthController(
     BergDbContext bergDbContext,
     InfraConfig infraConfig,
     DiscordConfig discordConfig,
-    GenericOpenIdConfig genericOpenIdConfig) : Controller
+    GenericOpenIdConfig genericOpenIdConfig,
+    IMediator mediator) : Controller
 {
     [HttpPost]
     [Route(Constants.Endpoints.Token)]
@@ -375,6 +376,10 @@ public class OAuthController(
                 CreatedAt = DateTime.UtcNow
             };
             bergDbContext.Players.Add(player);
+            var _ = mediator.Publish(new PlayerCreateNotification
+            {
+                DbPlayer = player,
+            }, cancellationToken);
         }
         else
         {

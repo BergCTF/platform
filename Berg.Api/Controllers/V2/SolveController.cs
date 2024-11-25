@@ -44,7 +44,7 @@ public class SolveController(
 
         if (!isCurrentlyFrozen)
         {
-            // If we are not in a freeze, so we can show every solve
+            // If we are not in a freeze, we can show every solve
             return ToModelSolves(dbContext.Solves);
         }
 
@@ -244,7 +244,7 @@ public class SolveController(
                 SolvedAt = dbSolve.SolvedAt,
                 Challenge = challengeName,
                 IsFrozen = isCurrentlyFrozen
-            }).ConfigureAwait(false);
+            });
 
             return Ok(new Solve
             {

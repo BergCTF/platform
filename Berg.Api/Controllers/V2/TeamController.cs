@@ -11,6 +11,8 @@ using OpenIddict.Abstractions;
 using Team = Berg.Api.Models.V2.Team;
 using CurrentTeam = Berg.Api.Models.V2.CurrentTeam;
 using OpenIddict.Validation.AspNetCore;
+using MediatR;
+using Berg.Api.Notifications;
 
 namespace Berg.Api.Controllers.V2;
 
@@ -19,7 +21,8 @@ namespace Berg.Api.Controllers.V2;
 public partial class TeamController(
     ILogger<TeamController> logger,
     BergDbContext dbContext,
-    CtfConfig ctfConfig) : ControllerBase
+    CtfConfig ctfConfig,
+    IMediator mediator) : ControllerBase
 {
 
     [HttpGet]
@@ -153,11 +156,21 @@ public partial class TeamController(
             Name = teamName,
             JoinToken = CreateJoinToken()
         };
-        await dbContext.Teams.AddAsync(dbTeam, cancel);
+        dbContext.Teams.Add(dbTeam);
 
         // Add player to team
         player.Team = dbTeam;
         await dbContext.SaveChangesAsync(cancel);
+
+        var _ = mediator.Publish(new TeamCreateNotification
+        {
+            ModelTeam = new Team
+            {
+                Id = dbTeam.Id,
+                Name = dbTeam.Name,
+                Players = [player.Id]
+            }
+        }, cancel);
         logger.LogInformation("Player {PlayerId} created team: {TeamId}", playerId, dbTeam.Id);
 
         return Ok(new CurrentTeam
@@ -235,13 +248,24 @@ public partial class TeamController(
         // before assigning the user to the team.
         var playerIds = dbTeam.Players.Select(p => p.Id).ToList();
         playerIds.Add(player.Id);
+        var playerIdsDeduplicated = playerIds.Distinct().ToList();
+
+        var _ = mediator.Publish(new TeamUpdateNotification
+        {
+            ModelTeam = new Team
+            {
+                Id = dbTeam.Id,
+                Name = dbTeam.Name,
+                Players = playerIdsDeduplicated,
+            }
+        }, cancel);
 
         return Ok(new CurrentTeam
         {
             Id = dbTeam.Id,
             Name = dbTeam.Name,
             JoinToken = dbTeam.JoinToken,
-            Players = playerIds.Distinct().ToList(),
+            Players = playerIdsDeduplicated,
         });
     }
 
@@ -276,9 +300,24 @@ public partial class TeamController(
         }
 
         var previousTeamId = player.Team.Id;
+        var previousTeamName = player.Team.Name;
         player.Team = null;
         await dbContext.SaveChangesAsync(cancel);
         logger.LogInformation("Player {PlayerId} left team {TeamId}", playerId, previousTeamId);
+
+        var _ = mediator.Publish(new TeamUpdateNotification
+        {
+            ModelTeam = new Team
+            {
+                Id = previousTeamId,
+                Name = previousTeamName,
+                Players = dbContext.Players
+                    .Where(p => p.TeamId == previousTeamId)
+                    .Select(p => p.Id)
+                    .ToList(),
+            }
+        }, cancel);
+
         return Ok();
     }
 

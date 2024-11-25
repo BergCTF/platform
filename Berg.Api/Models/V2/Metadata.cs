@@ -16,6 +16,9 @@ public class Metadata
     [JsonPropertyName("allowAnonymousAccess")]
     public bool AllowAnonymousAccess { get; set; }
 
+    [JsonPropertyName("playerAttributes")]
+    public List<PlayerAttribute> PlayerAttributes { get; set; } = [];
+
     [JsonPropertyName("freezeStart")]
     public DateTime? FreezeStart { get; set; }
 

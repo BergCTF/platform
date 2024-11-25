@@ -8,11 +8,11 @@ namespace Berg.Api.Controllers.V2;
 
 [ApiController]
 [ApiExplorerSettings(GroupName = "v2")]
-public class WebSocketController(WebSocketService webSocketService, CtfConfig ctfConfig) : ControllerBase
+public class EventsController(WebSocketService webSocketService, CtfConfig ctfConfig) : ControllerBase
 {
 
     [HttpGet]
-    [Route("/api/v2/ws")]
+    [Route("/api/v2/events")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult> OpenWebSocketConnection()
@@ -31,7 +31,11 @@ public class WebSocketController(WebSocketService webSocketService, CtfConfig ct
         }
         else
         {
-            HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Bad request",
+                Detail = "The received request is not a web socket request"
+            });
         }
         return Ok();
     }

@@ -1,6 +1,8 @@
 using Berg.Api.Configuration;
 using Berg.Api.Db;
 using Berg.Api.Models.V2;
+using Berg.Api.Notifications;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +16,9 @@ namespace Berg.Api.Controllers.V2;
 
 [ApiController]
 [ApiExplorerSettings(GroupName = "v2")]
-public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : ControllerBase
+public class PlayerController(CtfConfig ctfConfig,
+    BergDbContext dbContext,
+    IMediator mediator) : ControllerBase
 {
     [HttpGet]
     [Route("/api/v2/players")]
@@ -27,7 +31,7 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
         {
             return Unauthorized();
         }
-        var publicCustomAttributes = GetPublicCustomAttributes();
+        var publicCustomAttributes = GetPublicCustomAttributeNames(ctfConfig);
         var players = await dbContext.Players
             .Include(p => p.Attributes)
             .Where(p => p.Roles != null && !p.Roles.Contains(Constants.Roles.Admin))
@@ -47,7 +51,7 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
         {
             return Unauthorized();
         }
-        var publicCustomAttributes = GetPublicCustomAttributes();
+        var publicCustomAttributes = GetPublicCustomAttributeNames(ctfConfig);
         var player = await dbContext.Players
             .Include(p => p.Attributes)
             .Where(p => p.Roles != null && !p.Roles.Contains(Constants.Roles.Admin))
@@ -122,6 +126,12 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
             }
         }
         dbContext.SaveChanges();
+
+        var _ = mediator.Publish(new PlayerUpdateNotification
+        {
+            DbPlayer = player
+        });
+
         return Ok();
     }
 
@@ -180,7 +190,7 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
         return Ok(newApiKey);
     }
 
-    private HashSet<string> GetPublicCustomAttributes()
+    internal static HashSet<string> GetPublicCustomAttributeNames(CtfConfig ctfConfig)
     {
         return ctfConfig.PlayerAttributes?
             .Where(a => a.Public)
@@ -188,7 +198,7 @@ public class PlayerController(CtfConfig ctfConfig, BergDbContext dbContext) : Co
             .ToHashSet() ?? [];
     }
 
-    private static Player ToModelPlayer(Db.Player player, HashSet<string> publicCustomAttributeNames)
+    internal static Player ToModelPlayer(Db.Player player, HashSet<string> publicCustomAttributeNames)
     {
         return new Player
         {
