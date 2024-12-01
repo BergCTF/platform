@@ -1,0 +1,63 @@
+<h1>{{ playerName() }}</h1>
+<h4 class="mb-4">Score: {{ getScore() }}</h4>
+<div class="container mb-4">
+  <div class="row">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="mb-3 mt-3">Progress</h3>
+        <div class="row mb-4">
+          @for (category of helpers.getPrimaryCategories(); track category) {
+            <div class="col-12 col-md-6 col-lg-3 col-xl-2 mb-3">
+              <div class="card h-100">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <h5 class="card-title">{{ category }}</h5>
+                    <small>{{ getCategoryProgress(category) }}%</small>
+                  </div>
+                  <div class="progress mt-2">
+                    <div class="progress-bar" role="progressbar" [style.width]="getCategoryProgress(category) + '%'" [style.background-color]="getBarColor(getCategoryProgress(category))" aria-valuemin="0" aria-valuemax="100"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <h3 class="mb-3">Solves</h3>
+        <div class="card p-2">
+          @if (getSolves().length > 0) {
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">Challenge</th>
+                  <th scope="col">Solved at</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (solve of getSolves(); track solve) {
+                  <tr>
+                    <td>
+                      <span role="button" [routerLink]="['/challenges', solve.challengeName]">
+                        <span class="fw-semibold">{{ solve.challengeName }}</span> <wbr /> <span class="text-muted"> ({{ helpers.getChallengeObject(solve.challengeName)?.value }})</span>
+                      </span>
+                      @if (solve.isFirstBlood) {
+                        <span class="bi bi-blood" ngbTooltip="First blood" placement="right"></span>
+                      }
+                    </td>
+                    <td class="text-wrap">
+                      <app-pretty-date [date]="solve.solvedAt" />
+                      <wbr />
+                      <span class="text-muted text-nowrap">({{ helpers.relativeTime(solve.solvedAt) }})</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <p class="text-muted">No solves yet.</p>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
