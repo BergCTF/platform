@@ -1,12 +1,11 @@
 <h1>{{ playerName() }}</h1>
-<h4 class="mb-4">Score: {{ getScore() }}</h4>
 <div class="container mb-4">
   <div class="row">
     <div class="card">
       <div class="card-body">
         <h3 class="mb-3 mt-3">Progress</h3>
         <div class="row mb-4">
-          @for (category of helpers.getPrimaryCategories(); track category) {
+          @for (category of getPrimaryCategories(); track category) {
             <div class="col-12 col-md-6 col-lg-3 col-xl-2 mb-3">
               <div class="card h-100">
                 <div class="card-body">
@@ -25,7 +24,7 @@
 
         <h3 class="mb-3">Solves</h3>
         <div class="card p-2">
-          @if (getSolves().length > 0) {
+          @if (playerSolves != undefined && playerSolves.length > 0) {
             <table class="table">
               <thead>
                 <tr>
@@ -34,15 +33,12 @@
                 </tr>
               </thead>
               <tbody>
-                @for (solve of getSolves(); track solve) {
+                @for (solve of this.playerSolves; track solve) {
                   <tr>
                     <td>
                       <span role="button" [routerLink]="['/challenges', solve.challengeName]">
-                        <span class="fw-semibold">{{ solve.challengeName }}</span> <wbr /> <span class="text-muted"> ({{ helpers.getChallengeObject(solve.challengeName)?.value }})</span>
+                        <span class="fw-semibold">{{ solve.challengeName }}</span>
                       </span>
-                      @if (solve.isFirstBlood) {
-                        <span class="bi bi-blood" ngbTooltip="First blood" placement="right"></span>
-                      }
                     </td>
                     <td class="text-wrap">
                       <app-pretty-date [date]="solve.solvedAt" />

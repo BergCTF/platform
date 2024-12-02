@@ -1,38 +1,66 @@
-import { Component, OnInit } from '@angular/core';
-import { ApiService } from 'src/app/services/api.service';
-import { ActivatedRoute } from '@angular/router';
-import { Helpers } from 'src/app/services/helpers.service';
-import { Player, PlayerSolve } from 'src/app/model';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute, Params } from '@angular/router';
+import { Challenge, Player, Solve } from 'src/app/model';
+import { DataService } from 'src/app/services/data.service';
+import { HelperService } from 'src/app/services/helper.service';
 
 @Component({
   selector: 'app-player',
   templateUrl: './player.component.html',
   styleUrls: ['./player.component.less'],
 })
-export class PlayerComponent implements OnInit {
-  uuid = '';
+export class PlayerComponent implements OnInit, OnDestroy {
+
+  private _uuid = '';
+  private _players: Player[] = [];
+  private _solves: Solve[] = [];
+  private _challenges: Challenge[] = [];
+  private routeUpdateSubscription = this.route.params.subscribe(this.handleRouteUpdate);
+  private playerUpdateSubscription = this.dataService.players.subscribe(this.handlePlayersUpdate);
+  private solvesUpdateSubscription = this.dataService.solves.subscribe(this.handleSolvesUpdate);
+  private challengesUpdateSubscription = this.dataService.challenges.subscribe(this.handleChallengesUpdate);
+
   player: Player | undefined = undefined;
+  playerSolves: Solve[] = [];
+
   constructor(
-    public apiService: ApiService,
-    public helpers: Helpers,
+    public dataService: DataService,
+    public helpers: HelperService,
     private route: ActivatedRoute
   ) {}
 
+  ngOnDestroy(): void {
+    this.routeUpdateSubscription.unsubscribe();
+    this.playerUpdateSubscription.unsubscribe();
+    this.solvesUpdateSubscription.unsubscribe();
+    this.challengesUpdateSubscription.unsubscribe();
+  }
+
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
-      this.uuid = params['uuid'];
+  }
 
-      this.apiService.refreshCtfChallenges(() => {
-        this.player = this.apiService.getPlayer(this.uuid);
-      });
+  private handleRouteUpdate(params: Params) {
+    this._uuid = params['uuid'];
+    this.dataService.ensurePlayer(this._uuid);
+    this.handlePlayerUpdate();
+  }
 
-      this.apiService.refreshPlayerSelf(() => {
-        const playerSelf = this.apiService.getPlayerSelf();
-        if (playerSelf.player && playerSelf.player.id === this.uuid) {
-          this.player = playerSelf.player;
-        }
-      });
-    });
+  private handlePlayersUpdate(players: Player[]) {
+    this._players = players;
+    this.handlePlayerUpdate();
+  }
+
+  private handlePlayerUpdate() {
+    this.player = this._players.find(p => p.id == this._uuid);
+    this.playerSolves = this._solves.filter(s => s.playerId == this._uuid);
+  }
+
+  private handleSolvesUpdate(solves: Solve[]) {
+    this._solves = solves;
+  }
+
+  private handleChallengesUpdate(challenges: Challenge[]) {
+    this._challenges = challenges;
   }
 
   playerName() {
@@ -42,44 +70,21 @@ export class PlayerComponent implements OnInit {
     return 'Player not found';
   }
 
-  getPlayerAttributes() {
-    const scoreboard = this.apiService.getPlayerScoreboard();
-    return scoreboard.find(entry => entry.playerId === this.uuid);
-  }
-
-  lastSolve() {
-    const playerAttributes = this.getPlayerAttributes();
-    if (playerAttributes) {
-      return playerAttributes.lastSolve;
+  lastSolve(): string {
+    if (this.playerSolves) {
+      return this.playerSolves.reduce((a, b) => a < b ? b : a).solvedAt;
     }
     return '';
   }
 
-  getSolves(): PlayerSolve[] {
-    const playerAttributes = this.getPlayerAttributes();
-    if (playerAttributes) {
-      return playerAttributes.solves;
-    }
-    return [];
-  }
-
-  getScore() {
-    const playerAttributes = this.getPlayerAttributes();
-    if (playerAttributes) {
-      return playerAttributes.score;
-    }
-    return 0;
+  getPrimaryCategories() {
+    return this._challenges.map(c => c.categories.length == 0 ? 'uncategorized' : c.categories[0])
   }
 
   getCategoryProgress(category: string) {
-    const challenges = this.apiService.getCtfChallenges();
-    if (Object.keys(challenges.challengesByCategory).includes(category)) {
-      const categoryChallenges = challenges.challengesByCategory[category];
-      const playerSolves = this.getSolves();
-      const solvedChallenges = categoryChallenges.filter(challenge => playerSolves.some(solve => solve.challengeName === challenge.name));
-      return Math.floor((solvedChallenges.length / categoryChallenges.length) * 100);
-    }
-    return 0;
+    let categoryChallenges = this._challenges.filter(c => c.categories.includes(category));
+    let solvedChallenges = categoryChallenges.filter(challenge => this.playerSolves.some(solve => solve.challengeName === challenge.name));
+    return Math.floor((solvedChallenges.length / categoryChallenges.length) * 100);
   }
 
   getBarColor(percentage: number) {

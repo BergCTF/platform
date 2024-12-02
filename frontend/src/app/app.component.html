@@ -12,21 +12,21 @@
         <li><a routerLink="/sponsors" routerLinkActive="text-decoration-underline" class="nav-link px-2">Sponsors</a></li>
         <li><a routerLink="/rules" routerLinkActive="text-decoration-underline" class="nav-link px-2">Rules</a></li>
       </ul>
-      @if (playerSelf.player) {
+      @if (true) {
         <div class="dropdown text-end" role="button">
           <a class="d-block text-decoration-none link-secondary dropdown-toggle" data-bs-toggle="dropdown">
-            {{ playerSelf.player.name }}
+            {{ 'player' }}
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" [routerLink]="['/player', playerSelf.player.id]">Profile</a></li>
+            <li><a class="dropdown-item" [routerLink]="['/player', '00000000-0000-0000-0000-000000000000']">Profile</a></li>
             <li><a class="dropdown-item" routerLink="/profile-settings">Settings</a></li>
             <li><a class="dropdown-item" href="/api/v1/logout">Logout</a></li>
           </ul>
         </div>
       }
-      @if (playerSelf.player === null) {
+      @if (true) {
         <div class="text-end">
-          <a href="/api/v1/login" class="btn btn-primary">Login with <i class="bi bi-discord"></i></a>
+          <a href="/api/v1/login" class="btn btn-primary">Login</a>
         </div>
       }
       <div class="dropdown text-end ms-3">
@@ -68,7 +68,7 @@
       <span class="mb-12 mb-md-0 text-muted">© Swiss Hacking Challenge</span>
     </div>
     <div class="align-items-end">
-      <span class="mb-12 mb-md-0 text-muted">Berg CTF Platform by <a class="text-body" href="https://norelect.ch" target="_blank">NoRelect</a></span>
+      <span class="mb-12 mb-md-0 text-muted">Berg CTF Platform</span>
     </div>
   </footer>
 </div>

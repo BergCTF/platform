@@ -1,57 +1,84 @@
-import { Component, OnInit, ElementRef, ViewChild, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, inject, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { Location } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { Challenge, CtfChallenges, PlayerSelf, SubmitFlagResult, PlayerSolve } from 'src/app/model';
-import { ApiService } from 'src/app/services/api.service';
-import { ActivatedRoute, Router } from '@angular/router';
-import { Helpers } from 'src/app/services/helpers.service';
+import { Challenge, Instance, Metadata, Solve } from 'src/app/model';
+import { ActivatedRoute, Params } from '@angular/router';
+import { HelperService } from 'src/app/services/helper.service';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { DataService } from 'src/app/services/data.service';
 
 @Component({
   selector: 'app-challenges',
   templateUrl: './challenges.component.html',
   styleUrls: ['./challenges.component.less'],
 })
-export class ChallengesComponent implements OnInit {
+export class ChallengesComponent implements OnInit, OnDestroy {
   @ViewChild('challengeModal') challengeModal!: ElementRef;
   private modalService = inject(NgbModal);
-  public ctfChallenges: CtfChallenges = new CtfChallenges();
-  public playerSelf: PlayerSelf = new PlayerSelf();
+
   public currentChallenge: Challenge | null = null;
   public descriptionHtml: SafeHtml = '';
   public flagValue = '';
   public flagErrorMessage = '';
   public isFlagSubmitting = false;
-  private launchChallenge = '';
   public hideSolved = false;
   public filterCategory = '';
   public filterDifficulty = '';
 
+  public instance: Instance | null = null;
+
+  private _metadata = new Metadata();
+  private _launchChallengeName = '';
+  private _challenges: Challenge[] = [];
+  private routeUpdateSubscription = this.route.params.subscribe(this.handleRouteUpdate);
+  private instanceUpdateSubscription = this.dataService.instance.subscribe(this.handleInstanceUpdate);
+  private updateChallengesSubscription = this.dataService.challenges.subscribe(this.handleUpdateChallenges);
+
   constructor(
-    public apiService: ApiService,
+    private dataService: DataService,
     private domSanitizer: DomSanitizer,
-    private router: Router,
     private route: ActivatedRoute,
-    public helpers: Helpers,
+    public helpers: HelperService,
     private location: Location,
     private changeDetector: ChangeDetectorRef
   ) {}
 
+  ngOnDestroy(): void {
+    this.routeUpdateSubscription.unsubscribe();
+    this.updateChallengesSubscription.unsubscribe();
+    this.instanceUpdateSubscription.unsubscribe();
+  }
+
   ngOnInit(): void {
-    this.ctfChallenges = this.apiService.getCtfChallenges();
-    this.playerSelf = this.apiService.getPlayerSelf();
     this.hideSolved = localStorage.getItem('hideSolved') === 'true';
-    this.route.params.subscribe(params => {
-      this.launchChallenge = params['name'];
-      if (this.launchChallenge != null) {
-        this.apiService.refreshCtfChallenges(() => this.showLaunchChallenge());
-      }
-    });
+  }
+
+  private handleRouteUpdate(params: Params) {
+    this._launchChallengeName = params['name'];
+    if (this._launchChallengeName != null) {
+      this.dataService.ensureChallenge(this._launchChallengeName);
+    }
+    this.handleChallengeUpdate();
+  }
+
+  private handleUpdateChallenges(challenges: Challenge[]) {
+    this._challenges = challenges;
+    this.handleChallengeUpdate();
+  }
+
+  private handleChallengeUpdate() {
+    if (this._launchChallengeName != null) {
+      this.showLaunchChallenge();
+    }
+  }
+
+  private handleInstanceUpdate(instance: Instance | null) {
+    this.instance = instance
   }
 
   getChallenges(category: string, includeSolved: boolean = false): Challenge[] {
     return (
-      this.ctfChallenges.challengesByCategory[category]
+      this._challenges.filter(c => c.categories.length != 0 && c.categories[0] == category)
         // hide solved
         .filter(c => includeSolved || !(this.hideSolved && (c.solvedByPlayer || c.solvedByTeam)))
         // filter by difficulty
@@ -62,21 +89,19 @@ export class ChallengesComponent implements OnInit {
   }
 
   getStart(): Date {
-    return new Date(this.ctfChallenges?.start);
+    return new Date(this._metadata.start);
   }
 
   getEnd(): Date {
-    return new Date(this.ctfChallenges?.end);
+    return new Date(this._metadata.end);
   }
 
   getServerTime(): Date {
-    return new Date(this.ctfChallenges?.serverTime);
+    return new Date(this._metadata.serverTime);
   }
 
   showLaunchChallenge() {
-    this.ctfChallenges = this.apiService.getCtfChallenges();
-    const allChallenges = Object.values(this.ctfChallenges.challengesByCategory).reduce((acc, val) => acc.concat(val), []);
-    const challenge = allChallenges.find(c => c.name == this.launchChallenge);
+    let challenge = this._challenges.find(c => c.name == this._launchChallengeName);
     if (challenge) {
       this.setCurrentChallenge(challenge);
     }
@@ -89,13 +114,11 @@ export class ChallengesComponent implements OnInit {
   }
 
   getSolves(challenge: Challenge) {
-    return challenge.playerSolves.length || challenge.teamSolves.length;
+    return 0; // TODO: Fix
   }
 
   startChallengeInstance(challenge: string) {
-    this.apiService.startChallengeInstance(challenge).subscribe(() => {
-      console.log('Challenge instance started: ' + challenge);
-    });
+    this.dataService.startInstance(challenge);
   }
 
   setCurrentChallenge(challenge: Challenge) {
@@ -112,43 +135,16 @@ export class ChallengesComponent implements OnInit {
   }
 
   stopChallengeInstance() {
-    this.apiService.stopChallengeInstance().subscribe(() => {
-      console.log('Challenge instance stopped');
-      this.playerSelf = this.apiService.getPlayerSelf();
-    });
+    this.dataService.stopInstance();
   }
 
   submitFlag() {
     if (this.currentChallenge == null) return;
     this.flagErrorMessage = '';
     this.isFlagSubmitting = true;
-    this.apiService.submitFlag(this.currentChallenge.name, this.flagValue).subscribe(
-      res => {
-        this.isFlagSubmitting = false;
-        this.ctfChallenges = this.apiService.getCtfChallenges();
-        const result = res as SubmitFlagResult;
-        if (result == SubmitFlagResult.Correct) {
-          if (this.currentChallenge == null) return;
-          this.currentChallenge.solvedByPlayer = true;
-          this.currentChallenge.solvedByTeam = true;
-          this.apiService.refreshCtfChallenges();
-          this.apiService.refreshPlayerScoreboard();
-        } else if (result == SubmitFlagResult.Incorrect) {
-          this.flagErrorMessage = 'The flag you have provided is incorrect.';
-        } else if (result == SubmitFlagResult.AlreadySolved) {
-          if (this.currentChallenge == null) return;
-        } else if (result == SubmitFlagResult.RateLimited) {
-          this.flagErrorMessage = 'You are being rate limited.';
-        } else if (result == SubmitFlagResult.CtfNotStarted) {
-          this.flagErrorMessage = 'CTF has not started yet.';
-        } else if (result == SubmitFlagResult.CtfHasEnded) {
-          this.flagErrorMessage = 'CTF has ended.';
-        }
-      },
-      () => {
-        this.isFlagSubmitting = false;
-      }
-    );
+    this.dataService.addSolve(this.currentChallenge.name, this.flagValue).subscribe(_ => {
+      this.isFlagSubmitting = false;
+    });
   }
 
   getCategorySolves(category: string) {
@@ -157,13 +153,14 @@ export class ChallengesComponent implements OnInit {
     return `(${playerSolves}/${numChallenges})`;
   }
 
-  currentChallengeSolves(): PlayerSolve[] {
+  currentChallengeSolves(): Solve[] {
     const challenge = this.currentChallenge;
-    if (!challenge) return [];
-    const allChallenges = this.helpers.getAllChallenges();
-    const apiChallenge = allChallenges.find(c => c.name == challenge.name);
-    if (!apiChallenge) return [];
-    return apiChallenge.playerSolves || apiChallenge.teamSolves;
+    if (!challenge)
+      return [];
+    const apiChallenge = this._challenges.find(c => c.name == challenge.name);
+    if (!apiChallenge)
+      return [];
+    return []; // TODO: Fix
   }
 
   updateHideState() {
@@ -175,9 +172,5 @@ export class ChallengesComponent implements OnInit {
       .writeText(element.innerText)
       .then()
       .catch(e => console.error(e));
-  }
-
-  aprilFools() {
-    return new Date().getMonth() == 3 && new Date().getDate() == 1;
   }
 }

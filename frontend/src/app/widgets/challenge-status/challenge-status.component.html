@@ -1,6 +1,6 @@
-@if (playerSelf !== null && playerSelf.challengeInstance) {
+@if (instance) {
   <div>
-    @switch (playerSelf.challengeInstance.status) {
+    @switch (instance.status) {
       @case (0) {
         <p>
           <b>Status:</b>&nbsp;<i class="bi bi-slash-circle"></i>
@@ -22,7 +22,7 @@
           <b>Exposed Endpoints</b>
         </p>
         <ul>
-          @for (service of playerSelf.challengeInstance.services; track service) {
+          @for (service of instance.services; track service) {
             <li>
               @if (service.appProtocol === 'http' && service.vhost) {
                 <a href="https://{{ service.hostname }}:{{ service.port }}" target="_blank">https://{{ service.hostname }}:{{ service.port }}</a>
@@ -64,7 +64,7 @@
         </p>
       }
     }
-    @if (playerSelf.challengeInstance.status === 1 || playerSelf.challengeInstance.status === 2) {
+    @if (instance.status === 1 || instance.status === 2) {
       <button class="btn btn-outline-danger" tabIndex="{-1}" (click)="stopChallengeInstance()" (keyup.enter)="stopChallengeInstance()"><i class="bi bi-trash"></i> Kill instance</button>
     }
   </div>

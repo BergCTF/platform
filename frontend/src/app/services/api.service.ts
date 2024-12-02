@@ -40,15 +40,15 @@ export class ApiService {
     return this.http.get<Instance>('/api/v2/instances/current', this.httpOptions);
   }
 
-  startInstance(challenge: string): Observable<Instance> {
+  startInstance(challengeName: string): Observable<Instance> {
     let data = {
-      challenge: challenge,
+      challenge: challengeName,
     };
-    return this.http.post<Instance>('/api/v2/instances/current/start', data, this.httpOptions);
+    return this.http.post<Instance>('/api/v2/instances/current', data, this.httpOptions);
   }
 
   stopInstance(): Observable<Instance> {
-    return this.http.post<Instance>('/api/v2/instances/current/stop', this.httpOptions);
+    return this.http.delete<Instance>('/api/v2/instances/current', this.httpOptions);
   }
 
   /* Metadata */

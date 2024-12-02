@@ -1,7 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ApiService } from 'src/app/services/api.service';
-import { Router } from '@angular/router';
-import { Helpers } from 'src/app/services/helpers.service';
+import { HelperService } from 'src/app/services/helper.service';
 
 @Component({
   selector: 'app-home',
@@ -10,18 +8,8 @@ import { Helpers } from 'src/app/services/helpers.service';
 })
 export class HomeComponent implements OnInit {
   constructor(
-    private apiService: ApiService,
-    private router: Router,
-    public helpers: Helpers
+    public helpers: HelperService
   ) {}
   ngOnInit() {
-    this.apiService.refreshPlayerSelf(() => {
-      const player = this.apiService.getPlayerSelf()?.player;
-      if (this.router.url === '/' && player) {
-        this.router.navigate(['/challenges']);
-      } else {
-        this.router.navigate(['/home']);
-      }
-    });
   }
 }

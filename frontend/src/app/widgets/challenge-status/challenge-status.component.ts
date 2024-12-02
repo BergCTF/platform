@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { PlayerSelf } from 'src/app/model';
-import { ApiService } from 'src/app/services/api.service';
+import { Instance } from 'src/app/model';
+import { DataService } from 'src/app/services/data.service';
 
 @Component({
   selector: 'app-challenge-status',
@@ -8,19 +8,18 @@ import { ApiService } from 'src/app/services/api.service';
   styleUrls: ['./challenge-status.component.less'],
 })
 export class ChallengeStatusComponent implements OnInit {
-  public playerSelf: PlayerSelf | null = null;
+  public instance: Instance | null = null;
 
-  constructor(private apiService: ApiService) {}
+  constructor(private dataService: DataService) {}
 
   ngOnInit(): void {
-    this.playerSelf = this.apiService.getPlayerSelf();
+    this.dataService.instance.subscribe(instance => {
+      this.instance = instance;
+    });
   }
 
   stopChallengeInstance() {
-    this.apiService.stopChallengeInstance().subscribe(() => {
-      console.log('Challenge instance stopped');
-      this.playerSelf = this.apiService.getPlayerSelf();
-    });
+    this.dataService.stopInstance();
   }
 
   copyToClipboard(element: HTMLElement) {

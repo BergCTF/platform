@@ -42,7 +42,7 @@ public class InstanceController(IChallengeService challengeService) : Controller
 
     [HttpPost]
     [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Route("/api/v2/instances/current/start")]
+    [Route("/api/v2/instances/current")]
     [ProducesResponseType(typeof(Instance), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Instance>> StartChallengeInstance([FromBody] InstanceStartRequest startRequest,
@@ -59,9 +59,9 @@ public class InstanceController(IChallengeService challengeService) : Controller
         return await _challengeService.StartChallengeInstance(playerId, startRequest.Challenge, cancel);
     }
 
-    [HttpPost]
+    [HttpDelete]
     [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Route("/api/v2/instances/current/stop")]
+    [Route("/api/v2/instances/current")]
     [ProducesResponseType(typeof(Instance), StatusCodes.Status200OK)]
     public async Task<ActionResult<Instance>> StopChallengeInstance(CancellationToken cancel)
     {

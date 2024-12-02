@@ -14,7 +14,7 @@ export class ProfileSettingsComponent {
   ) {}
 
   deleteAccount() {
-    this.apiService.deleteAccount(() => {
+    this.apiService.deleteCurrentPlayer().subscribe(() => {
       this.router.navigate(['/']);
     });
   }
