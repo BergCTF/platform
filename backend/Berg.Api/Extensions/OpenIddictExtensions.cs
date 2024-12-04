@@ -195,10 +195,12 @@ public static class OpenIddictBuilder
                 options.SetTokenEndpointUris(Constants.Endpoints.Token);
                 options.SetIntrospectionEndpointUris(Constants.Endpoints.Introspect);
                 options.SetLogoutEndpointUris(Constants.Endpoints.Logout);
+                options.SetUserinfoEndpointUris(Constants.Endpoints.UserInfo);
 
                 options.AllowImplicitFlow();
                 options.AllowPasswordFlow();
                 options.AllowRefreshTokenFlow();
+                options.AllowAuthorizationCodeFlow();
 
                 options.AddEncryptionKey(keyProvider.ServerEncryptionKey);
                 options.AddSigningKey(keyProvider.ServerSigningKey);
@@ -236,12 +238,15 @@ public static class OpenIddictBuilder
                 Permissions.GrantTypes.Implicit,
                 Permissions.GrantTypes.Password,
                 Permissions.GrantTypes.RefreshToken,
+                Permissions.GrantTypes.AuthorizationCode,
                 Permissions.ResponseTypes.Token,
                 Permissions.ResponseTypes.IdToken,
                 Permissions.ResponseTypes.IdTokenToken,
+                Permissions.ResponseTypes.Code,
             },
             RedirectUris = {
                 new Uri($"https://{infraConfig.PlatformDomain}/swagger/oauth2-redirect.html"),
+                new Uri($"https://{infraConfig.PlatformDomain}/frontend/oidc-callback"),
             }
         };
         var redirectUris = infraConfig.RedirectUris ?? [];

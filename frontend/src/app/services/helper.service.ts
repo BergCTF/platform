@@ -28,4 +28,18 @@ export class HelperService {
       return rtf1.format(-seconds, 'second');
     }
   }
+
+  getCountdownText(target: Date, now: Date): string {
+    const diff = target.getTime() - now.getTime();
+    const seconds = Math.floor(Math.abs(diff / 1000));
+    let minutes = Math.floor(seconds / 60);
+    let hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    hours = hours % 24;
+    minutes = minutes % 60;
+    let countdown = days.toString().padStart(2, '0') + 'd ';
+    countdown += hours.toString().padStart(2, '0') + 'h ';
+    countdown += minutes.toString().padStart(2, '0') + 'm';
+    return countdown;
+  }
 }

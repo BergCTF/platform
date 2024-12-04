@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { Observable, shareReplay, Subject, take } from 'rxjs';
-import { Challenge, Instance, Player, Solve, Team } from '../model';
+import { Challenge, Instance, Metadata, Player, Solve, Team } from '../model';
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +12,7 @@ export class DataService {
   private _players: Subject<Player[]> = new Subject<Player[]>();
   private _teams: Subject<Team[]> = new Subject<Team[]>();
   private _solves: Subject<Solve[]> = new Subject<Solve[]>();
+  private _metadata: Subject<Metadata> = new Subject<Metadata>();
   private _instance: Subject<Instance|null> = new Subject<Instance|null>();
 
   public readonly challenges: Observable<Challenge[]> = this._challenges.asObservable().pipe(shareReplay(1));
@@ -19,6 +20,7 @@ export class DataService {
   public readonly teams: Observable<Team[]> = this._teams.asObservable().pipe(shareReplay(1));
   public readonly solves: Observable<Solve[]> = this._solves.asObservable().pipe(shareReplay(1));
   public readonly instance: Observable<Instance|null> = this._instance.asObservable().pipe(shareReplay(1));
+  public readonly metadata: Observable<Metadata> = this._metadata.asObservable().pipe(shareReplay(1));
 
   constructor(private apiService: ApiService) {
     this.refreshAllData();
@@ -32,6 +34,9 @@ export class DataService {
 
   private refreshAllData() {
     this._instance.next(null);
+    this.apiService.getMetadata().subscribe(metadata => {
+      this._metadata.next(metadata);
+    });
     this.apiService.getPlayers().subscribe(players => {
       this._players.next(players);
     });

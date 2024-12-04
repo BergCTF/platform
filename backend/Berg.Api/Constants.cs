@@ -130,5 +130,10 @@ public static class Constants
         /// Logout endpoint
         /// </summary>
         public const string Logout = "/api/logout";
+
+        /// <summary>
+        /// Userinfo endpoint
+        /// </summary>
+        public const string UserInfo = "/api/user-info";
     }
 }

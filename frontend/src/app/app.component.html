@@ -12,7 +12,7 @@
         <li><a routerLink="/sponsors" routerLinkActive="text-decoration-underline" class="nav-link px-2">Sponsors</a></li>
         <li><a routerLink="/rules" routerLinkActive="text-decoration-underline" class="nav-link px-2">Rules</a></li>
       </ul>
-      @if (true) {
+      @if (isAuthenticated) {
         <div class="dropdown text-end" role="button">
           <a class="d-block text-decoration-none link-secondary dropdown-toggle" data-bs-toggle="dropdown">
             {{ 'player' }}
@@ -20,13 +20,13 @@
           <ul class="dropdown-menu">
             <li><a class="dropdown-item" [routerLink]="['/player', '00000000-0000-0000-0000-000000000000']">Profile</a></li>
             <li><a class="dropdown-item" routerLink="/profile-settings">Settings</a></li>
-            <li><a class="dropdown-item" href="/api/v1/logout">Logout</a></li>
+            <li><a class="dropdown-item" (click)="logout()">Logout</a></li>
           </ul>
         </div>
       }
-      @if (true) {
+      @if (!isAuthenticated) {
         <div class="text-end">
-          <a href="/api/v1/login" class="btn btn-primary">Login</a>
+          <a (click)="login()" class="btn btn-primary">Login</a>
         </div>
       }
       <div class="dropdown text-end ms-3">

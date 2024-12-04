@@ -79,7 +79,7 @@ public class OAuthController(
 
             return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
-        if (request.IsRefreshTokenGrantType())
+        if (request.IsAuthorizationCodeGrantType() || request.IsRefreshTokenGrantType())
         {
             var result = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             var playerId = Guid.Parse(result.Principal?.FindFirstValue(OpenIddictConstants.Claims.Subject)
@@ -92,14 +92,14 @@ public class OAuthController(
                 {
                     [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidRequest,
                     [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                        "The refresh token is invalid."
+                        "The authorization code or refresh token is invalid."
                 });
 
                 return Forbid(properties, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             }
 
             var loginType = result.Principal?.FindFirstValue(Constants.Claims.LoginType)
-                            ?? "refresh-token";
+                            ?? throw new InvalidOperationException("Missing login type claim");
             var identity = CreateClaimsIdentityForPlayer(player, loginType, player.Roles ?? []);
 
             return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);

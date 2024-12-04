@@ -20,13 +20,12 @@ export class Challenge {
   public name = '';
   public author = '';
   public description = '';
-  public value = 0;
+  public event: string = '';
   public difficulty = '';
   public flagFormat = '';
-  public instantiatable = false;
-  public solvedByTeam = false;
-  public solvedByPlayer = false;
+  public hasRemote = false;
   public categories: string[] = [];
+  public tags: string[] = [];
   public attachments: Attachment[] = [];
 }
 
