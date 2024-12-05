@@ -16,14 +16,18 @@ export class ChallengesComponent implements OnInit, OnDestroy {
 
   private _metadata = new Metadata();
   private _challenges: Challenge[] = [];
-  private instanceUpdateSubscription = this.dataService.instance.subscribe(this.handleInstanceUpdate);
-  private updateMetadataSubscription = this.dataService.metadata.subscribe(this.handleMetadataUpdate);
-  private updateChallengesSubscription = this.dataService.challenges.subscribe(this.handleUpdateChallenges);
+  private instanceUpdateSubscription = this.dataService.instance.subscribe(instance => this.handleInstanceUpdate(instance));
+  private updateMetadataSubscription = this.dataService.metadata.subscribe(metadata => this.handleMetadataUpdate(metadata));
+  private updateChallengesSubscription = this.dataService.challenges.subscribe(challenges => this.handleChallengesUpdate(challenges));
 
   constructor(
     private dataService: DataService,
     public helpers: HelperService
   ) {}
+
+  ngOnInit(): void {
+    this.hideSolved = localStorage.getItem('hideSolved') === 'true';
+  }
 
   ngOnDestroy(): void {
     this.updateChallengesSubscription.unsubscribe();
@@ -31,11 +35,7 @@ export class ChallengesComponent implements OnInit, OnDestroy {
     this.instanceUpdateSubscription.unsubscribe();
   }
 
-  ngOnInit(): void {
-    this.hideSolved = localStorage.getItem('hideSolved') === 'true';
-  }
-
-  private handleUpdateChallenges(challenges: Challenge[]) {
+  private handleChallengesUpdate(challenges: Challenge[]) {
     this._challenges = challenges;
   }
 

@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { Observable, shareReplay, Subject, take } from 'rxjs';
-import { Challenge, Instance, Metadata, Player, Solve, Team } from '../model';
+import { Challenge, CurrentPlayer, Instance, Metadata, Player, Solve, Team } from '../model';
+import { LoginResponse, OidcSecurityService } from 'angular-auth-oidc-client';
 
 @Injectable({
   providedIn: 'root'
@@ -10,6 +11,7 @@ export class DataService {
 
   private _challenges: Subject<Challenge[]> = new Subject<Challenge[]>();
   private _players: Subject<Player[]> = new Subject<Player[]>();
+  private _currentPlayer: Subject<CurrentPlayer> = new Subject<CurrentPlayer>();
   private _teams: Subject<Team[]> = new Subject<Team[]>();
   private _solves: Subject<Solve[]> = new Subject<Solve[]>();
   private _metadata: Subject<Metadata> = new Subject<Metadata>();
@@ -17,13 +19,34 @@ export class DataService {
 
   public readonly challenges: Observable<Challenge[]> = this._challenges.asObservable().pipe(shareReplay(1));
   public readonly players: Observable<Player[]> = this._players.asObservable().pipe(shareReplay(1));
+  public readonly currentPlayer: Observable<CurrentPlayer> = this._currentPlayer.asObservable().pipe(shareReplay(1));
   public readonly teams: Observable<Team[]> = this._teams.asObservable().pipe(shareReplay(1));
   public readonly solves: Observable<Solve[]> = this._solves.asObservable().pipe(shareReplay(1));
   public readonly instance: Observable<Instance|null> = this._instance.asObservable().pipe(shareReplay(1));
   public readonly metadata: Observable<Metadata> = this._metadata.asObservable().pipe(shareReplay(1));
+  public isAuthenticated = false;
+  public currentPlayerId = '00000000-0000-0000-0000-000000000000';
 
-  constructor(private apiService: ApiService) {
+  constructor(private apiService: ApiService, private oidcSecurityService: OidcSecurityService) {
     this.refreshAllData();
+
+    this.oidcSecurityService
+      .checkAuth()
+      .subscribe((loginResponse: LoginResponse) => {
+        const { isAuthenticated, userData, accessToken, idToken, configId } =
+          loginResponse;
+
+        if(isAuthenticated) {
+          this.currentPlayerId = userData["sub"];
+          this.apiService.getCurrentPlayer().subscribe(player => {
+            this._currentPlayer.next(player);
+          });
+        } else {
+          this.currentPlayerId = '00000000-0000-0000-0000-000000000000';
+        }
+
+        this.isAuthenticated = isAuthenticated;
+    });
 
     setTimeout(() => {
       this.apiService.getInstance().subscribe(instance => {
@@ -52,6 +75,14 @@ export class DataService {
     this.apiService.getInstance().subscribe(instance => {
       this._instance.next(instance);
     });
+  }
+
+  login() {
+    this.oidcSecurityService.authorize();
+  }
+
+  logout() {
+    this.oidcSecurityService.logoff();
   }
 
   addSolve(challengeName: string, flag: string) {

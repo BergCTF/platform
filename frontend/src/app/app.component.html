@@ -12,21 +12,21 @@
         <li><a routerLink="/sponsors" routerLinkActive="text-decoration-underline" class="nav-link px-2">Sponsors</a></li>
         <li><a routerLink="/rules" routerLinkActive="text-decoration-underline" class="nav-link px-2">Rules</a></li>
       </ul>
-      @if (isAuthenticated) {
+      @if (dataService.isAuthenticated) {
         <div class="dropdown text-end" role="button">
           <a class="d-block text-decoration-none link-secondary dropdown-toggle" data-bs-toggle="dropdown">
             {{ 'player' }}
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" [routerLink]="['/player', '00000000-0000-0000-0000-000000000000']">Profile</a></li>
+            <li><a class="dropdown-item" [routerLink]="['/player', dataService.currentPlayerId]">Profile</a></li>
             <li><a class="dropdown-item" routerLink="/profile-settings">Settings</a></li>
-            <li><a class="dropdown-item" (click)="logout()">Logout</a></li>
+            <li><a class="dropdown-item" (click)="dataService.logout()">Logout</a></li>
           </ul>
         </div>
       }
-      @if (!isAuthenticated) {
+      @if (!dataService.isAuthenticated) {
         <div class="text-end">
-          <a (click)="login()" class="btn btn-primary">Login</a>
+          <a (click)="dataService.login()" class="btn btn-primary">Login</a>
         </div>
       }
       <div class="dropdown text-end ms-3">

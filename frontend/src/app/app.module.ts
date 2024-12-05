@@ -9,14 +9,14 @@ import { ChallengeStatusComponent } from './widgets/challenge-status/challenge-s
 import { ChallengesComponent } from './pages/challenges/challenges.component';
 import { FormsModule } from '@angular/forms';
 import { HomeComponent } from './pages/home/home.component';
-import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { NotFoundComponent } from './pages/not-found/not-found.component';
 import { PlayerComponent } from './pages/player/player.component';
 import { ProfileSettingsComponent } from './pages/profile-settings/profile-settings.component';
 import { PrettyDateComponent } from './widgets/pretty-date/pretty-date.component';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { NgxEchartsModule } from 'ngx-echarts';
-import { AuthInterceptor, AuthModule } from 'angular-auth-oidc-client';
+import { authInterceptor, AuthModule } from 'angular-auth-oidc-client';
 
 @NgModule({
   declarations: [AppComponent, ChallengeStatusComponent, ChallengesComponent, HomeComponent, NotFoundComponent, PlayerComponent, ProfileSettingsComponent, PrettyDateComponent],
@@ -44,11 +44,10 @@ import { AuthInterceptor, AuthModule } from 'angular-auth-oidc-client';
         secureRoutes: [window.location.origin]
       }
     }),
-    HttpClientModule,
   ],
   bootstrap: [AppComponent],
   providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+    provideHttpClient(withInterceptors([authInterceptor()])),
   ],
 })
 export class AppModule {}

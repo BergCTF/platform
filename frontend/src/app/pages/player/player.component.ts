@@ -15,10 +15,10 @@ export class PlayerComponent implements OnInit, OnDestroy {
   private _players: Player[] = [];
   private _solves: Solve[] = [];
   private _challenges: Challenge[] = [];
-  private routeUpdateSubscription = this.route.params.subscribe(this.handleRouteUpdate);
-  private playerUpdateSubscription = this.dataService.players.subscribe(this.handlePlayersUpdate);
-  private solvesUpdateSubscription = this.dataService.solves.subscribe(this.handleSolvesUpdate);
-  private challengesUpdateSubscription = this.dataService.challenges.subscribe(this.handleChallengesUpdate);
+  private routeUpdateSubscription = this.route.params.subscribe(params => this.handleRouteUpdate(params));
+  private playerUpdateSubscription = this.dataService.players.subscribe(players => this.handlePlayersUpdate(players));
+  private solvesUpdateSubscription = this.dataService.solves.subscribe(solves => this.handleSolvesUpdate(solves));
+  private challengesUpdateSubscription = this.dataService.challenges.subscribe(challenges => this.handleChallengesUpdate(challenges));
 
   player: Player | undefined = undefined;
   playerSolves: Solve[] = [];
@@ -78,7 +78,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   }
 
   getPrimaryCategories() {
-    return this._challenges.map(c => c.categories.length == 0 ? 'uncategorized' : c.categories[0])
+    return [...new Set(this._challenges.map(c => c.categories.length == 0 ? 'uncategorized' : c.categories[0]))].sort();
   }
 
   getCategoryProgress(category: string) {
