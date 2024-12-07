@@ -3,9 +3,10 @@ import { Instance } from 'src/app/model';
 import { DataService } from 'src/app/services/data.service';
 
 @Component({
-  selector: 'app-challenge-status',
-  templateUrl: './challenge-status.component.html',
-  styleUrls: ['./challenge-status.component.less'],
+    selector: 'app-challenge-status',
+    templateUrl: './challenge-status.component.html',
+    styleUrls: ['./challenge-status.component.less'],
+    standalone: false
 })
 export class ChallengeStatusComponent implements OnInit {
   public instance: Instance | null = null;

@@ -4,9 +4,10 @@ import { HelperService } from 'src/app/services/helper.service';
 import { DataService } from 'src/app/services/data.service';
 
 @Component({
-  selector: 'app-challenges',
-  templateUrl: './challenges.component.html',
-  styleUrls: ['./challenges.component.less'],
+    selector: 'app-challenges',
+    templateUrl: './challenges.component.html',
+    styleUrls: ['./challenges.component.less'],
+    standalone: false
 })
 export class ChallengesComponent implements OnInit, OnDestroy {
   public hideSolved = false;

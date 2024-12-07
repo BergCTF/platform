@@ -14,7 +14,7 @@ import { NotFoundComponent } from './pages/not-found/not-found.component';
 import { PlayerComponent } from './pages/player/player.component';
 import { ProfileSettingsComponent } from './pages/profile-settings/profile-settings.component';
 import { PrettyDateComponent } from './widgets/pretty-date/pretty-date.component';
-import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+
 import { NgxEchartsModule } from 'ngx-echarts';
 import { authInterceptor, AuthModule } from 'angular-auth-oidc-client';
 
@@ -26,9 +26,8 @@ import { authInterceptor, AuthModule } from 'angular-auth-oidc-client';
     FormsModule,
     AngularDraggableModule,
     BrowserAnimationsModule,
-    NgbModule,
     NgxEchartsModule.forRoot({
-      echarts: () => import('echarts'),
+      echarts: () => import('echarts/core'),
     }),
     AuthModule.forRoot({
       config: {
