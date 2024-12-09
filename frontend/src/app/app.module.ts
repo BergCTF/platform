@@ -16,7 +16,7 @@ import { ProfileSettingsComponent } from './pages/profile-settings/profile-setti
 import { PrettyDateComponent } from './widgets/pretty-date/pretty-date.component';
 
 import { NgxEchartsModule } from 'ngx-echarts';
-import { authInterceptor, AuthModule } from 'angular-auth-oidc-client';
+import { authInterceptor, provideAuth } from 'angular-auth-oidc-client';
 
 @NgModule({
   declarations: [AppComponent, ChallengeStatusComponent, ChallengesComponent, HomeComponent, NotFoundComponent, PlayerComponent, ProfileSettingsComponent, PrettyDateComponent],
@@ -29,7 +29,11 @@ import { authInterceptor, AuthModule } from 'angular-auth-oidc-client';
     NgxEchartsModule.forRoot({
       echarts: () => import('echarts/core'),
     }),
-    AuthModule.forRoot({
+  ],
+  bootstrap: [AppComponent],
+  providers: [
+    provideHttpClient(withInterceptors([authInterceptor()])),
+    provideAuth({
       config: {
         authority: window.location.origin,
         redirectUrl: window.location.origin + "/frontend/oidc-callback",
@@ -41,12 +45,8 @@ import { authInterceptor, AuthModule } from 'angular-auth-oidc-client';
         useRefreshToken: true,
         renewTimeBeforeTokenExpiresInSeconds: 30,
         secureRoutes: [window.location.origin]
-      }
-    }),
-  ],
-  bootstrap: [AppComponent],
-  providers: [
-    provideHttpClient(withInterceptors([authInterceptor()])),
+      },
+    })
   ],
 })
 export class AppModule {}

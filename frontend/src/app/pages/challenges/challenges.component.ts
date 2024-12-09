@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Challenge, Instance, Metadata } from 'src/app/model';
+import { Challenge, Instance, Metadata, Solve } from 'src/app/model';
 import { HelperService } from 'src/app/services/helper.service';
 import { DataService } from 'src/app/services/data.service';
 
@@ -17,9 +17,11 @@ export class ChallengesComponent implements OnInit, OnDestroy {
 
   private _metadata = new Metadata();
   private _challenges: Challenge[] = [];
+  private _solves: Solve[] = [];
   private instanceUpdateSubscription = this.dataService.instance.subscribe(instance => this.handleInstanceUpdate(instance));
   private updateMetadataSubscription = this.dataService.metadata.subscribe(metadata => this.handleMetadataUpdate(metadata));
   private updateChallengesSubscription = this.dataService.challenges.subscribe(challenges => this.handleChallengesUpdate(challenges));
+  private updateSolvesSubscription = this.dataService.solves.subscribe(solves => this.handleSolvesUpdate(solves));
 
   constructor(
     private dataService: DataService,
@@ -34,6 +36,7 @@ export class ChallengesComponent implements OnInit, OnDestroy {
     this.updateChallengesSubscription.unsubscribe();
     this.updateMetadataSubscription.unsubscribe();
     this.instanceUpdateSubscription.unsubscribe();
+    this.updateSolvesSubscription.unsubscribe();
   }
 
   private handleChallengesUpdate(challenges: Challenge[]) {
@@ -48,14 +51,24 @@ export class ChallengesComponent implements OnInit, OnDestroy {
     this._metadata = metadata;
   }
 
+  private handleSolvesUpdate(solves: Solve[]) {
+    this._solves = solves;
+  }
+
   getChallenges(category: string, includeSolved: boolean = false): Challenge[] {
     return (
       this._challenges.filter(c => c.categories.length != 0 && c.categories[0] == category)
+        // filter by solve
+        .filter(c => !includeSolved || this.hasSolvedChallenge(c.name))
         // filter by difficulty
         .filter(c => this.filterDifficulty === '' || this.filterDifficulty === c.difficulty)
         // filter by category
         .filter(c => this.filterCategory === '' || c.categories.includes(this.filterCategory))
     );
+  }
+
+  hasSolvedChallenge(challengeName: string): boolean {
+    return this._solves.find(s => s.challengeName == challengeName && s.playerId == this.dataService.currentPlayerId) !== undefined;
   }
 
   getStart(): Date {

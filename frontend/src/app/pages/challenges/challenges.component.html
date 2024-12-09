@@ -80,7 +80,7 @@
                 class="btn btn-secondary"
                 tabindex="0"
                 placement="top">
-                @if (true) {
+                @if (hasSolvedChallenge(challenge.name)) {
                   <i class="bi bi-check"></i>
                 }
                 {{ challenge.name }}
