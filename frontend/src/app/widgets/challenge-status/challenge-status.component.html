@@ -24,16 +24,16 @@
         <ul>
           @for (service of instance.services; track service) {
             <li>
-              @if (service.appProtocol === 'http' && service.vhost) {
+              @if (service.appProtocol === 'http' && service.tls) {
                 <a href="https://{{ service.hostname }}:{{ service.port }}" target="_blank">https://{{ service.hostname }}:{{ service.port }}</a>
               }
-              @if (service.appProtocol === 'http' && !service.vhost) {
+              @if (service.appProtocol === 'http' && !service.tls) {
                 <a href="http://{{ service.hostname }}:{{ service.port }}" target="_blank">http://{{ service.hostname }}:{{ service.port }}</a>
               }
-              @if (service.appProtocol === 'tcp' && service.vhost) {
+              @if (service.appProtocol === 'tcp' && service.tls) {
                 <code #a class="clipboard-copy" tabindex="0" (click)="copyToClipboard(a)" (keyup.enter)="copyToClipboard(a)">ncat --ssl {{ service.hostname }} {{ service.port }}</code>
               }
-              @if (service.appProtocol === 'tcp' && !service.vhost) {
+              @if (service.appProtocol === 'tcp' && !service.tls) {
                 <code #b class="clipboard-copy" tabindex="0" (click)="copyToClipboard(b)" (keyup.enter)="copyToClipboard(b)">nc {{ service.hostname }} {{ service.port }}</code>
               }
               @if (service.appProtocol === 'ssh') {
@@ -47,8 +47,8 @@
                   <div class="dropdown">
                     <a class="btn btn-sm btn-outline-secondary dropdown-toggle" href="#" type="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="bi bi-clipboard"></i> Copy </a>
                     <span class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-                      <a class="dropdown-item" tabindex="0" (click)="copyToClipboardNcat(service.hostname, service.port, service.vhost)" (keyup.enter)="copyToClipboardNcat(service.hostname, service.port, service.vhost)">Copy as ncat</a>
-                      <a class="dropdown-item" tabindex="0" (click)="copyToClipboardPwntools(service.hostname, service.port, service.vhost)" (keyup.enter)="copyToClipboardPwntools(service.hostname, service.port, service.vhost)">Copy as pwntools</a>
+                      <a class="dropdown-item" tabindex="0" (click)="copyToClipboardNcat(service.hostname, service.port, service.tls)" (keyup.enter)="copyToClipboardNcat(service.hostname, service.port, service.tls)">Copy as ncat</a>
+                      <a class="dropdown-item" tabindex="0" (click)="copyToClipboardPwntools(service.hostname, service.port, service.tls)" (keyup.enter)="copyToClipboardPwntools(service.hostname, service.port, service.tls)">Copy as pwntools</a>
                     </span>
                   </div>
                 </div>

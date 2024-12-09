@@ -4,8 +4,7 @@ import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
     selector: 'app-pretty-date',
     templateUrl: './pretty-date.component.html',
     styleUrls: ['./pretty-date.component.less'],
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PrettyDateComponent {
   @Input()

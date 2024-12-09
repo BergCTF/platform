@@ -40,7 +40,7 @@ export class Service {
   public port = 0;
   public protocol = '';
   public appProtocol = '';
-  public vhost = false;
+  public tls = false;
 }
 
 export class Player {

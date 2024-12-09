@@ -1,14 +1,16 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute, Params } from '@angular/router';
+import { ActivatedRoute, Params, RouterLink } from '@angular/router';
 import { Challenge, Player, Solve } from 'src/app/model';
 import { DataService } from 'src/app/services/data.service';
 import { HelperService } from 'src/app/services/helper.service';
+import { PrettyDateComponent } from '../../widgets/pretty-date/pretty-date.component';
+import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-player',
     templateUrl: './player.component.html',
     styleUrls: ['./player.component.less'],
-    standalone: false
+    imports: [RouterLink, PrettyDateComponent]
 })
 export class PlayerComponent implements OnInit, OnDestroy {
 
@@ -16,10 +18,10 @@ export class PlayerComponent implements OnInit, OnDestroy {
   private _players: Player[] = [];
   private _solves: Solve[] = [];
   private _challenges: Challenge[] = [];
-  private routeUpdateSubscription = this.route.params.subscribe(params => this.handleRouteUpdate(params));
-  private playerUpdateSubscription = this.dataService.players.subscribe(players => this.handlePlayersUpdate(players));
-  private solvesUpdateSubscription = this.dataService.solves.subscribe(solves => this.handleSolvesUpdate(solves));
-  private challengesUpdateSubscription = this.dataService.challenges.subscribe(challenges => this.handleChallengesUpdate(challenges));
+  private routeUpdateSubscription: Subscription | undefined;
+  private playerUpdateSubscription: Subscription | undefined;
+  private solvesUpdateSubscription: Subscription | undefined;
+  private challengesUpdateSubscription: Subscription | undefined;
 
   player: Player | undefined = undefined;
   playerSolves: Solve[] = [];
@@ -30,14 +32,18 @@ export class PlayerComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute
   ) {}
 
-  ngOnDestroy(): void {
-    this.routeUpdateSubscription.unsubscribe();
-    this.playerUpdateSubscription.unsubscribe();
-    this.solvesUpdateSubscription.unsubscribe();
-    this.challengesUpdateSubscription.unsubscribe();
+  ngOnInit(): void {
+    this.routeUpdateSubscription = this.route.params.subscribe(params => this.handleRouteUpdate(params));
+    this.playerUpdateSubscription = this.dataService.players.subscribe(players => this.handlePlayersUpdate(players));
+    this.solvesUpdateSubscription = this.dataService.solves.subscribe(solves => this.handleSolvesUpdate(solves));
+    this.challengesUpdateSubscription = this.dataService.challenges.subscribe(challenges => this.handleChallengesUpdate(challenges));
   }
 
-  ngOnInit(): void {
+  ngOnDestroy(): void {
+    this.routeUpdateSubscription?.unsubscribe();
+    this.playerUpdateSubscription?.unsubscribe();
+    this.solvesUpdateSubscription?.unsubscribe();
+    this.challengesUpdateSubscription?.unsubscribe();
   }
 
   private handleRouteUpdate(params: Params) {
@@ -58,17 +64,11 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   private handleSolvesUpdate(solves: Solve[]) {
     this._solves = solves;
+    this.handlePlayerUpdate();
   }
 
   private handleChallengesUpdate(challenges: Challenge[]) {
     this._challenges = challenges;
-  }
-
-  playerName() {
-    if (this.player) {
-      return this.player.name;
-    }
-    return 'Player not found';
   }
 
   lastSolve(): string {

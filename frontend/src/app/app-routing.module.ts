@@ -5,13 +5,14 @@ import { NotFoundComponent } from './pages/not-found/not-found.component';
 import { HomeComponent } from './pages/home/home.component';
 import { ProfileSettingsComponent } from './pages/profile-settings/profile-settings.component';
 import { PlayerComponent } from './pages/player/player.component';
+import { ChallengeDetailComponent } from './pages/challenge-detail/challenge-detail.component';
 
 const routes: Routes = [
   { path: 'challenges', component: ChallengesComponent },
-  { path: 'challenges/:name', component: ChallengesComponent },
+  { path: 'challenges/:name', component: ChallengeDetailComponent },
   { path: 'home', component: HomeComponent },
   { path: 'profile-settings', component: ProfileSettingsComponent },
-  { path: 'player/:uuid', component: PlayerComponent },
+  { path: 'players/:uuid', component: PlayerComponent },
   { path: '', component: HomeComponent },
   { path: '**', component: NotFoundComponent },
 ];

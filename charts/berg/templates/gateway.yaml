@@ -13,6 +13,7 @@ spec:
       requestRedirect:
         scheme: https
         statusCode: 301
+        port: {{ .Values.gateway.httpPort }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway

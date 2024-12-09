@@ -12,10 +12,10 @@
       @if (dataService.isAuthenticated) {
         <div class="dropdown text-end" role="button">
           <a class="d-block text-decoration-none link-secondary dropdown-toggle" data-bs-toggle="dropdown">
-            {{ 'player' }}
+            {{ currentPlayer.name }}
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" [routerLink]="['/player', dataService.currentPlayerId]">Profile</a></li>
+            <li><a class="dropdown-item" [routerLink]="['/players', dataService.currentPlayerId]">Profile</a></li>
             <li><a class="dropdown-item" routerLink="/profile-settings">Settings</a></li>
             <li><a class="dropdown-item" (click)="dataService.logout()">Logout</a></li>
           </ul>

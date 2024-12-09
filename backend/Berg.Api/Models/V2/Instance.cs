@@ -41,4 +41,7 @@ public class Service
 
     [JsonPropertyName("appProtocol")]
     public string AppProtocol { get; set; } = "";
+
+    [JsonPropertyName("tls")]
+    public bool Tls { get; set; } = false;
 }

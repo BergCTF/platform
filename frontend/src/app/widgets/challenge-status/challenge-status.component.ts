@@ -5,8 +5,7 @@ import { DataService } from 'src/app/services/data.service';
 @Component({
     selector: 'app-challenge-status',
     templateUrl: './challenge-status.component.html',
-    styleUrls: ['./challenge-status.component.less'],
-    standalone: false
+    styleUrls: ['./challenge-status.component.less']
 })
 export class ChallengeStatusComponent implements OnInit {
   public instance: Instance | null = null;

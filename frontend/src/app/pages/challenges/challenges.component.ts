@@ -2,12 +2,17 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Challenge, Instance, Metadata, Solve } from 'src/app/model';
 import { HelperService } from 'src/app/services/helper.service';
 import { DataService } from 'src/app/services/data.service';
+import { PrettyDateComponent } from '../../widgets/pretty-date/pretty-date.component';
+import { ChallengeStatusComponent } from '../../widgets/challenge-status/challenge-status.component';
+import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
+import { RouterLink } from '@angular/router';
 
 @Component({
     selector: 'app-challenges',
     templateUrl: './challenges.component.html',
     styleUrls: ['./challenges.component.less'],
-    standalone: false
+    imports: [RouterLink, PrettyDateComponent, ChallengeStatusComponent, FormsModule]
 })
 export class ChallengesComponent implements OnInit, OnDestroy {
   public hideSolved = false;
@@ -18,25 +23,29 @@ export class ChallengesComponent implements OnInit, OnDestroy {
   private _metadata = new Metadata();
   private _challenges: Challenge[] = [];
   private _solves: Solve[] = [];
-  private instanceUpdateSubscription = this.dataService.instance.subscribe(instance => this.handleInstanceUpdate(instance));
-  private updateMetadataSubscription = this.dataService.metadata.subscribe(metadata => this.handleMetadataUpdate(metadata));
-  private updateChallengesSubscription = this.dataService.challenges.subscribe(challenges => this.handleChallengesUpdate(challenges));
-  private updateSolvesSubscription = this.dataService.solves.subscribe(solves => this.handleSolvesUpdate(solves));
+  private instanceUpdateSubscription: Subscription | undefined;
+  private updateMetadataSubscription: Subscription | undefined;
+  private updateChallengesSubscription: Subscription | undefined;
+  private updateSolvesSubscription: Subscription | undefined;
 
   constructor(
-    private dataService: DataService,
+    public dataService: DataService,
     public helpers: HelperService
   ) {}
 
   ngOnInit(): void {
     this.hideSolved = localStorage.getItem('hideSolved') === 'true';
+    this.instanceUpdateSubscription = this.dataService.instance.subscribe(instance => this.handleInstanceUpdate(instance));
+    this.updateMetadataSubscription = this.dataService.metadata.subscribe(metadata => this.handleMetadataUpdate(metadata));
+    this.updateChallengesSubscription = this.dataService.challenges.subscribe(challenges => this.handleChallengesUpdate(challenges));
+    this.updateSolvesSubscription = this.dataService.solves.subscribe(solves => this.handleSolvesUpdate(solves));
   }
 
   ngOnDestroy(): void {
-    this.updateChallengesSubscription.unsubscribe();
-    this.updateMetadataSubscription.unsubscribe();
-    this.instanceUpdateSubscription.unsubscribe();
-    this.updateSolvesSubscription.unsubscribe();
+    this.updateChallengesSubscription?.unsubscribe();
+    this.updateMetadataSubscription?.unsubscribe();
+    this.instanceUpdateSubscription?.unsubscribe();
+    this.updateSolvesSubscription?.unsubscribe();
   }
 
   private handleChallengesUpdate(challenges: Challenge[]) {
@@ -56,15 +65,13 @@ export class ChallengesComponent implements OnInit, OnDestroy {
   }
 
   getChallenges(category: string, includeSolved: boolean = false): Challenge[] {
-    return (
-      this._challenges.filter(c => c.categories.length != 0 && c.categories[0] == category)
-        // filter by solve
-        .filter(c => !includeSolved || this.hasSolvedChallenge(c.name))
+    return this._challenges.filter(c => c.categories.length != 0 && c.categories[0] == category)
+        // hide solved
+        .filter(c => includeSolved || !(this.hideSolved && this.hasSolvedChallenge(c.name)))
         // filter by difficulty
         .filter(c => this.filterDifficulty === '' || this.filterDifficulty === c.difficulty)
         // filter by category
-        .filter(c => this.filterCategory === '' || c.categories.includes(this.filterCategory))
-    );
+        .filter(c => this.filterCategory === '' || c.categories.includes(this.filterCategory));
   }
 
   hasSolvedChallenge(challengeName: string): boolean {
@@ -104,8 +111,9 @@ export class ChallengesComponent implements OnInit, OnDestroy {
   }
 
   getCategorySolves(category: string) {
-    const numChallenges = this.getChallenges(category, true).length;
-    const playerSolves = 0;
+    let challengeNames = this.getChallenges(category, true).map(c => c.name);
+    const numChallenges = challengeNames.length;
+    const playerSolves = this._solves.filter(s => s.playerId == this.dataService.currentPlayerId && challengeNames.includes(s.challengeName)).length;
     return `(${playerSolves}/${numChallenges})`;
   }
 

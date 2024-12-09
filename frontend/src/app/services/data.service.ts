@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
-import { Observable, shareReplay, Subject, take } from 'rxjs';
+import { BehaviorSubject, Observable, filter, map, mergeMap } from 'rxjs';
 import { Challenge, CurrentPlayer, Instance, Metadata, Player, Solve, Team } from '../model';
 import { LoginResponse, OidcSecurityService } from 'angular-auth-oidc-client';
 
@@ -9,30 +9,27 @@ import { LoginResponse, OidcSecurityService } from 'angular-auth-oidc-client';
 })
 export class DataService {
 
-  private _challenges: Subject<Challenge[]> = new Subject<Challenge[]>();
-  private _players: Subject<Player[]> = new Subject<Player[]>();
-  private _currentPlayer: Subject<CurrentPlayer> = new Subject<CurrentPlayer>();
-  private _teams: Subject<Team[]> = new Subject<Team[]>();
-  private _solves: Subject<Solve[]> = new Subject<Solve[]>();
-  private _metadata: Subject<Metadata> = new Subject<Metadata>();
-  private _instance: Subject<Instance|null> = new Subject<Instance|null>();
+  private _challenges = new BehaviorSubject<Challenge[]>([]);
+  private _players = new BehaviorSubject<Player[]>([]);
+  private _currentPlayer = new BehaviorSubject<CurrentPlayer>(new CurrentPlayer());
+  private _teams = new BehaviorSubject<Team[]>([]);
+  private _solves = new BehaviorSubject<Solve[]>([]);
+  private _metadata= new BehaviorSubject<Metadata>(new Metadata());
+  private _instance = new BehaviorSubject<Instance>(new Instance());
 
-  public readonly challenges: Observable<Challenge[]> = this._challenges.asObservable().pipe(shareReplay(1));
-  public readonly players: Observable<Player[]> = this._players.asObservable().pipe(shareReplay(1));
-  public readonly currentPlayer: Observable<CurrentPlayer> = this._currentPlayer.asObservable().pipe(shareReplay(1));
-  public readonly teams: Observable<Team[]> = this._teams.asObservable().pipe(shareReplay(1));
-  public readonly solves: Observable<Solve[]> = this._solves.asObservable().pipe(shareReplay(1));
-  public readonly instance: Observable<Instance|null> = this._instance.asObservable().pipe(shareReplay(1));
-  public readonly metadata: Observable<Metadata> = this._metadata.asObservable().pipe(shareReplay(1));
+  public readonly challenges: Observable<Challenge[]> = this._challenges.asObservable();
+  public readonly players: Observable<Player[]> = this._players.asObservable();
+  public readonly currentPlayer: Observable<CurrentPlayer> = this._currentPlayer.asObservable();
+  public readonly teams: Observable<Team[]> = this._teams.asObservable();
+  public readonly solves: Observable<Solve[]> = this._solves.asObservable();
+  public readonly instance: Observable<Instance> = this._instance.asObservable();
+  public readonly metadata: Observable<Metadata> = this._metadata.asObservable();
   public isAuthenticated = false;
   public currentPlayerId = '00000000-0000-0000-0000-000000000000';
 
   constructor(private apiService: ApiService, private oidcSecurityService: OidcSecurityService) {
-    this.refreshAllData();
-
-    this.oidcSecurityService
-      .checkAuth()
-      .subscribe((loginResponse: LoginResponse) => {
+    let checkAuthSubscription = this.oidcSecurityService.checkAuth();
+    checkAuthSubscription.subscribe((loginResponse: LoginResponse) => {
         const { isAuthenticated, userData, accessToken, idToken, configId } =
           loginResponse;
 
@@ -46,9 +43,15 @@ export class DataService {
         }
 
         this.isAuthenticated = isAuthenticated;
+        if (!this._metadata.getValue().allowAnonymousAccess && !isAuthenticated) {
+          this.oidcSecurityService.authorize();
+        }
+        this.refreshAllData();
     });
 
-    setTimeout(() => {
+    setInterval(() => {
+      if (!this.isAuthenticated)
+        return;
       this.apiService.getInstance().subscribe(instance => {
         this._instance.next(instance);
       });
@@ -56,7 +59,6 @@ export class DataService {
   }
 
   private refreshAllData() {
-    this._instance.next(null);
     this.apiService.getMetadata().subscribe(metadata => {
       this._metadata.next(metadata);
     });
@@ -82,7 +84,7 @@ export class DataService {
   }
 
   logout() {
-    this.oidcSecurityService.logoff();
+    this.oidcSecurityService.logoff().subscribe((_) => {});
   }
 
   addSolve(challengeName: string, flag: string) {
@@ -101,28 +103,34 @@ export class DataService {
     });
   }
 
+  getPlayerName(id: string): Observable<string> {
+    return this.players.pipe(mergeMap(p => p), filter(p => p.id == id), map(p => p.name));
+  }
+
   ensurePlayer(id: string) {
-    this.players.pipe(take(1)).subscribe(players => {
-      let player = players.find(p => p.id == id);
-      if (player === undefined) {
-        this.apiService.getPlayer(id).subscribe(player => {
-          players.push(player);
-          this._players.next(players);
-        });
-      }
-    });
+    let player = this._players.getValue().find(p => p.id == id);
+    if (player === undefined) {
+      this.apiService.getPlayer(id).subscribe(player => {
+        let players = this._players.getValue();
+        if (players.find(p => p.id == id))
+          return;
+        players.push(player);
+        this._players.next(players);
+      });
+    }
   }
 
   ensureChallenge(name: string) {
-    this.challenges.pipe(take(1)).subscribe(challenges => {
-      let challenge = challenges.find(c => c.name == name);
-      if (challenge === undefined) {
-        this.apiService.getChallenge(name).subscribe(challenge => {
-          challenges.push(challenge);
-          this._challenges.next(challenges);
-        });
-      }
-    });
+    let challenge = this._challenges.getValue().find(c => c.name == name);
+    if (challenge === undefined) {
+      this.apiService.getChallenge(name).subscribe(challenge => {
+        let challenges = this._challenges.getValue();
+        if (challenges.find(c => c.name == name))
+          return;
+        challenges.push(challenge);
+        this._challenges.next(challenges);
+      });
+    }
   }
 
 }

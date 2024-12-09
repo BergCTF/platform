@@ -199,6 +199,7 @@ public class ChallengeService : IChallengeService
                     Hostname = _infraConfig.ChallengeDomain,
                     AppProtocol = port.AppProtocol,
                     Protocol = port.Protocol,
+                    Tls = true,
                 };
 
                 if (port.Type == V1ChallengePortType.PublicPort)
@@ -207,6 +208,7 @@ public class ChallengeService : IChallengeService
                     var infraService = serviceList.Items.FirstOrDefault(s => s.Name() == serviceName);
                     var infraPort = infraService?.Spec.Ports.FirstOrDefault(p => p.Port == port.Port);
                     service.Port = infraPort?.NodePort ?? 0;
+                    service.Tls = false;
                 }
                 else if (port.Type == V1ChallengePortType.PublicHttpRoute)
                 {

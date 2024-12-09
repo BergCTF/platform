@@ -1,5 +1,6 @@
-<h3 class="mb-3">Challenges</h3>
-
+<div class="row">
+  <h3 class="mb-3">Challenges</h3>
+</div>
 @if (getServerTime() <= getStart()) {
   <div class="card">
     <div class="card-body">
@@ -37,50 +38,58 @@
     </div>
   </div>
 }
-@if (getStart() <= getServerTime()) {
-  <div class="form-check">
-    <input type="checkbox" id="hideSolved" class="form-check-input" name="hideSolved" [(ngModel)]="hideSolved" (change)="updateHideState()" />
-    <label class="form-check-label" for="hideSolved">Hide solved </label>
+@if (getStart() <= getServerTime() && dataService.isAuthenticated) {
+  <div class="row">
+    <div class="col">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="hideSolved" name="hideSolved" [(ngModel)]="hideSolved" (change)="updateHideState()" />
+        <label class="form-check-label" for="hideSolved">Hide solved</label>
+      </div>
+    </div>
   </div>
 }
-<div clas="form-control">
-  <div class="input-group mb-3">
-    <span class="input-group-text">Category</span>
-    <select class="form-select" [(ngModel)]="filterCategory" (change)="filterCategorySelect.blur()" #filterCategorySelect>
-      <option value="">Select...</option>
-      @for (category of getAllCategories(); track category) {
-        <option value="{{ category }}">{{ category }}</option>
-      }
-    </select>
-    <span class="input-group-text">Difficulty</span>
-    <select class="form-select" [(ngModel)]="filterDifficulty" (change)="filterDifficultySelect.blur()" #filterDifficultySelect>
-      <option value="">Select...</option>
-      @for (difficulty of getAllDifficulties(); track difficulty) {
-        <option value="{{ difficulty }}">{{ difficulty }}</option>
-      }
-    </select>
+<div class="row">
+  <div class="col mt-2 mb-3">
+    <div class="input-group">
+      <span class="input-group-text">Category</span>
+      <select class="form-select" [(ngModel)]="filterCategory" (change)="filterCategorySelect.blur()" #filterCategorySelect>
+        <option value="">Select...</option>
+        @for (category of getAllCategories(); track category) {
+          <option value="{{ category }}">{{ category }}</option>
+        }
+      </select>
+      <span class="input-group-text">Difficulty</span>
+      <select class="form-select" [(ngModel)]="filterDifficulty" (change)="filterDifficultySelect.blur()" #filterDifficultySelect>
+        <option value="">Select...</option>
+        @for (difficulty of getAllDifficulties(); track difficulty) {
+          <option value="{{ difficulty }}">{{ difficulty }}</option>
+        }
+      </select>
+    </div>
   </div>
 </div>
 @for (category of getPrimaryCategories(); track category) {
   @if (getChallenges(category).length > 0) {
-    <div class="row mb-3 mt-3 justify-content-center">
-      <div class="row">
-        <h4>
-          {{ category }}
-          @if (true) {
-            <span class="h5"> {{ getCategorySolves(category) }}</span>
-          }
-        </h4>
-      </div>
+    <div class="mb-3 mt-3 justify-content-center">
+      <h4>
+        {{ category }}
+        @if (dataService.isAuthenticated) {
+          <span class="h5"> {{ getCategorySolves(category) }}</span>
+        }
+      </h4>
       <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-gap-2 mb-3">
         @for (challenge of getChallenges(category); track challenge) {
           <div class="col">
             <div class="d-grid gap-2">
+              @let hasSolved = hasSolvedChallenge(challenge.name);
               <a
                 class="btn btn-secondary"
                 tabindex="0"
-                placement="top">
-                @if (hasSolvedChallenge(challenge.name)) {
+                placement="top"
+                [class.bg-success]="hasSolved"
+                [class.border-success]="hasSolved"
+                [routerLink]="['/challenges', challenge.name]" >
+                @if (hasSolved) {
                   <i class="bi bi-check"></i>
                 }
                 {{ challenge.name }}

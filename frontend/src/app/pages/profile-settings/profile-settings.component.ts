@@ -5,8 +5,7 @@ import { Router } from '@angular/router';
 @Component({
     selector: 'app-profile-settings',
     templateUrl: './profile-settings.component.html',
-    styleUrls: ['./profile-settings.component.less'],
-    standalone: false
+    styleUrls: ['./profile-settings.component.less']
 })
 export class ProfileSettingsComponent {
   constructor(
