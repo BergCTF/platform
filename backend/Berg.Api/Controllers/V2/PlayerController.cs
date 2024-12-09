@@ -34,7 +34,6 @@ public class PlayerController(CtfConfig ctfConfig,
         var publicCustomAttributes = GetPublicCustomAttributeNames(ctfConfig);
         var players = await dbContext.Players
             .Include(p => p.Attributes)
-            .Where(p => p.Roles != null && !p.Roles.Contains(Constants.Roles.Admin))
             .ToListAsync(cancel);
         return players.Select(p => ToModelPlayer(p, publicCustomAttributes)).ToList();
     }
@@ -44,7 +43,7 @@ public class PlayerController(CtfConfig ctfConfig,
     [ProducesResponseType(typeof(Player), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Player>> GetPlayer(Guid id, CancellationToken cancel)
+    public async Task<ActionResult<Player>> GetPlayer([FromRoute] Guid id, CancellationToken cancel)
     {
         if (!ctfConfig.AllowAnonymousAccess &&
             !(HttpContext.User.Identity?.IsAuthenticated ?? false))
@@ -54,7 +53,6 @@ public class PlayerController(CtfConfig ctfConfig,
         var publicCustomAttributes = GetPublicCustomAttributeNames(ctfConfig);
         var player = await dbContext.Players
             .Include(p => p.Attributes)
-            .Where(p => p.Roles != null && !p.Roles.Contains(Constants.Roles.Admin))
             .FirstOrDefaultAsync(p => p.Id == id, cancel);
         if (player == null)
             return NotFound();

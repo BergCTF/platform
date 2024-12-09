@@ -45,6 +45,28 @@ public partial class TeamController(
     }
 
     [HttpGet]
+    [Route("/api/v2/teams/{id:guid}")]
+    [ProducesResponseType(typeof(List<Team>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<List<Team>>> GetTeam([FromRoute] Guid id, CancellationToken cancel)
+    {
+        if (!ctfConfig.AllowAnonymousAccess &&
+            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
+        {
+            return Unauthorized();
+        }
+        var team = await dbContext.Teams.Select(t => new Team
+        {
+            Id = t.Id,
+            Name = t.Name,
+            Players = t.Players.Select(p => p.Id).ToList()
+        }).FirstOrDefaultAsync(t => t.Id == id, cancel);
+        if (team == null)
+            return NotFound();
+        return Ok(team);
+    }
+
+    [HttpGet]
     [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/teams/current")]
     [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]

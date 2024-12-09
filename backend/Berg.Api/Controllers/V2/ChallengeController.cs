@@ -33,7 +33,7 @@ public class ChallengeController(IChallengeService challengeService, CtfConfig c
     [ProducesResponseType(typeof(Challenge), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public ActionResult<Challenge> GetChallenge(string name)
+    public ActionResult<Challenge> GetChallenge([FromRoute] string name)
     {
         if (!ctfConfig.AllowAnonymousAccess &&
             !(HttpContext.User.Identity?.IsAuthenticated ?? false))

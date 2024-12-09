@@ -246,7 +246,10 @@ public static class OpenIddictBuilder
             },
             RedirectUris = {
                 new Uri($"https://{infraConfig.PlatformDomain}/swagger/oauth2-redirect.html"),
-                new Uri($"https://{infraConfig.PlatformDomain}/frontend/oidc-callback"),
+                new Uri($"https://{infraConfig.PlatformDomain}/frontend/oidc-callback")
+            },
+            PostLogoutRedirectUris = {
+                new Uri($"https://{infraConfig.PlatformDomain}")
             }
         };
         var redirectUris = infraConfig.RedirectUris ?? [];
