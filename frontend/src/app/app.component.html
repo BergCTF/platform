@@ -5,7 +5,9 @@
         <img class="bi me-2" width="32" height="32" src="/assets/img/logo-small.png" alt="Logo" />
       </a>
       <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
-        <li><a routerLink="/home" routerLinkActive="text-decoration-underline" class="nav-link px-2">Home</a></li>
+        @for (page of dataService.pages | async; track page) {
+          <li><a [routerLink]="page.path" routerLinkActive="text-decoration-underline" class="nav-link px-2">{{ page.title}}</a></li>
+        }
         <li><a routerLink="/challenges" routerLinkActive="text-decoration-underline" class="nav-link px-2">Challenges</a></li>
         <li><a routerLink="/scoreboard" routerLinkActive="text-decoration-underline" class="nav-link px-2">Scoreboard</a></li>
       </ul>

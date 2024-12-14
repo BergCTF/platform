@@ -43,6 +43,13 @@ export class Service {
   public tls = false;
 }
 
+export class Page {
+  public title = '';
+  public index = 0;
+  public path = '';
+  public content = '';
+}
+
 export class Player {
   public id = '';
   public name = '';

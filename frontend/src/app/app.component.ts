@@ -2,13 +2,14 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DataService } from './services/data.service';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { CurrentPlayer, Player } from './model';
+import { CurrentPlayer } from './model';
+import { AsyncPipe } from '@angular/common';
 
 @Component({
     selector: 'app-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.less'],
-    imports: [RouterLink, RouterLinkActive, RouterOutlet]
+    imports: [RouterLink, RouterLinkActive, RouterOutlet, AsyncPipe]
 })
 export class AppComponent implements OnInit, OnDestroy {
   title = 'Berg Frontend';
@@ -16,7 +17,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private updateCurrentPlayerSubscription: Subscription | undefined;
 
   constructor(
-    public dataService: DataService
+    public dataService: DataService,
   ) {}
 
   ngOnInit() {

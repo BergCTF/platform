@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Challenge, CurrentPlayer, CurrentTeam, Instance, Metadata, Player, Solve, Team } from '../model';
+import { Challenge, CurrentPlayer, CurrentTeam, Instance, Metadata, Page, Player, Solve, Team } from '../model';
 import { Observable } from 'rxjs';
 
 @Injectable({
@@ -57,6 +57,12 @@ export class ApiService {
 
   getMetadata(): Observable<Metadata> {
     return this.http.get<Metadata>(this.baseUrl+'/api/v2/metadata', this.httpOptions);
+  }
+
+  /* Page */
+
+  getPages(): Observable<Page[]> {
+    return this.http.get<Page[]>(this.baseUrl+'/api/v2/pages', this.httpOptions);
   }
 
   /* Player */

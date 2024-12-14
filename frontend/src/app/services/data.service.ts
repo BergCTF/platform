@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { BehaviorSubject, Observable, filter, map, mergeMap } from 'rxjs';
-import { Challenge, CurrentPlayer, Instance, Metadata, Player, Solve, Team } from '../model';
+import { Challenge, CurrentPlayer, Instance, Metadata, Page, Player, Solve, Team } from '../model';
 import { LoginResponse, OidcSecurityService } from 'angular-auth-oidc-client';
 
 @Injectable({
@@ -14,11 +14,13 @@ export class DataService {
   private _currentPlayer = new BehaviorSubject<CurrentPlayer>(new CurrentPlayer());
   private _teams = new BehaviorSubject<Team[]>([]);
   private _solves = new BehaviorSubject<Solve[]>([]);
+  private _pages = new BehaviorSubject<Page[]>([]);
   private _metadata= new BehaviorSubject<Metadata>(new Metadata());
   private _instance = new BehaviorSubject<Instance>(new Instance());
 
   public readonly challenges: Observable<Challenge[]> = this._challenges.asObservable();
   public readonly players: Observable<Player[]> = this._players.asObservable();
+  public readonly pages: Observable<Page[]> = this._pages.asObservable();
   public readonly currentPlayer: Observable<CurrentPlayer> = this._currentPlayer.asObservable();
   public readonly teams: Observable<Team[]> = this._teams.asObservable();
   public readonly solves: Observable<Solve[]> = this._solves.asObservable();
@@ -28,6 +30,10 @@ export class DataService {
   public currentPlayerId = '00000000-0000-0000-0000-000000000000';
 
   constructor(private apiService: ApiService, private oidcSecurityService: OidcSecurityService) {
+    this.apiService.getMetadata().subscribe(metadata => {
+      this._metadata.next(metadata);
+    });
+
     let checkAuthSubscription = this.oidcSecurityService.checkAuth();
     checkAuthSubscription.subscribe((loginResponse: LoginResponse) => {
         const { isAuthenticated, userData, accessToken, idToken, configId } =
@@ -61,6 +67,9 @@ export class DataService {
   private refreshAllData() {
     this.apiService.getMetadata().subscribe(metadata => {
       this._metadata.next(metadata);
+    });
+    this.apiService.getPages().subscribe(pages => {
+      this._pages.next(pages.sort((a,b) => a.index - b.index));
     });
     this.apiService.getPlayers().subscribe(players => {
       this._players.next(players);
