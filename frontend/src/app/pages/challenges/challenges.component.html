@@ -1,0 +1,129 @@
+<div class="row">
+  <h3 class="mb-3">Challenges</h3>
+</div>
+@if (getServerTime() <= getStart()) {
+  <div class="card">
+    <div class="card-body">
+      <p class="countdown-label">CTF starts in:</p>
+      <h1 class="countdown">{{ helpers.getCountdownText(getStart(), getServerTime()) }}</h1>
+    </div>
+  </div>
+  <br />
+  <div class="card">
+    <div class="card-body">
+      <p>The CTF has not started yet. It will start at <app-pretty-date [date]="getStart()" /> (UTC)</p>
+    </div>
+  </div>
+}
+
+@if (getEnd() <= getServerTime()) {
+  <div class="card">
+    <div class="card-body">
+      <h1>The CTF has ended. Thank you for playing!</h1>
+      <p>You can no longer submit flags, but still play the challenges.</p>
+    </div>
+  </div>
+}
+
+@if (instance && instance.status !== 0) {
+  <div class="row mb-3 mt-3">
+    <div class="col">
+      <div class="card">
+        <div class="card-header">Private instance</div>
+        <div class="card-body">
+          <p class="card-text"><b>Challenge:</b>&nbsp;{{ instance.name }}</p>
+          <app-challenge-status></app-challenge-status>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+@if (getStart() <= getServerTime() && dataService.isAuthenticated) {
+  <div class="row">
+    <div class="col">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="hideSolved" name="hideSolved" [(ngModel)]="hideSolved" (change)="updateHideState()" />
+        <label class="form-check-label" for="hideSolved">Hide solved</label>
+      </div>
+    </div>
+  </div>
+}
+<div class="row">
+  <div class="col mt-2 mb-3">
+    <div class="input-group">
+      <span class="input-group-text">Category</span>
+      <select class="form-select" [(ngModel)]="filterCategory" (change)="filterCategorySelect.blur()" #filterCategorySelect>
+        <option value="">Select...</option>
+        @for (category of getAllCategories(); track category) {
+          <option value="{{ category }}">{{ category }}</option>
+        }
+      </select>
+      <span class="input-group-text">Difficulty</span>
+      <select class="form-select" [(ngModel)]="filterDifficulty" (change)="filterDifficultySelect.blur()" #filterDifficultySelect>
+        <option value="">Select...</option>
+        @for (difficulty of getAllDifficulties(); track difficulty) {
+          <option value="{{ difficulty }}">{{ difficulty }}</option>
+        }
+      </select>
+    </div>
+  </div>
+</div>
+@for (category of getPrimaryCategories(); track category) {
+  @if (getChallenges(category).length > 0) {
+    <div class="mb-3 mt-3 justify-content-center">
+      <h4>
+        {{ category }}
+        @if (dataService.isAuthenticated) {
+          <span class="h5"> {{ getCategorySolves(category) }}</span>
+        }
+      </h4>
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-gap-2 mb-3">
+        @for (challenge of getChallenges(category); track challenge) {
+          <div class="col">
+            <div class="d-grid gap-2">
+              @let hasSolved = hasSolvedChallenge(challenge.name);
+              <a
+                class="btn btn-secondary"
+                tabindex="0"
+                placement="top"
+                [class.bg-success]="hasSolved"
+                [class.border-success]="hasSolved"
+                [routerLink]="['/challenges', challenge.name]" >
+                @if (hasSolved) {
+                  <i class="bi bi-check"></i>
+                }
+                {{ challenge.name }}
+                <br />
+                @switch (challenge.difficulty) {
+                  @case ('baby') {
+                    <span class="badge text-bg-info me-1">baby</span>
+                  }
+                  @case ('easy') {
+                    <span class="badge text-bg-success me-1">easy</span>
+                  }
+                  @case ('medium') {
+                    <span class="badge text-bg-warning me-1">medium</span>
+                  }
+                  @case ('hard') {
+                    <span class="badge text-bg-danger me-1">hard</span>
+                  }
+                  @case ('leet') {
+                    <span class="badge text-bg-leet me-1">leet</span>
+                  }
+                  @default {
+                    <span class="badge text-bg-light me-1">{{ challenge.difficulty }}</span>
+                  }
+                }
+                @for (c of challenge.categories; track c) {
+                  @if (!getPrimaryCategories().includes(c)) {
+                    <span class="badge text-bg-dark me-1">{{ c }}</span>
+                  }
+                }
+              </a>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+}

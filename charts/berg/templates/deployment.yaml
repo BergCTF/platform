@@ -5,6 +5,7 @@ metadata:
   name: {{ include "berg.fullname" . }}-api
   labels:
     {{- include "berg.labels" . | nindent 4 }}
+    component: api
 spec:
   strategy:
     type: Recreate
@@ -12,6 +13,7 @@ spec:
   selector:
     matchLabels:
       {{- include "berg.selectorLabels" . | nindent 6 }}
+      component: api
   template:
     metadata:
       labels:
@@ -46,3 +48,36 @@ spec:
         - name: appsettings
           configMap:
             name: {{ include "berg.fullname" . }}-appsettings
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "berg.fullname" . }}-frontend
+  labels:
+    {{- include "berg.labels" . | nindent 4 }}
+    component: frontend
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "berg.selectorLabels" . | nindent 6 }}
+      component: frontend
+  template:
+    metadata:
+      labels:
+        {{- include "berg.selectorLabels" . | nindent 8 }}
+        component: frontend
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.berg.pullSecretName }}
+      serviceAccountName: {{ include "berg.fullname" . }}
+      containers:
+        - name: berg-frontend
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.frontend.image.imagePullPolicy }}
+          ports:
+            - containerPort: 80
+          resources:
+            {{- toYaml .Values.berg.resources | nindent 12 }}

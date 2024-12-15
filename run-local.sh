@@ -9,10 +9,12 @@ kubectl --context kind-berg-dev-cluster create secret generic berg-pull-secret \
     --type=kubernetes.io/dockerconfigjson -n berg
 
 echo "Build image"
-docker build -t kind.localhost/berg/api:local -f Berg.Api/Dockerfile .
+docker build -t kind.localhost/berg/api:local -f backend/Berg.Api/Dockerfile backend
+docker build -t kind.localhost/berg/frontend:local -f frontend/Dockerfile frontend
 
 echo "Transfer image"
 kind load docker-image --name=berg-dev-cluster kind.localhost/berg/api:local
+kind load docker-image --name=berg-dev-cluster kind.localhost/berg/frontend:local
 
 cd charts/berg
 echo "Uninstalling berg"
@@ -23,6 +25,10 @@ gateway:
   domain: berg.localhost
   tlsSecretName: "berg-gateway-tls"
   gatewayClassName: "traefik"
+frontend:
+  image:
+    repository: "kind.localhost/berg/frontend"
+    tag: local
 berg:
   image:
     repository: "kind.localhost/berg/api"
@@ -58,6 +64,34 @@ berg:
 
 postgresql:
   enabled: false
+EOF
+
+
+echo "Deploying example pages"
+cat <<EOF | kubectl --context kind-berg-dev-cluster apply -f -
+apiVersion: berg.norelect.ch/v1
+kind: Page
+metadata:
+  name: home
+  namespace: berg
+spec:
+  path: home
+  title: Home
+  index: 0
+  content: |
+    Home Page Content
+---
+apiVersion: berg.norelect.ch/v1
+kind: Page
+metadata:
+  name: extra
+  namespace: berg
+spec:
+  path: extra
+  title: Extra
+  index: 1
+  content: |
+    Extra Page Content
 EOF
 
 echo "Deploying example challenges"

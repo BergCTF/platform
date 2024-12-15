@@ -1,0 +1,71 @@
+@if (instance) {
+  <div>
+    @switch (instance.status) {
+      @case (0) {
+        <p>
+          <b>Status:</b>&nbsp;<i class="bi bi-slash-circle"></i>
+          Not running
+        </p>
+      }
+      @case (1) {
+        <p>
+          <b>Status:</b>&nbsp;<i class="bi bi-boxes text-info"></i>
+          Starting
+        </p>
+      }
+      @case (2) {
+        <p>
+          <b>Status:</b>&nbsp;<i class="bi bi-boxes text-success"></i>
+          Running
+        </p>
+        <p>
+          <b>Exposed Endpoints</b>
+        </p>
+        <ul>
+          @for (service of instance.services; track service) {
+            <li>
+              @if (service.appProtocol === 'http' && service.tls) {
+                <a href="https://{{ service.hostname }}:{{ service.port }}" target="_blank">https://{{ service.hostname }}:{{ service.port }}</a>
+              }
+              @if (service.appProtocol === 'http' && !service.tls) {
+                <a href="http://{{ service.hostname }}:{{ service.port }}" target="_blank">http://{{ service.hostname }}:{{ service.port }}</a>
+              }
+              @if (service.appProtocol === 'tcp' && service.tls) {
+                <code #a class="clipboard-copy" tabindex="0" (click)="copyToClipboard(a)" (keyup.enter)="copyToClipboard(a)">ncat --ssl {{ service.hostname }} {{ service.port }}</code>
+              }
+              @if (service.appProtocol === 'tcp' && !service.tls) {
+                <code #b class="clipboard-copy" tabindex="0" (click)="copyToClipboard(b)" (keyup.enter)="copyToClipboard(b)">nc {{ service.hostname }} {{ service.port }}</code>
+              }
+              @if (service.appProtocol === 'ssh') {
+                <code #c class="clipboard-copy" tabindex="0" (click)="copyToClipboard(c)" (keyup.enter)="copyToClipboard(c)">ssh {{ service.hostname }} -p {{ service.port }}</code>
+              }
+              @if (service.name) {
+                <span>&nbsp;&nbsp;({{ service.name }})</span>
+              }
+              @if (service.appProtocol !== 'http' && service.appProtocol !== 'ssh') {
+                <div>
+                  <div class="dropdown">
+                    <a class="btn btn-sm btn-outline-secondary dropdown-toggle" href="#" type="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="bi bi-clipboard"></i> Copy </a>
+                    <span class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                      <a class="dropdown-item" tabindex="0" (click)="copyToClipboardNcat(service.hostname, service.port, service.tls)" (keyup.enter)="copyToClipboardNcat(service.hostname, service.port, service.tls)">Copy as ncat</a>
+                      <a class="dropdown-item" tabindex="0" (click)="copyToClipboardPwntools(service.hostname, service.port, service.tls)" (keyup.enter)="copyToClipboardPwntools(service.hostname, service.port, service.tls)">Copy as pwntools</a>
+                    </span>
+                  </div>
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+      @case (3) {
+        <p>
+          <b>Status:</b>&nbsp;<i class="bi bi-boxes text-danger"></i>
+          Terminating
+        </p>
+      }
+    }
+    @if (instance.status === 1 || instance.status === 2) {
+      <button class="btn btn-outline-danger" tabIndex="{-1}" (click)="stopChallengeInstance()" (keyup.enter)="stopChallengeInstance()"><i class="bi bi-trash"></i> Kill instance</button>
+    }
+  </div>
+}

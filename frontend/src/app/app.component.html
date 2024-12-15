@@ -1,0 +1,73 @@
+<header class="p-3">
+  <div class="container">
+    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start navbar navbar-expand-lg navbar-95">
+      <a routerLink="/" class="d-flex align-items-center mb-2 mb-lg-0 text-primary text-decoration-none">
+        <img class="bi me-2" width="32" height="32" src="/assets/img/logo-small.png" alt="Logo" />
+      </a>
+      <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+        @for (page of dataService.pages | async; track page) {
+          <li><a [routerLink]="page.path" routerLinkActive="text-decoration-underline" class="nav-link px-2">{{ page.title}}</a></li>
+        }
+        <li><a routerLink="/challenges" routerLinkActive="text-decoration-underline" class="nav-link px-2">Challenges</a></li>
+        <li><a routerLink="/scoreboard" routerLinkActive="text-decoration-underline" class="nav-link px-2">Scoreboard</a></li>
+      </ul>
+      @if (dataService.isAuthenticated) {
+        <div class="dropdown text-end" role="button">
+          <a class="d-block text-decoration-none link-secondary dropdown-toggle" data-bs-toggle="dropdown">
+            {{ currentPlayer.name }}
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" [routerLink]="['/players', dataService.currentPlayerId]">Profile</a></li>
+            <li><a class="dropdown-item" routerLink="/profile-settings">Settings</a></li>
+            <li><a class="dropdown-item" (click)="dataService.logout()">Logout</a></li>
+          </ul>
+        </div>
+      }
+      @if (!dataService.isAuthenticated) {
+        <div class="text-end">
+          <a (click)="dataService.login()" class="btn btn-primary">Login</a>
+        </div>
+      }
+      <div class="dropdown text-end ms-3">
+        <a class="d-block text-decoration-none dropdown-toggle link-secondary theme-icon-active" type="button" data-bs-toggle="dropdown">
+          <i class="bi bi-circle-half"></i>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light">
+              <i class="bi bi-sun-fill"></i>
+              &nbsp; Light
+            </button>
+          </li>
+          <li>
+            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark">
+              <i class="bi bi-moon-stars-fill"></i>
+              &nbsp; Dark
+            </button>
+          </li>
+          <li>
+            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="auto">
+              <i class="bi bi-circle-half"></i>
+              &nbsp; Auto
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</header>
+<div class="container">
+  <main role="main" class="pb-3 overflow-x-hidden" [@fadeAnimation]="outlet.isActivated ? outlet.activatedRoute : ''">
+    <router-outlet #outlet="outlet"></router-outlet>
+  </main>
+</div>
+<div class="container">
+  <footer class="d-flex flex-wrap justify-content-between py-3 my-4 border-top">
+    <div class="align-items-start">
+      <span class="mb-12 mb-md-0 text-muted">© Swiss Hacking Challenge</span>
+    </div>
+    <div class="align-items-end">
+      <span class="mb-12 mb-md-0 text-muted">Berg CTF Platform</span>
+    </div>
+  </footer>
+</div>
