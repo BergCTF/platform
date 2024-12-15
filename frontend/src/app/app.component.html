@@ -34,20 +34,20 @@
         </a>
         <ul class="dropdown-menu dropdown-menu-end">
           <li>
-            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light">
-              <i class="bi bi-sun-fill"></i>
+            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light" [class.active]="theme == 'light'" (click)="setTheme('light')">
+              <i class="bi bi-sun-fill" [class.theme-icon-active]="theme == 'light'"></i>
               &nbsp; Light
             </button>
           </li>
           <li>
-            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark">
-              <i class="bi bi-moon-stars-fill"></i>
+            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark" [class.active]="theme == 'dark'" (click)="setTheme('dark')">
+              <i class="bi bi-moon-stars-fill" [class.theme-icon-active]="theme == 'dark'"></i>
               &nbsp; Dark
             </button>
           </li>
           <li>
-            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="auto">
-              <i class="bi bi-circle-half"></i>
+            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="auto" [class.active]="theme == null || theme == 'auto'" (click)="setTheme('auto')">
+              <i class="bi bi-circle-half" [class.theme-icon-active]="theme == null || theme == 'auto'"></i>
               &nbsp; Auto
             </button>
           </li>

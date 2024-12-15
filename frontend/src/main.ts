@@ -7,7 +7,9 @@ import { AngularDraggableModule } from 'angular2-draggable';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { NgxEchartsModule } from 'ngx-echarts';
 import { AppComponent } from './app/app.component';
-import { importProvidersFrom } from '@angular/core';
+import { importProvidersFrom, inject, provideAppInitializer } from '@angular/core';
+import { DataService } from './app/services/data.service';
+import { EMPTY, mergeMap, take } from 'rxjs';
 
 bootstrapApplication(AppComponent, {
     providers: [
@@ -30,5 +32,16 @@ bootstrapApplication(AppComponent, {
             },
         }),
         provideAnimations(),
+        provideAppInitializer(() => {
+            let dataService = inject(DataService);
+            return dataService.refreshMetadata().pipe(mergeMap(metadata => {
+                if (metadata.allowAnonymousAccess) {
+                    return dataService.refreshPages();
+                } else {
+                    dataService.login();
+                    return EMPTY;
+                }
+            }), mergeMap(_ => dataService.loginEvents.pipe(take(1))));
+        }),
     ]
 }).catch(err => console.error(err));

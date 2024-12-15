@@ -14,6 +14,7 @@ import { AsyncPipe } from '@angular/common';
 export class AppComponent implements OnInit, OnDestroy {
   title = 'Berg Frontend';
   currentPlayer = new CurrentPlayer();
+  theme: string | null = null;
   private updateCurrentPlayerSubscription: Subscription | undefined;
 
   constructor(
@@ -22,6 +23,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.updateCurrentPlayerSubscription = this.dataService.currentPlayer.subscribe(currentPlayer => this.handleCurrentPlayerUpdate(currentPlayer));
+    this.theme = localStorage.getItem('theme');
+    this.setTheme(this.getPreferredTheme());
   }
 
   ngOnDestroy(): void {
@@ -30,5 +33,23 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private handleCurrentPlayerUpdate(player: CurrentPlayer) {
     this.currentPlayer = player;
+  }
+
+  getPreferredTheme(){
+    if (this.theme) {
+        return this.theme;
+    }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  setTheme(theme: string) {
+    if (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-bs-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+    } else {
+        document.documentElement.setAttribute('data-bs-theme', theme);
+        localStorage.setItem('theme', theme);
+    }
+    this.theme = theme;
   }
 }

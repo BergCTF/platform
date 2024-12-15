@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
-import { BehaviorSubject, Observable, filter, map, mergeMap } from 'rxjs';
+import { BehaviorSubject, Observable, filter, map, mergeMap, share, tap } from 'rxjs';
 import { Challenge, CurrentPlayer, Instance, Metadata, Page, Player, Solve, Team } from '../model';
 import { LoginResponse, OidcSecurityService } from 'angular-auth-oidc-client';
 
@@ -26,16 +26,13 @@ export class DataService {
   public readonly solves: Observable<Solve[]> = this._solves.asObservable();
   public readonly instance: Observable<Instance> = this._instance.asObservable();
   public readonly metadata: Observable<Metadata> = this._metadata.asObservable();
+  public readonly loginEvents: Observable<LoginResponse>;
   public isAuthenticated = false;
   public currentPlayerId = '00000000-0000-0000-0000-000000000000';
 
   constructor(private apiService: ApiService, private oidcSecurityService: OidcSecurityService) {
-    this.apiService.getMetadata().subscribe(metadata => {
-      this._metadata.next(metadata);
-    });
-
-    let checkAuthSubscription = this.oidcSecurityService.checkAuth();
-    checkAuthSubscription.subscribe((loginResponse: LoginResponse) => {
+    this.loginEvents = this.oidcSecurityService.checkAuth().pipe(share());
+    this.loginEvents.subscribe((loginResponse: LoginResponse) => {
         const { isAuthenticated, userData, accessToken, idToken, configId } =
           loginResponse;
 
@@ -86,6 +83,18 @@ export class DataService {
     this.apiService.getInstance().subscribe(instance => {
       this._instance.next(instance);
     });
+  }
+
+  refreshMetadata(): Observable<Metadata> {
+    return this.apiService.getMetadata().pipe(tap(metadata => {
+      this._metadata.next(metadata);
+    }));
+  }
+
+  refreshPages(): Observable<Page[]> {
+    return this.apiService.getPages().pipe(tap(pages => {
+      this._pages.next(pages.sort((a,b) => a.index - b.index));
+    }));
   }
 
   login() {
