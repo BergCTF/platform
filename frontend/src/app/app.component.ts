@@ -13,26 +13,18 @@ import { AsyncPipe } from '@angular/common';
 })
 export class AppComponent implements OnInit, OnDestroy {
   title = 'Berg Frontend';
-  currentPlayer = new CurrentPlayer();
   theme: string | null = null;
-  private updateCurrentPlayerSubscription: Subscription | undefined;
 
   constructor(
     public dataService: DataService,
   ) {}
 
   ngOnInit() {
-    this.updateCurrentPlayerSubscription = this.dataService.currentPlayer.subscribe(currentPlayer => this.handleCurrentPlayerUpdate(currentPlayer));
     this.theme = localStorage.getItem('theme');
     this.setTheme(this.getPreferredTheme());
   }
 
   ngOnDestroy(): void {
-    this.updateCurrentPlayerSubscription?.unsubscribe();
-  }
-
-  private handleCurrentPlayerUpdate(player: CurrentPlayer) {
-    this.currentPlayer = player;
   }
 
   getPreferredTheme(){

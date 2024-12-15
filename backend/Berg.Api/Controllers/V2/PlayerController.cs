@@ -181,7 +181,7 @@ public class PlayerController(CtfConfig ctfConfig,
         var apiKeyHash = Helpers.GetApiKeyHash(newApiKey, playerId);
 
         var player = dbContext.Players.Single(p => p.Id == playerId);
-        player.ApiKeyPlaceholder = newApiKey[..4] + new string('*', newApiKey.Length - 4);
+        player.ApiKeyPlaceholder = newApiKey[..4] + new string('*', 10);
         player.ApiKeyHash = apiKeyHash;
         dbContext.SaveChanges();
 

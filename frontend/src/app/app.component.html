@@ -14,7 +14,7 @@
       @if (dataService.isAuthenticated) {
         <div class="dropdown text-end" role="button">
           <a class="d-block text-decoration-none link-secondary dropdown-toggle" data-bs-toggle="dropdown">
-            {{ currentPlayer.name }}
+            {{ (dataService.currentPlayer | async)?.name }}
           </a>
           <ul class="dropdown-menu">
             <li><a class="dropdown-item" [routerLink]="['/players', dataService.currentPlayerId]">Profile</a></li>

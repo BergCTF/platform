@@ -1,6 +1,37 @@
 <h1>Profile settings</h1>
 <p>Manage your account.</p>
-<div class="card">
+<div class="card mb-3">
+  <div class="card-body">
+    <h4>API Key</h4>
+    @if (apiKey) {
+      <p>Make sure you copy the api key, as it will not be shown again.</p>
+      <code>{{ apiKey }}</code>
+      <p></p>
+    }
+    @else {
+      <p>Current API Key: <code>{{ (dataService.currentPlayer | async)?.apiKeyPlaceholder ?? 'Not yet generated' }}</code></p>
+    }
+    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#resetApiKey"><i class="bi bi-trash text-info"></i>&nbsp;Reset API Key</button>
+    <div class="modal" tabindex="-1" id="resetApiKey">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Reset API Key</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>This action will ensure that the previous API Key will no longer work for new authentications.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-warning" (click)="resetAPIKey()" data-bs-dismiss="modal"><i class="bi bi-trash text-white"></i>Reset API Key</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card mb-3">
   <div class="card-body">
     <h4>Danger zone</h4>
     <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccount"><i class="bi bi-trash text-info"></i>&nbsp;Delete account</button>

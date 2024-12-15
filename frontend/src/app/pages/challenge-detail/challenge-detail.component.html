@@ -89,8 +89,8 @@
     <hr />
       @if (true && getServerTime() <= getEnd()) {
         <div class="input-group mb-3">
-          <input [disabled]="isFlagSubmitting" type="text" class="form-control" placeholder="{{ challenge.flagFormat }}" (keyup.enter)="submitFlag()" [(value)]="flagValue" aria-describedby="button-submit" />
-          <button [disabled]="isFlagSubmitting" class="btn btn-primary" type="button" id="button-submit" (click)="submitFlag()"><i class="bi bi-flag"></i> Submit Flag</button>
+          <input [disabled]="isFlagSubmitting" type="text" class="form-control" placeholder="{{ challenge.flagFormat }}" (keyup.enter)="submitFlag(flagInput.value)" #flagInput aria-describedby="button-submit" />
+          <button [disabled]="isFlagSubmitting" class="btn btn-primary" type="button" id="button-submit" (click)="submitFlag(flagInput.value)"><i class="bi bi-flag"></i> Submit Flag</button>
         </div>
       }
       @if (false) {

@@ -15,6 +15,7 @@ export class ApiService {
 
   httpOptions = {
     headers: new HttpHeaders({
+      'Accept': 'application/json',
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache, no-store, must-revalidate, post-check=0, pre-check=0',
       Pragma: 'no-cache',

@@ -49,7 +49,7 @@ public class WebSocketSolveNotificationHandler(WebSocketService webSocketService
         logger.LogDebug("Sending player created message to websocket clients.");
         var publicCustomAttributeNames = PlayerController.GetPublicCustomAttributeNames(ctfConfig);
         var player = PlayerController.ToModelPlayer(notification.DbPlayer, publicCustomAttributeNames);
-        await webSocketService.PushEvent("player-create", player);
+        await webSocketService.PushEvent("player", player);
     }
 
     public async Task Handle(PlayerUpdateNotification notification, CancellationToken cancellationToken)
@@ -57,18 +57,18 @@ public class WebSocketSolveNotificationHandler(WebSocketService webSocketService
         logger.LogDebug("Sending player updated message to websocket clients.");
         var publicCustomAttributeNames = PlayerController.GetPublicCustomAttributeNames(ctfConfig);
         var player = PlayerController.ToModelPlayer(notification.DbPlayer, publicCustomAttributeNames);
-        await webSocketService.PushEvent("player-update", player);
+        await webSocketService.PushEvent("player", player);
     }
 
     public async Task Handle(TeamCreateNotification notification, CancellationToken cancellationToken)
     {
         logger.LogDebug("Sending team created message to websocket clients.");
-        await webSocketService.PushEvent("team-create", notification);
+        await webSocketService.PushEvent("team", notification);
     }
 
     public async Task Handle(TeamUpdateNotification notification, CancellationToken cancellationToken)
     {
         logger.LogDebug("Sending team updated message to websocket clients.");
-        await webSocketService.PushEvent("team-update", notification);
+        await webSocketService.PushEvent("team", notification);
     }
 }

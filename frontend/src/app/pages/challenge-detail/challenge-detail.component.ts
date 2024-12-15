@@ -18,7 +18,6 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy {
   challenge = new Challenge();
   instance = new Instance();
   solves: Solve[] = [];
-  flagValue = '';
   isFlagSubmitting = false;
   private _metadata = new Metadata();
   private _solves: Solve[] = [];
@@ -52,9 +51,10 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy {
     this.updateSolvesSubscription?.unsubscribe();
   }
 
-  submitFlag() {
+  submitFlag(flag: string) {
     this.isFlagSubmitting = true;
-    this.dataService.addSolve(this._challengeName, this.flagValue).subscribe(_ => {
+    this.dataService.addSolve(this._challengeName, flag).subscribe(_ => {
+    }).add(() => {
       this.isFlagSubmitting = false;
     });
   }
