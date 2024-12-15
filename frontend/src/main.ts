@@ -28,7 +28,8 @@ bootstrapApplication(AppComponent, {
                 silentRenew: true,
                 useRefreshToken: true,
                 renewTimeBeforeTokenExpiresInSeconds: 30,
-                secureRoutes: [window.location.origin + '/api']
+                secureRoutes: [window.location.origin + '/api'],
+                ignoreNonceAfterRefresh: true
             },
         }),
         provideAnimations(),
