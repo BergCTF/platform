@@ -8,7 +8,7 @@ public interface IWebSocketService
 {
     Task WebSocketHandler(WebSocket webSocket, Guid? playerId);
     Task PushEvent<T>(string eventType, T message, Func<Guid, bool> filter);
-    Task PushEvent<T>(string eventType, T message);
+    Task PushEventAll<T>(string eventType, T message);
 }
 
 public class BergWebSocketConnection
@@ -67,8 +67,15 @@ public class WebSocketService(ILogger<ChallengeService> logger) : IWebSocketServ
         }
     }
 
-    public Task PushEvent<T>(string eventType, T message)
+    public async Task PushEventAll<T>(string eventType, T message)
     {
-        return PushEvent(eventType, message, _ => true);
+        var buffer = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { type = eventType, message }));
+        foreach (var conn in _connections)
+        {
+            if (conn.WebSocket.State == WebSocketState.Open)
+                await conn.WebSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
+            else if (conn.WebSocket.State == WebSocketState.CloseReceived || conn.WebSocket.State == WebSocketState.CloseSent)
+                _connections.Remove(conn);
+        }
     }
 }

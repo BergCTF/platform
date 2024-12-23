@@ -186,7 +186,7 @@ public partial class TeamController(
 
         var _ = mediator.Publish(new TeamCreateNotification
         {
-            ModelTeam = new Team
+            Team = new Team
             {
                 Id = dbTeam.Id,
                 Name = dbTeam.Name,
@@ -274,7 +274,7 @@ public partial class TeamController(
 
         var _ = mediator.Publish(new TeamUpdateNotification
         {
-            ModelTeam = new Team
+            Team = new Team
             {
                 Id = dbTeam.Id,
                 Name = dbTeam.Name,
@@ -329,7 +329,7 @@ public partial class TeamController(
 
         var _ = mediator.Publish(new TeamUpdateNotification
         {
-            ModelTeam = new Team
+            Team = new Team
             {
                 Id = previousTeamId,
                 Name = previousTeamName,

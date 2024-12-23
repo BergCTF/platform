@@ -5,5 +5,5 @@ namespace Berg.Api.Notifications;
 
 public class TeamCreateNotification : INotification
 {
-    public required Team ModelTeam { get; set; }
+    public required Team Team { get; set; }
 }

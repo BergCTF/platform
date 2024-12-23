@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Berg.Api.Configuration;
 using Berg.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
 
@@ -13,23 +14,13 @@ public class EventsController(WebSocketService webSocketService, CtfConfig ctfCo
 
     [HttpGet]
     [Route("/api/v2/events")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status101SwitchingProtocols)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult> OpenWebSocketConnection()
     {
-        if (!ctfConfig.AllowAnonymousAccess &&
-            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
-        {
-            return Unauthorized();
-        }
-
-        if (HttpContext.WebSockets.IsWebSocketRequest)
-        {
-            using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-            Guid? player = (User.Identity?.IsAuthenticated ?? false) ? Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!) : null;
-            await webSocketService.WebSocketHandler(webSocket, player);
-        }
-        else
+        if (!HttpContext.WebSockets.IsWebSocketRequest)
         {
             return BadRequest(new ProblemDetails
             {
@@ -37,6 +28,16 @@ public class EventsController(WebSocketService webSocketService, CtfConfig ctfCo
                 Detail = "The received request is not a web socket request"
             });
         }
-        return Ok();
+
+        if (!ctfConfig.AllowAnonymousAccess &&
+            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
+        {
+            return Unauthorized();
+        }
+
+        using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+        Guid? player = (User.Identity?.IsAuthenticated ?? false) ? Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!) : null;
+        await webSocketService.WebSocketHandler(webSocket, player);
+        return new EmptyResult();
     }
 }

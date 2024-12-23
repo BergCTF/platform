@@ -27,12 +27,17 @@ public class PageController(Kubernetes kubernetes, CtfConfig ctfConfig) : Contro
         var bergNamespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
         var pages = await pageClient.ListNamespacedAsync<CustomResourceList<V1Page>>(bergNamespace, cancellationToken);
         return pages.Items
-            .Select(p => new Page{
-                Title = p.Spec.Title,
-                Path = p.Spec.Path,
-                Index = p.Spec.Index,
-                Content = p.Spec.Content,
-            })
+            .Select(ToPage)
             .ToList();
+    }
+
+    internal static Page ToPage(V1Page p)
+    {
+        return new Page{
+            Title = p.Spec.Title,
+            Path = p.Spec.Path,
+            Index = p.Spec.Index,
+            Content = p.Spec.Content,
+        };
     }
 }

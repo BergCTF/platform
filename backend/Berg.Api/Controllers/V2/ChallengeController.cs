@@ -48,7 +48,7 @@ public class ChallengeController(IChallengeService challengeService, CtfConfig c
         return Ok(ToChallenge(challenge));
     }
 
-    private static Challenge ToChallenge(V1Challenge c)
+    internal static Challenge ToChallenge(V1Challenge c)
     {
         var challengeName = c.Name();
         return new Challenge

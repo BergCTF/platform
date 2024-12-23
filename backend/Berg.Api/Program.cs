@@ -31,6 +31,7 @@ builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 builder.Services.AddSingleton<WebSocketService>();
 builder.Services.AddSingleton<IChallengeService, ChallengeService>();
+builder.Services.AddHostedService<WatchService>();
 builder.Services.AddHostedService<RefreshService>();
 builder.Services.AddDbContext<BergDbContext>(options => {
     options.UseNpgsql(builder.Configuration.GetConnectionString("BergDbConnection"));

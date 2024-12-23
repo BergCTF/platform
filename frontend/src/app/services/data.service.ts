@@ -105,21 +105,21 @@ export class DataService {
         case "team":
           let team = message.message as Team;
           let teams = this._teams.getValue();
-          teams.filter(t => t.id != team.id)
+          teams = teams.filter(t => t.id != team.id)
           teams.push(team);
           this._teams.next(teams);
           break;
         case "player":
           let player = message.message as Player;
           let players = this._players.getValue();
-          players.filter(t => t.id != player.id)
+          players = players.filter(t => t.id != player.id)
           players.push(player);
           this._players.next(players);
           break;
         case "challenge":
           let challenge = message.message as Challenge;
           let challenges = this._challenges.getValue();
-          challenges.filter(t => t.name != challenge.name)
+          challenges = challenges.filter(t => t.name != challenge.name)
           challenges.push(challenge);
           this._challenges.next(challenges);
           break;
