@@ -33,6 +33,11 @@ public static class Constants
     public static class Policies
     {
         /// <summary>
+        /// The name of the anonymous policy
+        /// </summary>
+        public const string Anonymous = "anonymous";
+
+        /// <summary>
         /// The name of the player policy
         /// </summary>
         public const string Player = "player";
@@ -109,31 +114,57 @@ public static class Constants
         /// <summary>
         /// Authorization endpoint
         /// </summary>
-        public const string Authorization = "/api/authorize";
+        public const string BasePath = "/api/openid";
+
+        /// <summary>
+        /// Authorization endpoint
+        /// </summary>
+        public const string Authorization = $"{BasePath}/authorize";
 
         /// <summary>
         /// Token endpoint
         /// </summary>
-        public const string Token = "/api/token";
+        public const string Token = $"{BasePath}/token";
 
         /// <summary>
         /// Federation callback endpoint
         /// </summary>
-        public const string FederationCallback = "/api/federation-callback";
+        public const string FederationCallback = $"{BasePath}/federation-callback";
 
         /// <summary>
         /// Introspection endpoint
         /// </summary>
-        public const string Introspect = "/api/introspect";
+        public const string Introspect = $"{BasePath}/introspect";
 
         /// <summary>
         /// Logout endpoint
         /// </summary>
-        public const string Logout = "/api/logout";
+        public const string Logout = $"{BasePath}/logout";
 
         /// <summary>
         /// Userinfo endpoint
         /// </summary>
-        public const string UserInfo = "/api/user-info";
+        public const string UserInfo = $"{BasePath}/user-info";
+    }
+
+    /// <summary>
+    /// LifeTime constants
+    /// </summary>
+    public static class Lifetimes
+    {
+        /// <summary>
+        /// The lifetime of the access token
+        /// </summary>
+        public static readonly TimeSpan AccessTokenLifetime = TimeSpan.FromMinutes(30);
+
+        /// <summary>
+        /// The lifetime of the refresh token
+        /// </summary>
+        public static readonly TimeSpan RefreshTokenLifetime = TimeSpan.FromDays(1);
+
+        /// <summary>
+        /// The lifetime of the federated login cookie
+        /// </summary>
+        public static readonly TimeSpan FederatedLoginCacheLifetime = TimeSpan.FromDays(5);
     }
 }

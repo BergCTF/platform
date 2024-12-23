@@ -4,41 +4,30 @@ using Berg.Api.Services;
 
 namespace Berg.Api.BackgroundServices;
 
-public class RefreshService : BackgroundService
+public class RefreshService(
+    ILogger<RefreshService> logger,
+    IChallengeService challengeService,
+    IServiceScopeFactory serviceScopeFactory,
+    IWebSocketService webSocketService,
+    InfraConfig infraConfig) : BackgroundService
 {
-    private readonly ILogger<RefreshService> _logger;
-    private readonly IChallengeService _challengeService;
-    private readonly IServiceScopeFactory _serviceScopeFactory;
-    private readonly InfraConfig _infraConfig;
-
-    public RefreshService(
-        ILogger<RefreshService> logger,
-        IChallengeService challengeService,
-        IServiceScopeFactory serviceScopeFactory,
-        InfraConfig infraConfig)
-    {
-        _logger = logger;
-        _serviceScopeFactory = serviceScopeFactory;
-        _challengeService = challengeService;
-        _infraConfig = infraConfig;
-    }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("RefreshService started");
+        logger.LogInformation("RefreshService started");
         while (!stoppingToken.IsCancellationRequested)
         {
-            using var scope = _serviceScopeFactory.CreateScope();
-            using var activity = Constants.BergActivitySource.StartActivity("RefreshService");
+            using var scope = serviceScopeFactory.CreateScope();
+            using var activity = Constants.BergActivitySource.StartActivity("Refresh");
             await using (var dbContext = scope.ServiceProvider.GetRequiredService<BergDbContext>())
             {
-                _challengeService.RefreshChallenges(dbContext);
+                challengeService.RefreshChallenges(dbContext);
             }
-            await _challengeService.CheckChallengeInstanceTimeout(stoppingToken);
+            await challengeService.CheckChallengeInstanceTimeout(stoppingToken);
+            await webSocketService.DowngradeExpiredConnections(stoppingToken);
             activity?.Stop();
 
-            await Task.Delay(_infraConfig.RefreshInterval, stoppingToken);
+            await Task.Delay(infraConfig.RefreshInterval, stoppingToken);
         }
-        _logger.LogInformation("RefreshService stopped");
+        logger.LogInformation("RefreshService stopped");
     }
 }

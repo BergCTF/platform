@@ -19,6 +19,7 @@ bootstrapApplication(AppComponent, {
         provideHttpClient(withInterceptors([authInterceptor()])),
         provideAuth({
             config: {
+                configId: 'berg',
                 authority: window.location.origin,
                 redirectUrl: window.location.origin + '/frontend/oidc-callback',
                 postLogoutRedirectUri: window.location.origin,
@@ -27,9 +28,9 @@ bootstrapApplication(AppComponent, {
                 responseType: 'code',
                 silentRenew: true,
                 useRefreshToken: true,
+                ignoreNonceAfterRefresh: true,
                 renewTimeBeforeTokenExpiresInSeconds: 30,
-                secureRoutes: [window.location.origin + '/api'],
-                ignoreNonceAfterRefresh: true
+                secureRoutes: [window.location.origin + '/api']
             },
         }),
         provideAnimations(),

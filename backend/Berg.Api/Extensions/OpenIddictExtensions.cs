@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using OpenIddict.Abstractions;
 using OpenIddict.Client;
+using OpenIddict.Validation;
+using OpenIddict.Validation.AspNetCore;
 using Quartz;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 using static OpenIddict.Client.OpenIddictClientEvents;
@@ -56,6 +58,33 @@ public sealed class InternalBackChannelReplacement(IConfiguration configuration)
     }
 }
 
+public sealed class PatchWebSocketTokenValidationParameters : IOpenIddictValidationHandler<OpenIddictValidationEvents.ValidateTokenContext>
+{
+    public static OpenIddictValidationHandlerDescriptor Descriptor { get; }
+        = OpenIddictValidationHandlerDescriptor.CreateBuilder<OpenIddictValidationEvents.ValidateTokenContext>()
+            .UseSingletonHandler<PatchWebSocketTokenValidationParameters>()
+            .SetOrder(int.MinValue + 100_001)
+            .SetType(OpenIddictValidationHandlerType.BuiltIn)
+            .Build();
+
+    public ValueTask HandleAsync(OpenIddictValidationEvents.ValidateTokenContext context)
+    {
+        // Hack because OpenIddict searches for the issuer with a wss:// prefix in websocket requests.
+        context.TokenValidationParameters.ValidIssuers = context.TokenValidationParameters.ValidIssuers.Select(issuer => {
+            if (issuer.StartsWith("wss://", StringComparison.InvariantCultureIgnoreCase))
+            {
+                return "https" + issuer[3..];
+            }
+            else if (issuer.StartsWith("ws://", StringComparison.InvariantCultureIgnoreCase))
+            {
+                return "http" + issuer[2..];
+            }
+            return issuer;
+        }).ToList();
+        return default;
+    }
+}
+
 public static class OpenIddictBuilder
 {
     public static void AddOpenIddict(this WebApplicationBuilder builder, Kubernetes kubernetes, DiscordConfig discordConfig, GenericOpenIdConfig genericOpenIdConfig)
@@ -77,7 +106,9 @@ public static class OpenIddictBuilder
         builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options => {
                 options.Cookie.Name = "berg-idp-session";
-                options.ExpireTimeSpan = TimeSpan.FromDays(14);
+                options.Cookie.Path = Constants.Endpoints.BasePath;
+                options.SlidingExpiration = true;
+                options.ExpireTimeSpan = Constants.Lifetimes.FederatedLoginCacheLifetime;
 
                 // Hacky workaround due to https://github.com/dotnet/aspnetcore/issues/9039
                 options.Events = new CookieAuthenticationEvents()
@@ -95,18 +126,21 @@ public static class OpenIddictBuilder
                 };
             });
         builder.Services.AddAuthorization(options => {
+            options.AddPolicy(Constants.Policies.Anonymous, policy =>
+                policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
+                    .RequireAssertion(ctx => true));
             options.AddPolicy(Constants.Policies.Player, policy =>
-                policy
-                .RequireAuthenticatedUser()
-                .RequireClaim(Claims.Role, [Constants.Roles.Player, Constants.Roles.Author, Constants.Roles.Admin]));
+                policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
+                    .RequireAuthenticatedUser()
+                    .RequireClaim(Claims.Role, [Constants.Roles.Player, Constants.Roles.Author, Constants.Roles.Admin]));
             options.AddPolicy(Constants.Policies.Author, policy =>
-                policy
-                .RequireAuthenticatedUser()
-                .RequireClaim(Claims.Role, [Constants.Roles.Author, Constants.Roles.Admin]));
+                policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
+                    .RequireAuthenticatedUser()
+                    .RequireClaim(Claims.Role, [Constants.Roles.Author, Constants.Roles.Admin]));
             options.AddPolicy(Constants.Policies.Admin, policy =>
-                policy
-                .RequireAuthenticatedUser()
-                .RequireClaim(Claims.Role, [Constants.Roles.Admin]));
+                policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
+                    .RequireAuthenticatedUser()
+                    .RequireClaim(Claims.Role, [Constants.Roles.Admin]));
         });
         builder.Services.AddOpenIddict()
             .AddCore(options =>
@@ -197,6 +231,9 @@ public static class OpenIddictBuilder
                 options.SetLogoutEndpointUris(Constants.Endpoints.Logout);
                 options.SetUserinfoEndpointUris(Constants.Endpoints.UserInfo);
 
+                options.SetAccessTokenLifetime(Constants.Lifetimes.AccessTokenLifetime);
+                options.SetRefreshTokenLifetime(Constants.Lifetimes.RefreshTokenLifetime);
+
                 options.AllowImplicitFlow();
                 options.AllowPasswordFlow();
                 options.AllowRefreshTokenFlow();
@@ -215,7 +252,10 @@ public static class OpenIddictBuilder
             {
                 options.EnableTokenEntryValidation();
                 options.UseLocalServer();
-                options.UseAspNetCore();
+                options.UseAspNetCore(options => {
+                    options.DisableAccessTokenExtractionFromBodyForm();
+                });
+                options.AddEventHandler(PatchWebSocketTokenValidationParameters.Descriptor);
                 options.AddAudiences(Constants.ClientIds.Berg);
             });
     }

@@ -29,7 +29,7 @@ var kubernetes = new Kubernetes(KubernetesClientConfiguration.BuildDefaultConfig
 builder.Services.AddSingleton(kubernetes);
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
-builder.Services.AddSingleton<WebSocketService>();
+builder.Services.AddSingleton<IWebSocketService, WebSocketService>();
 builder.Services.AddSingleton<IChallengeService, ChallengeService>();
 builder.Services.AddHostedService<WatchService>();
 builder.Services.AddHostedService<RefreshService>();

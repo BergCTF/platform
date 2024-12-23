@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
-import { BehaviorSubject, Observable, filter, map, mergeMap, share, tap } from 'rxjs';
+import { BehaviorSubject, Observable, filter, map, mergeMap, retry, share, tap } from 'rxjs';
 import { Challenge, CurrentPlayer, Instance, Metadata, Page, Player, Solve, Team, WebSocketMessage } from '../model';
 import { LoginResponse, OidcSecurityService } from 'angular-auth-oidc-client';
 
@@ -19,6 +19,7 @@ export class DataService {
   private _pages = new BehaviorSubject<Page[]>([]);
   private _metadata= new BehaviorSubject<Metadata>(new Metadata());
   private _instance = new BehaviorSubject<Instance>(new Instance());
+  private _currentAccessToken = '';
 
   public readonly challenges: Observable<Challenge[]> = this._challenges.asObservable();
   public readonly players: Observable<Player[]> = this._players.asObservable();
@@ -32,7 +33,9 @@ export class DataService {
   public isAuthenticated = false;
   public currentPlayerId = '00000000-0000-0000-0000-000000000000';
 
-  constructor(private apiService: ApiService, private oidcSecurityService: OidcSecurityService) {
+  constructor(
+    private apiService: ApiService,
+    private oidcSecurityService: OidcSecurityService) {
     this.loginEvents = this.oidcSecurityService.checkAuth().pipe(share());
     this.loginEvents.subscribe((loginResponse: LoginResponse) => {
         const { isAuthenticated, userData, accessToken, idToken, configId } =
@@ -41,8 +44,10 @@ export class DataService {
         if(isAuthenticated) {
           this.currentPlayerId = userData["sub"];
           this.refreshCurrentPlayer();
+          this._currentAccessToken = accessToken;
         } else {
           this.currentPlayerId = '00000000-0000-0000-0000-000000000000';
+          this._currentAccessToken = '';
         }
 
         this.isAuthenticated = isAuthenticated;
@@ -50,11 +55,9 @@ export class DataService {
           this.oidcSecurityService.authorize();
         }
 
-        this.refreshWebSocket();
         this.refreshAllData();
+        this.refreshWebSocket();
     });
-
-    this.refreshWebSocket();
 
     setInterval(() => {
       if (!this.isAuthenticated)
@@ -91,9 +94,15 @@ export class DataService {
 
   refreshWebSocket() {
     this._webSocket?.complete();
-    this._webSocket = webSocket<WebSocketMessage<any>>('wss://' + window.location.host + '/api/v2/events');
-    this._webSocket.subscribe(message => {
-      console.debug(message);
+    let protocol = window.location.protocol == 'https:' ? 'wss' : 'ws';
+    let query = this._currentAccessToken == '' ? '' : ('?access_token=' + encodeURIComponent(this._currentAccessToken));
+    this._webSocket = webSocket<WebSocketMessage<any>>({
+      url: protocol + '://' + window.location.host + '/api/v2/events' + query,
+      openObserver: {
+        next: () => {this.refreshAllData()}
+      }
+    });
+    this._webSocket.pipe(retry()).subscribe(message => {
       switch (message.type) {
         case "solve":
           let solve = message.message as Solve;
@@ -122,6 +131,18 @@ export class DataService {
           challenges = challenges.filter(t => t.name != challenge.name)
           challenges.push(challenge);
           this._challenges.next(challenges);
+          break;
+        case "current-player":
+          let playerId = message.message as string | null;
+          var currentPlayerId: string | null = this.currentPlayerId;
+          if (currentPlayerId == '00000000-0000-0000-0000-000000000000')
+            currentPlayerId = null;
+          if (playerId != currentPlayerId) {
+            this.oidcSecurityService.getAccessToken().subscribe(accessToken => {
+              this._currentAccessToken = accessToken;
+              this.refreshWebSocket();
+            });
+          }
           break;
         default:
           console.warn("Unknown websocket message type: " + message.type);

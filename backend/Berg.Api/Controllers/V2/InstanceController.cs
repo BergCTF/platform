@@ -3,7 +3,6 @@ using Berg.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
-using OpenIddict.Validation.AspNetCore;
 using System.Security.Claims;
 using System.Text.Json.Serialization;
 
@@ -22,8 +21,8 @@ public class InstanceController(IChallengeService challengeService) : Controller
     }
 
     [HttpGet]
-    [Authorize(Policy = Constants.Policies.Admin, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/instances")]
+    [Authorize(Policy = Constants.Policies.Admin)]
     [ProducesResponseType(typeof(List<Instance>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<Instance>>> GetAllChallengeInstances(CancellationToken cancel)
     {
@@ -31,8 +30,8 @@ public class InstanceController(IChallengeService challengeService) : Controller
     }
 
     [HttpGet]
-    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/instances/current")]
+    [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(Instance), StatusCodes.Status200OK)]
     public async Task<ActionResult<Instance>> GetChallengeInstance(CancellationToken cancel)
     {
@@ -41,8 +40,8 @@ public class InstanceController(IChallengeService challengeService) : Controller
     }
 
     [HttpPost]
-    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/instances/current")]
+    [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(Instance), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Instance>> StartChallengeInstance([FromBody] InstanceStartRequest startRequest,
@@ -60,8 +59,8 @@ public class InstanceController(IChallengeService challengeService) : Controller
     }
 
     [HttpDelete]
-    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/instances/current")]
+    [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(Instance), StatusCodes.Status200OK)]
     public async Task<ActionResult<Instance>> StopChallengeInstance(CancellationToken cancel)
     {

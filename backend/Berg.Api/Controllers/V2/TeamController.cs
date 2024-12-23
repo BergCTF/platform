@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using Team = Berg.Api.Models.V2.Team;
 using CurrentTeam = Berg.Api.Models.V2.CurrentTeam;
-using OpenIddict.Validation.AspNetCore;
 using MediatR;
 using Berg.Api.Notifications;
 
@@ -27,6 +26,7 @@ public partial class TeamController(
 
     [HttpGet]
     [Route("/api/v2/teams")]
+    [Authorize(Policy = Constants.Policies.Anonymous)]
     [ProducesResponseType(typeof(List<Team>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<Team>>> ListTeams(CancellationToken cancel)
@@ -46,6 +46,7 @@ public partial class TeamController(
 
     [HttpGet]
     [Route("/api/v2/teams/{id:guid}")]
+    [Authorize(Policy = Constants.Policies.Anonymous)]
     [ProducesResponseType(typeof(List<Team>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<Team>>> GetTeam([FromRoute] Guid id, CancellationToken cancel)
@@ -67,8 +68,8 @@ public partial class TeamController(
     }
 
     [HttpGet]
-    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/teams/current")]
+    [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CurrentTeam>> GetCurrentTeam(CancellationToken cancel)
@@ -116,8 +117,8 @@ public partial class TeamController(
     private static partial Regex TeamNameRegex();
 
     [HttpPost]
-    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/teams/create")]
+    [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CurrentTeam>> CreateTeam([FromBody] TeamCreateRequest teamCreateRequest, CancellationToken cancel)
@@ -210,8 +211,8 @@ public partial class TeamController(
     }
 
     [HttpPost]
-    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/teams/join")]
+    [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CurrentTeam>> JoinTeam([FromBody] JoinTeamRequest req, CancellationToken cancel)
@@ -292,8 +293,8 @@ public partial class TeamController(
     }
 
     [HttpDelete]
-    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/teams/current")]
+    [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> LeaveCurrentTeam(CancellationToken cancel)

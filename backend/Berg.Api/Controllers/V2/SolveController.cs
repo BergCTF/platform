@@ -27,6 +27,7 @@ public class SolveController(
 
     [HttpGet]
     [Route("/api/v2/solves")]
+    [Authorize(Policy = Constants.Policies.Anonymous)]
     [ProducesResponseType(typeof(List<Solve>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public ActionResult<List<Solve>> ListSolves()
@@ -88,11 +89,11 @@ public class SolveController(
     }
 
     [HttpPost]
-    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Route("/api/v2/solves")]
+    [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(Solve), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
-    [Route("/api/v2/solves")]
     public ActionResult<Solve> AddSolve([FromBody] AddSolveRequest addSolveRequest)
     {
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);

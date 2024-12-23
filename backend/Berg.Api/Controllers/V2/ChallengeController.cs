@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Challenge = Berg.Api.Models.V2.Challenge;
 using Attachment = Berg.Api.Models.V2.Attachment;
 using Berg.Api.Configuration;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Berg.Api.Controllers.V2;
 
@@ -14,6 +15,7 @@ public class ChallengeController(IChallengeService challengeService, CtfConfig c
 {
     [HttpGet]
     [Route("/api/v2/challenges")]
+    [Authorize(Policy = Constants.Policies.Anonymous)]
     [ProducesResponseType(typeof(List<Challenge>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public ActionResult<List<Challenge>> ListChallenges()

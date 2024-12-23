@@ -22,6 +22,7 @@ public class PlayerController(CtfConfig ctfConfig,
 {
     [HttpGet]
     [Route("/api/v2/players")]
+    [Authorize(Policy = Constants.Policies.Anonymous)]
     [ProducesResponseType(typeof(List<Player>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<Player>>> ListPlayers(CancellationToken cancel)
@@ -40,6 +41,7 @@ public class PlayerController(CtfConfig ctfConfig,
 
     [HttpGet]
     [Route("/api/v2/players/{id:guid}")]
+    [Authorize(Policy = Constants.Policies.Anonymous)]
     [ProducesResponseType(typeof(Player), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -60,8 +62,8 @@ public class PlayerController(CtfConfig ctfConfig,
     }
 
     [HttpGet]
-    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/players/current")]
+    [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(CurrentPlayer), StatusCodes.Status200OK)]
     public async Task<ActionResult<CurrentPlayer>> GetCurrentPlayer(CancellationToken cancel)
     {
@@ -87,8 +89,8 @@ public class PlayerController(CtfConfig ctfConfig,
     }
 
     [HttpPatch]
-    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/players/current")]
+    [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public ActionResult UpdateCurrentPlayerAttributes(AttributesUpdateRequest attrUpdate)
     {
@@ -135,8 +137,8 @@ public class PlayerController(CtfConfig ctfConfig,
 
 
     [HttpDelete]
-    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/players/current")]
+    [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public ActionResult DeleteCurrentPlayer()
     {
@@ -159,8 +161,8 @@ public class PlayerController(CtfConfig ctfConfig,
     }
 
     [HttpDelete]
-    [Authorize(Policy = Constants.Policies.Player, AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Route("/api/v2/players/current/api-key")]
+    [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public ActionResult<string> ResetApiKey()

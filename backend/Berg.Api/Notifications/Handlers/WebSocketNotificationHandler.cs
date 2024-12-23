@@ -6,7 +6,8 @@ using MediatR;
 
 namespace Berg.Api.Notifications.Handlers;
 
-public class WebSocketNotificationHandler(WebSocketService webSocketService,
+public class WebSocketNotificationHandler(
+    IWebSocketService webSocketService,
     CtfConfig ctfConfig,
     BergDbContext dbContext,
     ILogger<WebSocketNotificationHandler> logger) :

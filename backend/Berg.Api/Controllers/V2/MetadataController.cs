@@ -1,5 +1,6 @@
 using Berg.Api.Configuration;
 using Berg.Api.Models.V2;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Berg.Api.Controllers.V2;
@@ -11,6 +12,7 @@ public class MetadataController(CtfConfig ctfConfig) : ControllerBase
 
     [HttpGet]
     [Route("/api/v2/metadata")]
+    [Authorize(Policy = Constants.Policies.Anonymous)]
     public Metadata GetMetadata()
     {
         return new Metadata
