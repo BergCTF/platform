@@ -126,6 +126,14 @@ export class DataService {
           challenges.push(challenge);
           this._challenges.next(challenges);
           break;
+        case "page":
+          let page = message.message as Page;
+          let pages = this._pages.getValue();
+          pages = pages.filter(p => p.path != page.path);
+          pages.push(page);
+          pages.sort((a,b) => a.index - b.index);
+          this._pages.next(pages);
+          break;
         case "instance":
           let instance = message.message as Instance;
           this._instance.next(instance);
