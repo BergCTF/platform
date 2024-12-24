@@ -2,7 +2,6 @@ using Berg.Api.CustomResources.Berg;
 using Berg.Api.Db;
 using k8s.Models;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Berg.Api.Notifications.Handlers;
 
@@ -20,15 +19,16 @@ public class ChallengeNotificationHandler(BergDbContext bergDbContext) :
         await HandleChallengeChange(notification.Challenge, cancellationToken);
     }
 
-    public async Task HandleChallengeChange(V1Challenge challenge, CancellationToken cancellationToken)
+    public Task HandleChallengeChange(V1Challenge challenge, CancellationToken cancellationToken)
     {
         using var activity = Constants.BergActivitySource.StartActivity();
 
         var challengeName = challenge.Name();
-        var chall = bergDbContext.Challenges.SingleOrDefaultAsync(c => c.Name == challengeName, cancellationToken);
+        var chall = bergDbContext.Challenges.SingleOrDefault(c => c.Name == challengeName);
         if(chall == null) {
-            bergDbContext.Challenges.Add(new Db.Challenge { Name = challengeName });
-            await bergDbContext.SaveChangesAsync(cancellationToken);
+            bergDbContext.Challenges.Add(new Challenge { Name = challengeName });
+            bergDbContext.SaveChanges();
         }
+        return Task.CompletedTask;
     }
 }

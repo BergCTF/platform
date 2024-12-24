@@ -19,17 +19,18 @@ public class WatchService(
         logger.LogInformation("WatchService started");
 
         await Task.WhenAll([
-            WatchConfig(cancellationToken),
-            WatchChallenges(cancellationToken),
-            WatchPages(cancellationToken),
-            WatchInstanceNamespaces(cancellationToken),
-            WatchInstancePods(cancellationToken)
+            WithRetry(() => WatchConfig(cancellationToken), cancellationToken),
+            WithRetry(() => WatchChallenges(cancellationToken), cancellationToken),
+            WithRetry(() => WatchPages(cancellationToken), cancellationToken),
+            WithRetry(() => WatchInstanceNamespaces(cancellationToken), cancellationToken),
+            WithRetry(() => WatchInstancePods(cancellationToken), cancellationToken),
         ]);
 
         logger.LogInformation("WatchService stopped");
     }
 
     private async Task WatchConfig(CancellationToken cancellationToken) {
+        logger.LogInformation("WatchConfig started");
         var bergNamespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
         using var configMapListResponse = kubernetes.CoreV1.ListNamespacedConfigMapWithHttpMessagesAsync(bergNamespace, watch: true, cancellationToken: cancellationToken);
         await foreach (var (type, item) in configMapListResponse.WatchAsync<V1ConfigMap, V1ConfigMapList>(cancellationToken: cancellationToken))
@@ -40,6 +41,7 @@ public class WatchService(
     }
 
     private async Task WatchChallenges(CancellationToken cancellationToken) {
+        logger.LogInformation("WatchChallenges started");
         var bergNamespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
         var challenge = new V1Challenge();
         using var challengeListResponse = kubernetes.CustomObjects.ListNamespacedCustomObjectWithHttpMessagesAsync<CustomResourceList<V1Challenge>>(challenge.Group, challenge.Version, bergNamespace, challenge.Plural, watch: true, cancellationToken: cancellationToken);
@@ -62,6 +64,7 @@ public class WatchService(
     }
 
     private async Task WatchPages(CancellationToken cancellationToken) {
+        logger.LogInformation("WatchPages started");
         var bergNamespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
         var page = new V1Page();
         using var pageListResponse = kubernetes.CustomObjects.ListNamespacedCustomObjectWithHttpMessagesAsync<CustomResourceList<V1Page>>(page.Group, page.Version, bergNamespace, page.Plural, watch: true, cancellationToken: cancellationToken);
@@ -84,6 +87,7 @@ public class WatchService(
     }
 
     private async Task WatchInstanceNamespaces(CancellationToken cancellationToken) {
+        logger.LogInformation("WatchInstanceNamespaces started");
         using var nsListResponse = kubernetes.CoreV1.ListNamespaceWithHttpMessagesAsync(watch: true, labelSelector: ChallengeService.ToLabelSelector(ChallengeService.ChallengeNamespaceLabelSelector), cancellationToken: cancellationToken);
         await foreach (var (type, item) in nsListResponse.WatchAsync<V1Namespace, V1NamespaceList>(cancellationToken: cancellationToken))
         {
@@ -100,6 +104,7 @@ public class WatchService(
     }
 
     private async Task WatchInstancePods(CancellationToken cancellationToken) {
+        logger.LogInformation("WatchInstances started");
         var labelSelector = ChallengeService.ChallengePodLabelSelector;
         using var podListResponse = kubernetes.CoreV1.ListPodForAllNamespacesWithHttpMessagesAsync(watch: true, labelSelector: ChallengeService.ToLabelSelector(labelSelector), cancellationToken: cancellationToken);
         await foreach (var (type, item) in podListResponse.WatchAsync<V1Pod, V1PodList>(cancellationToken: cancellationToken))
@@ -116,5 +121,19 @@ public class WatchService(
             }, cancellationToken);
         }
         logger.LogInformation("WatchInstances stopped");
+    }
+
+    private async Task WithRetry(Func<Task> action, CancellationToken cancellationToken) {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                await action();
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "WithRetry swallowed an exception");
+            }
+        }
     }
 }

@@ -81,8 +81,8 @@ public class ChallengeService(
     {
         using var activity = Constants.BergActivitySource.StartActivity();
 
-        var challengeList = _challengeClient
-            .ListNamespacedAsync<CustomResourceList<V1Challenge>>(_bergNamespace).Result;
+        var challengeList = await _challengeClient
+            .ListNamespacedAsync<CustomResourceList<V1Challenge>>(_bergNamespace, cancel);
 
         challengeCache = challengeList.Items
             .ToDictionary(c => c.Name(), c => c);
