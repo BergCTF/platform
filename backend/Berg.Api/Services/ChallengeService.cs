@@ -1,14 +1,17 @@
+using System.Collections.Immutable;
 using System.Text;
 using Berg.Api.Configuration;
 using Berg.Api.CustomResources;
 using Berg.Api.CustomResources.Berg;
 using Berg.Api.CustomResources.Cilium;
 using Berg.Api.CustomResources.GatewayApi;
-using Berg.Api.Db;
 using Berg.Api.Models.V2;
+using Berg.Api.Notifications;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Berg.Api.Services;
 
@@ -16,80 +19,52 @@ public interface IChallengeService
 {
     IEnumerable<V1Challenge> GetChallenges();
     V1Challenge? GetChallengeConfig(string challengeName);
-    void RefreshChallenges(BergDbContext dbContext);
     Task CheckChallengeInstanceTimeout(CancellationToken cancel);
+    Task CheckNewlyUnhiddenChallenges(TimeSpan window, CancellationToken cancel);
     Task<Instance> GetChallengeInstance(Guid playerId, CancellationToken cancel);
     Task<List<Instance>> GetChallengeInstances(CancellationToken cancel);
     Task<Instance> StartChallengeInstance(Guid playerId, string challenge, CancellationToken cancel);
     Task<Instance> StopChallengeInstance(Guid playerId, CancellationToken cancel);
 }
 
-public class ChallengeService : IChallengeService
+public class ChallengeService(
+    ILogger<ChallengeService> logger,
+    Kubernetes kubernetes,
+    CtfConfig ctfConfig,
+    InfraConfig infraConfig,
+    IMediator mediator) :
+    IChallengeService
 {
-    private const string ManagedByLabel      = "app.kubernetes.io/managed-by";
-    private const string ComponentLabel      = "app.kubernetes.io/component";
-    private const string PlayerIdLabel       = "berg.norelect.ch/player-id";
-    private const string ChallengeLabel      = "berg.norelect.ch/challenge";
-    private const string ContainerLabel      = "berg.norelect.ch/container";
-    private const string HostnameLabel       = "berg.norelect.ch/hostname";
-    private readonly ILogger<ChallengeService> _logger;
-    private readonly Kubernetes _kubernetes;
-    private readonly GenericClient _challengeClient;
-    private readonly GenericClient _httpRouteClient;
-    private readonly GenericClient _tlsRouteClient;
-    private readonly GenericClient _ciliumNetworkPolicyClient;
-    private readonly string _bergNamespace;
-    private readonly CtfConfig _ctfConfig;
-    private readonly InfraConfig _infraConfig;
+    public const string ManagedByLabel      = "app.kubernetes.io/managed-by";
+    public const string ComponentLabel      = "app.kubernetes.io/component";
+    public const string PlayerIdLabel       = "berg.norelect.ch/player-id";
+    public const string ChallengeLabel      = "berg.norelect.ch/challenge";
+    public const string ContainerLabel      = "berg.norelect.ch/container";
+    public const string HostnameLabel       = "berg.norelect.ch/hostname";
 
-    private readonly object _refreshLock = new();
-    private Dictionary<string, V1Challenge> _challenges = new();
-
-    public ChallengeService(
-        ILogger<ChallengeService> logger,
-        Kubernetes kubernetes,
-        CtfConfig ctfConfig,
-        InfraConfig infraConfig)
+    public static readonly ImmutableDictionary<string, string> ChallengeNamespaceLabelSelector = new Dictionary<string, string>
     {
-        _logger = logger;
-        _kubernetes = kubernetes;
-        _challengeClient = CustomResource.CreateGenericClient<V1Challenge>(kubernetes, false);
-        _httpRouteClient = CustomResource.CreateGenericClient<V1HTTPRoute>(kubernetes, false);
-        _tlsRouteClient = CustomResource.CreateGenericClient<V1Alpha2TLSRoute>(kubernetes, false);
-        _ciliumNetworkPolicyClient = CustomResource.CreateGenericClient<V2CiliumNetworkPolicy>(kubernetes, false);
-        _ctfConfig = ctfConfig;
-        _infraConfig = infraConfig;
-        _bergNamespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
-    }
+        { ManagedByLabel, "berg" },
+        { ComponentLabel, "challenge" },
+    }.ToImmutableDictionary();
 
-    public void RefreshChallenges(BergDbContext dbContext)
+    public static readonly ImmutableDictionary<string, string> ChallengePodLabelSelector = new Dictionary<string, string>
     {
-        using var activity = Constants.BergActivitySource.StartActivity();
-        lock (_refreshLock)
-        {
-            var challengeList = _challengeClient
-                .ListNamespacedAsync<CustomResourceList<V1Challenge>>(_bergNamespace).Result;
+        { ManagedByLabel, "berg" },
+        { ComponentLabel, "challenge-pod" },
+    }.ToImmutableDictionary();
 
-            _challenges = challengeList.Items
-                .ToDictionary(c => c.Name(), c => c);
-
-            var dbChallenges = dbContext.Challenges.ToList();
-            var missingChallengeNames = _challenges.Values.Select(c => c.Name()).ToHashSet();
-            missingChallengeNames.ExceptWith(dbChallenges.Select(c => c.Name));
-
-            foreach (var missingChallengeName in missingChallengeNames)
-            {
-                dbContext.Challenges.Add(new Db.Challenge { Name = missingChallengeName });
-            }
-
-            dbContext.SaveChanges();
-        }
-    }
+    private readonly GenericClient _challengeClient = CustomResource.CreateGenericClient<V1Challenge>(kubernetes, false);
+    private readonly GenericClient _httpRouteClient = CustomResource.CreateGenericClient<V1HTTPRoute>(kubernetes, false);
+    private readonly GenericClient _tlsRouteClient = CustomResource.CreateGenericClient<V1Alpha2TLSRoute>(kubernetes, false);
+    private readonly GenericClient _ciliumNetworkPolicyClient = CustomResource.CreateGenericClient<V2CiliumNetworkPolicy>(kubernetes, false);
+    private readonly string _bergNamespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
+    private Dictionary<string, V1Challenge> challengeCache = [];
 
     public IEnumerable<V1Challenge> GetChallenges()
     {
         var now = DateTime.UtcNow;
-        return _challenges.Values
+        return challengeCache.Values
             .Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= now)
             .ToList();
     }
@@ -97,40 +72,49 @@ public class ChallengeService : IChallengeService
     public V1Challenge? GetChallengeConfig(string challengeName)
     {
         var now = DateTime.UtcNow;
-        return _challenges.Values
+        return challengeCache.Values
             .Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= now)
             .FirstOrDefault(c => c.Name() == challengeName);
     }
 
+    public async Task CheckNewlyUnhiddenChallenges(TimeSpan window, CancellationToken cancel)
+    {
+        using var activity = Constants.BergActivitySource.StartActivity();
+
+        var challengeList = _challengeClient
+            .ListNamespacedAsync<CustomResourceList<V1Challenge>>(_bergNamespace).Result;
+
+        challengeCache = challengeList.Items
+            .ToDictionary(c => c.Name(), c => c);
+
+        var now = DateTime.UtcNow;
+        var pastWindow = now.Subtract(window);
+        foreach (var unhiddenChallenge in challengeCache.Values
+            .Where(c => c.Spec.HideUntil != null && c.Spec.HideUntil.Value <= now && pastWindow <= c.Spec.HideUntil.Value))
+        {
+            await mediator.Publish(new ChallengeUnhideNotification
+            {
+                Challenge = unhiddenChallenge,
+            }, cancel);
+        }
+    }
     public async Task CheckChallengeInstanceTimeout(CancellationToken cancel)
     {
         using var activity = Constants.BergActivitySource.StartActivity();
-        var labelSelector = new Dictionary<string, string>
-        {
-            { ManagedByLabel, "berg" },
-            { ComponentLabel, "challenge" },
-        };
-        var nsList = await _kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(labelSelector),
+        var nsList = await kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(ChallengeNamespaceLabelSelector),
             cancellationToken: cancel);
 
-        var maxAge = DateTime.UtcNow.Subtract(_infraConfig.ChallengeInstanceTimeout);
+        var maxAge = DateTime.UtcNow.Subtract(infraConfig.ChallengeInstanceTimeout);
         foreach (var ns in nsList.Items.Where(n => n.Metadata.CreationTimestamp < maxAge))
         {
-            _logger.LogInformation("Removing {} because it reached the instance timeout", ns.Name());
-            await _kubernetes.DeleteNamespaceAsync(ns.Name(), cancellationToken: cancel);
+            logger.LogInformation("Removing {} because it reached the instance timeout", ns.Name());
+            await kubernetes.DeleteNamespaceAsync(ns.Name(), cancellationToken: cancel);
         }
     }
-
     public async Task<List<Instance>> GetChallengeInstances(CancellationToken cancel)
     {
         using var activity = Constants.BergActivitySource.StartActivity();
-
-        var labelSelector = new Dictionary<string, string>
-        {
-            { ManagedByLabel, "berg" },
-            { ComponentLabel, "challenge" },
-        };
-        var nsList = await _kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(labelSelector),
+        var nsList = await kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(ChallengeNamespaceLabelSelector),
             cancellationToken: cancel);
 
         var playersWithActiveInstances = nsList.Items.Select(ns => Guid.Parse(ns.GetLabel(PlayerIdLabel)));
@@ -146,16 +130,14 @@ public class ChallengeService : IChallengeService
     {
         using var activity = Constants.BergActivitySource.StartActivity();
         var now = DateTime.UtcNow;
-        if (_ctfConfig.Start > now)
+        if (ctfConfig.Start > now)
             return new Instance();
 
-        var labelSelector = new Dictionary<string, string>
+        var labelSelector = new Dictionary<string, string>(ChallengeNamespaceLabelSelector)
         {
-            { ManagedByLabel, "berg" },
-            { ComponentLabel, "challenge" },
             { PlayerIdLabel, playerId.ToString() },
         };
-        var nsList = await _kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(labelSelector),
+        var nsList = await kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(labelSelector),
             cancellationToken: cancel);
 
         var ns = nsList.Items.FirstOrDefault();
@@ -172,31 +154,31 @@ public class ChallengeService : IChallengeService
 
         var challenge = await _challengeClient.ReadNamespacedAsync<V1Challenge>(_bergNamespace, challengeName, cancel);
 
-        var podList = await _kubernetes.ListNamespacedPodAsync(ns.Name(), cancellationToken: cancel);
-        if (podList.Items.Any(p => p.Status.Phase != "Running"))
+        var podList = await kubernetes.ListNamespacedPodAsync(ns.Name(), cancellationToken: cancel);
+        if (podList.Items.Any(p => p.Status.Phase != "Running") || podList.Items.Count == 0)
            return new Instance
            {
                Name = challengeName,
                InstanceState = InstanceState.Starting
            };
 
-        var serviceList = await _kubernetes.ListNamespacedServiceAsync(ns.Name(), cancellationToken: cancel);
+        var serviceList = await kubernetes.ListNamespacedServiceAsync(ns.Name(), cancellationToken: cancel);
         var httpRouteList = await _httpRouteClient
             .ListNamespacedAsync<CustomResourceList<V1HTTPRoute>>(ns.Name(), cancel);
         var tlsRouteList = await _tlsRouteClient
             .ListNamespacedAsync<CustomResourceList<V1Alpha2TLSRoute>>(ns.Name(), cancel);
 
         var services = new List<Service>();
-        foreach (var container in challenge.Spec.Containers ?? new List<V1ChallengeContainer>())
+        foreach (var container in challenge.Spec.Containers ?? [])
         {
-            foreach (var port in container.Ports ?? new List<V1ChallengePort>())
+            foreach (var port in container.Ports ?? [])
             {
                 if (port.Type == V1ChallengePortType.InternalPort)
                     continue;
                 var service = new Service
                 {
                     Name = port.Name,
-                    Hostname = _infraConfig.ChallengeDomain,
+                    Hostname = infraConfig.ChallengeDomain,
                     AppProtocol = port.AppProtocol,
                     Protocol = port.Protocol,
                     Tls = true,
@@ -214,15 +196,15 @@ public class ChallengeService : IChallengeService
                 {
                     var ingress = httpRouteList.Items
                         .FirstOrDefault(i => i.Name() == $"{container.Hostname}-{port.Port}");
-                    service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + "." + _infraConfig.ChallengeDomain;
-                    service.Port = _infraConfig.ChallengeHttpPort;
+                    service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + "." + infraConfig.ChallengeDomain;
+                    service.Port = infraConfig.ChallengeHttpPort;
                 }
                 else if (port.Type == V1ChallengePortType.PublicTlsRoute)
                 {
                     var ingress = tlsRouteList.Items
                         .FirstOrDefault(i => i.Name() == $"{container.Hostname}-{port.Port}");
-                    service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + "." +_infraConfig.ChallengeDomain;
-                    service.Port = _infraConfig.ChallengeTlsPort;
+                    service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + "." +infraConfig.ChallengeDomain;
+                    service.Port = infraConfig.ChallengeTlsPort;
                 }
                 services.Add(service);
             }
@@ -233,7 +215,7 @@ public class ChallengeService : IChallengeService
             Name = challengeName,
             InstanceState = InstanceState.Running,
             Services = services,
-            Timeout = ns.CreationTimestamp()?.Add(_infraConfig.ChallengeInstanceTimeout)
+            Timeout = ns.CreationTimestamp()?.Add(infraConfig.ChallengeInstanceTimeout)
         };
     }
 
@@ -241,16 +223,14 @@ public class ChallengeService : IChallengeService
         CancellationToken cancel)
     {
         var now = DateTime.UtcNow;
-        if (_ctfConfig.Start > now)
+        if (ctfConfig.Start > now)
             return new Instance();
 
-        var labelSelector = new Dictionary<string, string>
+        var labelSelector = new Dictionary<string, string>(ChallengeNamespaceLabelSelector)
         {
-            { ManagedByLabel, "berg" },
-            { ComponentLabel, "challenge" },
             { PlayerIdLabel, playerId.ToString() }
         };
-        var nsList = await _kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(labelSelector),
+        var nsList = await kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(labelSelector),
             cancellationToken: cancel);
         if (nsList.Items.Any())
             throw new ArgumentException("A challenge is already running!");
@@ -264,15 +244,13 @@ public class ChallengeService : IChallengeService
         if ((challengeConfig.Spec.Containers?.Count ?? 0) == 0)
             throw new ArgumentException("Challenge can't be instantiated");
 
-        var ns = await _kubernetes.CreateNamespaceAsync(new V1Namespace
+        var ns = await kubernetes.CreateNamespaceAsync(new V1Namespace
         {
             Metadata = new V1ObjectMeta
             {
                 Name = $"challenge-{playerId}",
-                Labels = new Dictionary<string, string>
+                Labels = new Dictionary<string, string>(ChallengeNamespaceLabelSelector)
                 {
-                    { ManagedByLabel, "berg" },
-                    { ComponentLabel, "challenge" },
                     { ChallengeLabel, challenge },
                     { PlayerIdLabel, playerId.ToString() },
                 }
@@ -282,12 +260,12 @@ public class ChallengeService : IChallengeService
         try
         {
             var imagePullSecret =
-                await _kubernetes.ReadNamespacedSecretAsync(_infraConfig.PullSecretName, _bergNamespace, cancellationToken: cancel);
-            await _kubernetes.CreateNamespacedSecretAsync(new V1Secret
+                await kubernetes.ReadNamespacedSecretAsync(infraConfig.PullSecretName, _bergNamespace, cancellationToken: cancel);
+            await kubernetes.CreateNamespacedSecretAsync(new V1Secret
             {
                 Metadata = new V1ObjectMeta
                 {
-                    Name = _infraConfig.PullSecretName,
+                    Name = infraConfig.PullSecretName,
                 },
                 Type = "kubernetes.io/dockerconfigjson",
                 Data = imagePullSecret.Data
@@ -295,8 +273,8 @@ public class ChallengeService : IChallengeService
         }
         catch (HttpOperationException ex)
         {
-            _logger.LogWarning("Image pull secret '{}' not found in namespace '{}'", _infraConfig.PullSecretName, _bergNamespace);
-            _logger.LogWarning("Detailed exception for pull secret copy operations: {}", ex);
+            logger.LogWarning("Image pull secret '{}' not found in namespace '{}'", infraConfig.PullSecretName, _bergNamespace);
+            logger.LogWarning("Detailed exception for pull secret copy operations: {}", ex);
         }
 
         var networkPolicy = new V2CiliumNetworkPolicy()
@@ -308,12 +286,12 @@ public class ChallengeService : IChallengeService
             Spec = new V2CiliumNetworkPolicySpec
             {
                 EndpointSelector = new V1LabelSelector(),
-                Egress = new List<V2CiliumEgressRule>
-                {
+                Egress =
+                [
                     new()
                     {
-                        ToEndpoints = new List<V1LabelSelector>
-                        {
+                        ToEndpoints =
+                        [
                             new()
                             {
                                 MatchLabels = new Dictionary<string, string>
@@ -322,67 +300,67 @@ public class ChallengeService : IChallengeService
                                     { "k8s:k8s-app", "kube-dns" },
                                 }
                             }
-                        },
-                        ToPorts = new List<V2CiliumPortRule>
-                        {
+                        ],
+                        ToPorts =
+                        [
                               new()
                               {
-                                  Ports = new List<V2CiliumPortProtocol>
-                                  {
+                                  Ports =
+                                  [
                                       new()
                                       {
                                           Port = "53"
                                       }
-                                  },
+                                  ],
                                   Rules = challengeConfig.Spec.AllowOutboundTraffic ? null : new V2CiliumL7Rule
                                   {
-                                      Dns = new List<V2CiliumPortRuleDns>
-                                      {
+                                      Dns =
+                                      [
                                           new()
                                           {
                                               // If outbound traffic is forbidden, only accept
                                               // dns requests for internal services
                                               MatchPattern = $"*.{ns.Name()}.svc.cluster.local.",
                                           }
-                                      }
+                                      ]
                                   }
                               }
-                        }
+                        ]
                     },
                     new()
                     {
-                        ToEndpoints = new List<V1LabelSelector>
-                        {
+                        ToEndpoints =
+                        [
                             // Allow traffic to other pods in the same namespace
                             // by matching all labels
                             new()
-                        }
+                        ]
                     },
                     new()
                     {
                         // Allow outbound traffic to self using the public ip address
                         // as this is required for OIDC to work if an IDP is deployed within
                         // a challenge.
-                        ToEntities = new List<string> { CiliumEntity.Host },
-                        ToPorts = new List<V2CiliumPortRule>
-                        {
+                        ToEntities = [CiliumEntity.Host],
+                        ToPorts =
+                        [
                             new()
                             {
-                                Ports = new List<V2CiliumPortProtocol>
-                                {
+                                Ports =
+                                [
                                     new()
                                     {
-                                        Port = _infraConfig.ChallengeHttpPort.ToString()
+                                        Port = infraConfig.ChallengeHttpPort.ToString()
                                     },
                                     new()
                                     {
-                                        Port = _infraConfig.ChallengeTlsPort.ToString()
+                                        Port = infraConfig.ChallengeTlsPort.ToString()
                                     }
-                                }
+                                ]
                             }
-                        }
+                        ]
                     }
-                }
+                ]
             }
         };
 
@@ -390,10 +368,10 @@ public class ChallengeService : IChallengeService
         {
             networkPolicy.Spec.Egress.Add(new V2CiliumEgressRule
             {
-                ToEntities = new List<string>
-                {
+                ToEntities =
+                [
                     CiliumEntity.World
-                }
+                ]
             });
         }
 
@@ -403,16 +381,16 @@ public class ChallengeService : IChallengeService
         }
         catch (HttpOperationException ex)
         {
-            _logger.LogError("Got exception while creating CiliumNetworkPolicy: {}", ex);
-            _logger.LogError("Response.Content: {}", ex.Response.Content);
-            _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(networkPolicy));
+            logger.LogError("Got exception while creating CiliumNetworkPolicy: {}", ex);
+            logger.LogError("Response.Content: {}", ex.Response.Content);
+            logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(networkPolicy));
         }
 
         var serviceEndpoints = new Dictionary<string, string>();
 
-        foreach (var container in challengeConfig.Spec.Containers ?? new List<V1ChallengeContainer>())
+        foreach (var container in challengeConfig.Spec.Containers ?? [])
         {
-            var allPorts = container.Ports ?? new List<V1ChallengePort>();
+            var allPorts = container.Ports ?? [];
             if (allPorts.Any())
             {
                 var service = new V1Service
@@ -446,19 +424,19 @@ public class ChallengeService : IChallengeService
                 }
                 try
                 {
-                    await _kubernetes.CreateNamespacedServiceAsync(service, ns.Name(), cancellationToken: cancel);
+                    await kubernetes.CreateNamespacedServiceAsync(service, ns.Name(), cancellationToken: cancel);
                 }
                 catch (HttpOperationException ex)
                 {
-                    _logger.LogError("Got exception while creating Service: {}", ex);
-                    _logger.LogError("Response.Content: {}", ex.Response.Content);
-                    _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(service));
+                    logger.LogError("Got exception while creating Service: {}", ex);
+                    logger.LogError("Response.Content: {}", ex.Response.Content);
+                    logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(service));
                 }
             }
 
             var publicPorts = container.Ports?
                 .Where(p => p.Type is V1ChallengePortType.PublicPort)
-                .ToList() ?? new List<V1ChallengePort>();
+                .ToList() ?? [];
             if (publicPorts.Any())
             {
                 var service = new V1Service
@@ -486,19 +464,19 @@ public class ChallengeService : IChallengeService
                 };
                 try
                 {
-                    await _kubernetes.CreateNamespacedServiceAsync(service, ns.Name(), cancellationToken: cancel);
+                    await kubernetes.CreateNamespacedServiceAsync(service, ns.Name(), cancellationToken: cancel);
                 }
                 catch (HttpOperationException ex)
                 {
-                    _logger.LogError("Got exception while creating Service: {}", ex);
-                    _logger.LogError("Response.Content: {}", ex.Response.Content);
-                    _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(service));
+                    logger.LogError("Got exception while creating Service: {}", ex);
+                    logger.LogError("Response.Content: {}", ex.Response.Content);
+                    logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(service));
                 }
             }
 
             var httpRoutePorts = container.Ports?
                 .Where(p => p.Type is V1ChallengePortType.PublicHttpRoute)
-                .ToList() ?? new List<V1ChallengePort>();
+                .ToList() ?? [];
             foreach (var httpRoutePort in httpRoutePorts)
             {
                 var serviceGuid = Guid.NewGuid();
@@ -517,42 +495,42 @@ public class ChallengeService : IChallengeService
                     },
                     Spec = new V1HTTPRouteSpec
                     {
-                        Hostnames = new List<string>
-                        {
-                            $"{serviceGuid}.{_infraConfig.ChallengeDomain}"
-                        },
-                        ParentRefs = new List<V1ParentReference>
-                        {
+                        Hostnames =
+                        [
+                            $"{serviceGuid}.{infraConfig.ChallengeDomain}"
+                        ],
+                        ParentRefs =
+                        [
                             new()
                             {
                                 Kind = "Gateway",
-                                Name = _infraConfig.GatewayName,
-                                SectionName = _infraConfig.ChallengeHttpListenerName,
+                                Name = infraConfig.GatewayName,
+                                SectionName = infraConfig.ChallengeHttpListenerName,
                                 Namespace = _bergNamespace,
                             }
-                        },
-                        Rules = new List<V1HTTPRouteRule>
-                        {
+                        ],
+                        Rules =
+                        [
                             new ()
                             {
-                                BackendRefs = new List<V1HttpBackendRef>
-                                {
+                                BackendRefs =
+                                [
                                     new ()
                                     {
                                         Name = container.Hostname,
                                         Port = httpRoutePort.Port,
                                         Namespace = ns.Name()
                                     }
-                                }
+                                ]
                             }
-                        }
+                        ]
                     }
                 };
                 if (httpRoutePort.Name != null)
                 {
                     serviceEndpoints.Remove(httpRoutePort.Name);
                     serviceEndpoints.Add(httpRoutePort.Name,
-                        $"{serviceGuid}.{_infraConfig.ChallengeDomain}:{_infraConfig.ChallengeHttpPort}");
+                        $"{serviceGuid}.{infraConfig.ChallengeDomain}:{infraConfig.ChallengeHttpPort}");
                 }
                 try
                 {
@@ -560,15 +538,15 @@ public class ChallengeService : IChallengeService
                 }
                 catch (HttpOperationException ex)
                 {
-                    _logger.LogError("Got exception while creating HttpRoute: {}", ex);
-                    _logger.LogError("Response.Content: {}", ex.Response.Content);
-                    _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(httpRoute));
+                    logger.LogError("Got exception while creating HttpRoute: {}", ex);
+                    logger.LogError("Response.Content: {}", ex.Response.Content);
+                    logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(httpRoute));
                 }
             }
 
             var tlsRoutePorts = container.Ports?
                 .Where(p => p.Type is V1ChallengePortType.PublicTlsRoute)
-                .ToList() ?? new List<V1ChallengePort>();
+                .ToList() ?? [];
             foreach (var tlsRoutePort in tlsRoutePorts)
             {
                 var serviceGuid = Guid.NewGuid();
@@ -587,42 +565,42 @@ public class ChallengeService : IChallengeService
                     },
                     Spec = new V1Alpha2TLSRouteSpec
                     {
-                        Hostnames = new List<string>
-                        {
-                            $"{serviceGuid}.{_infraConfig.ChallengeDomain}"
-                        },
-                        ParentRefs = new List<V1ParentReference>
-                        {
+                        Hostnames =
+                        [
+                            $"{serviceGuid}.{infraConfig.ChallengeDomain}"
+                        ],
+                        ParentRefs =
+                        [
                             new()
                             {
                                 Kind = "Gateway",
-                                Name = _infraConfig.GatewayName,
-                                SectionName = _infraConfig.ChallengeTlsListenerName,
+                                Name = infraConfig.GatewayName,
+                                SectionName = infraConfig.ChallengeTlsListenerName,
                                 Namespace = _bergNamespace,
                             }
-                        },
-                        Rules = new List<V1Alpha2TLSRouteRule>
-                        {
+                        ],
+                        Rules =
+                        [
                             new ()
                             {
-                                BackendRefs = new List<V1BackendRef>
-                                {
+                                BackendRefs =
+                                [
                                     new ()
                                     {
                                         Name = container.Hostname,
                                         Port = tlsRoutePort.Port,
                                         Namespace = ns.Name()
                                     }
-                                }
+                                ]
                             }
-                        }
+                        ]
                     }
                 };
                 if (tlsRoutePort.Name != null)
                 {
                     serviceEndpoints.Remove(tlsRoutePort.Name);
                     serviceEndpoints.Add(tlsRoutePort.Name,
-                        $"{serviceGuid}.{_infraConfig.ChallengeDomain}:{_infraConfig.ChallengeTlsPort}");
+                        $"{serviceGuid}.{infraConfig.ChallengeDomain}:{infraConfig.ChallengeTlsPort}");
                 }
                 try
                 {
@@ -630,16 +608,16 @@ public class ChallengeService : IChallengeService
                 }
                 catch (HttpOperationException ex)
                 {
-                    _logger.LogError("Got exception while creating TLSRoute: {}", ex);
-                    _logger.LogError("Response.Content: {}", ex.Response.Content);
-                    _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(tlsRoute));
+                    logger.LogError("Got exception while creating TLSRoute: {}", ex);
+                    logger.LogError("Response.Content: {}", ex.Response.Content);
+                    logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(tlsRoute));
                 }
             }
         }
 
-        foreach (var container in challengeConfig.Spec.Containers ?? new List<V1ChallengeContainer>())
+        foreach (var container in challengeConfig.Spec.Containers ?? [])
         {
-            var env = (container.Environment ?? new Dictionary<string, object>())
+            var env = (container.Environment ?? [])
                 .Select(e => new V1EnvVar(e.Key, e.Value.ToString()))
                 .Concat(serviceEndpoints.Select(e => new V1EnvVar($"{e.Key.ToUpperInvariant()}_ENDPOINT", e.Value)))
                 .ToList();
@@ -651,9 +629,9 @@ public class ChallengeService : IChallengeService
                 EnableServiceLinks = false,
                 AutomountServiceAccountToken = false,
                 TerminationGracePeriodSeconds = 0,
-                ImagePullSecrets = new List<V1LocalObjectReference> { new(_infraConfig.PullSecretName) },
-                Containers = new List<V1Container>
-                {
+                ImagePullSecrets = [new(infraConfig.PullSecretName)],
+                Containers =
+                [
                     new()
                     {
                         SecurityContext = new V1SecurityContext
@@ -686,12 +664,10 @@ public class ChallengeService : IChallengeService
                             .Select(p => new V1ContainerPort(p.Port, protocol: p.Protocol.ToUpperInvariant()))
                             .ToList()
                     }
-                },
+                ],
             };
-            var labels = new Dictionary<string, string>
+            var labels = new Dictionary<string, string>(ChallengePodLabelSelector)
             {
-                { ManagedByLabel, "berg" },
-                { ComponentLabel, "challenge-container" },
                 { ChallengeLabel, challenge },
                 { PlayerIdLabel, playerId.ToString() },
                 { ContainerLabel, container.Hostname }
@@ -722,41 +698,39 @@ public class ChallengeService : IChallengeService
             };
             try
             {
-                await _kubernetes.CreateNamespacedDeploymentAsync(deployment, ns.Name(), cancellationToken: cancel);
+                await kubernetes.CreateNamespacedDeploymentAsync(deployment, ns.Name(), cancellationToken: cancel);
             }
             catch (HttpOperationException ex)
             {
-                _logger.LogError("Got exception while creating Pod: {}", ex);
-                _logger.LogError("Response.Content: {}", ex.Response.Content);
-                _logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(deployment));
+                logger.LogError("Got exception while creating Pod: {}", ex);
+                logger.LogError("Response.Content: {}", ex.Response.Content);
+                logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(deployment));
             }
         }
 
-        _logger.LogInformation("Created instance of challenge: {}", challenge);
+        logger.LogInformation("Created instance of challenge: {}", challenge);
         return new Instance { Name = challenge, InstanceState = InstanceState.Starting };
     }
 
     public async Task<Instance> StopChallengeInstance(Guid playerId, CancellationToken cancel)
     {
-        var labelSelector = new Dictionary<string, string>
+        var labelSelector = new Dictionary<string, string>(ChallengeNamespaceLabelSelector)
         {
-            { ManagedByLabel, "berg" },
-            { ComponentLabel, "challenge" },
             { PlayerIdLabel, playerId.ToString() },
         };
-        var nsList = await _kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(labelSelector),
+        var nsList = await kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(labelSelector),
             cancellationToken: cancel);
         var ns = nsList.Items.FirstOrDefault();
         if (ns == null)
             return new Instance { InstanceState = InstanceState.None };
 
-        await _kubernetes.DeleteNamespaceAsync(ns.Name(), gracePeriodSeconds: 0, cancellationToken: cancel);
+        await kubernetes.DeleteNamespaceAsync(ns.Name(), gracePeriodSeconds: 0, cancellationToken: cancel);
         var challengeName = ns.GetLabel(ChallengeLabel);
-        _logger.LogInformation("Deleted instance of challenge: {}", challengeName);
+        logger.LogInformation("Deleted instance of challenge: {}", challengeName);
         return new Instance { Name = challengeName, InstanceState = InstanceState.Terminating };
     }
 
-    private static string ToLabelSelector(Dictionary<string, string> labelSelector)
+    public static string ToLabelSelector(IDictionary<string, string> labelSelector)
     {
         var sb = new StringBuilder();
         var pairs = labelSelector.ToArray();

@@ -58,14 +58,6 @@ export class DataService {
         this.refreshAllData();
         this.refreshWebSocket();
     });
-
-    setInterval(() => {
-      if (!this.isAuthenticated)
-        return;
-      this.apiService.getInstance().subscribe(instance => {
-        this._instance.next(instance);
-      });
-    }, 3000);
   }
 
   private refreshAllData() {
@@ -87,9 +79,11 @@ export class DataService {
     this.apiService.getSolves().subscribe(solves => {
       this._solves.next(solves);
     });
-    this.apiService.getInstance().subscribe(instance => {
-      this._instance.next(instance);
-    });
+    if (this.isAuthenticated) {
+      this.apiService.getInstance().subscribe(instance => {
+        this._instance.next(instance);
+      });
+    }
   }
 
   refreshWebSocket() {
@@ -131,6 +125,10 @@ export class DataService {
           challenges = challenges.filter(t => t.name != challenge.name)
           challenges.push(challenge);
           this._challenges.next(challenges);
+          break;
+        case "instance":
+          let instance = message.message as Instance;
+          this._instance.next(instance);
           break;
         case "current-player":
           let playerId = message.message as string | null;

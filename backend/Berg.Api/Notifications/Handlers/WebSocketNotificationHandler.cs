@@ -1,5 +1,6 @@
 using Berg.Api.Configuration;
 using Berg.Api.Controllers.V2;
+using Berg.Api.CustomResources.Berg;
 using Berg.Api.Db;
 using Berg.Api.Services;
 using MediatR;
@@ -19,7 +20,9 @@ public class WebSocketNotificationHandler(
     INotificationHandler<PageCreateNotification>,
     INotificationHandler<PageUpdateNotification>,
     INotificationHandler<ChallengeCreateNotification>,
-    INotificationHandler<ChallengeUpdateNotification>
+    INotificationHandler<ChallengeUnhideNotification>,
+    INotificationHandler<ChallengeUpdateNotification>,
+    INotificationHandler<InstanceChangeNotification>
 {
     public async Task Handle(SolveNotification solve, CancellationToken cancellationToken)
     {
@@ -93,43 +96,48 @@ public class WebSocketNotificationHandler(
 
     public async Task Handle(ChallengeCreateNotification notification, CancellationToken cancellationToken)
     {
-        if (DateTime.UtcNow < notification.Challenge.Spec.HideUntil)
+        await HandleChallengeChange(notification.Challenge, cancellationToken);
+    }
+
+    public async Task Handle(ChallengeUnhideNotification notification, CancellationToken cancellationToken)
+    {
+        await HandleChallengeChange(notification.Challenge, cancellationToken);
+    }
+
+    public async Task Handle(ChallengeUpdateNotification notification, CancellationToken cancellationToken)
+    {
+        await HandleChallengeChange(notification.Challenge, cancellationToken);
+    }
+
+    private async Task HandleChallengeChange(V1Challenge challenge, CancellationToken cancellationToken)
+    {
+        if (DateTime.UtcNow < challenge.Spec.HideUntil)
         {
-            logger.LogDebug("Skipping challenge created message due to HideUntil property.");
+            logger.LogDebug("Skipping challenge message due to HideUntil property.");
             return;
         }
-        var dtoChallenge = ChallengeController.ToChallenge(notification.Challenge);
+        var dtoChallenge = ChallengeController.ToChallenge(challenge);
         if (ctfConfig.Start < DateTime.UtcNow) {
-            logger.LogDebug("Sending challenge created message to all websocket clients.");
+            logger.LogDebug("Sending challenge message to all websocket clients.");
             await webSocketService.PushEventAll("challenge", dtoChallenge);
         } else {
-            logger.LogDebug("Sending challenge created message only to admin websocket clients.");
+            logger.LogDebug("Sending challenge message only to admin websocket clients.");
             var adminIds = dbContext.Players
-                .Where(p => p.Roles != null && p.Roles.Contains("admin"))
+                .Where(p => p.Roles != null && p.Roles.Contains(Constants.Roles.Admin))
                 .Select(p => p.Id)
                 .ToHashSet();
             await webSocketService.PushEvent("challenge", dtoChallenge, adminIds.Contains);
         }
     }
 
-    public async Task Handle(ChallengeUpdateNotification notification, CancellationToken cancellationToken)
+    public async Task Handle(InstanceChangeNotification notification, CancellationToken cancellationToken)
     {
-        if (DateTime.UtcNow < notification.Challenge.Spec.HideUntil)
-        {
-            logger.LogDebug("Skipping challenge update message due to HideUntil property.");
-            return;
-        }
-        var dtoChallenge = ChallengeController.ToChallenge(notification.Challenge);
-        if (ctfConfig.Start < DateTime.UtcNow) {
-            logger.LogDebug("Sending challenge updated message to all websocket clients.");
-            await webSocketService.PushEventAll("challenge", dtoChallenge);
-        } else {
-            logger.LogDebug("Sending challenge updated message only to admin websocket clients.");
-            var adminIds = dbContext.Players
-                .Where(p => p.Roles != null && p.Roles.Contains("admin"))
-                .Select(p => p.Id)
-                .ToHashSet();
-            await webSocketService.PushEvent("challenge", dtoChallenge, adminIds.Contains);
-        }
+        logger.LogDebug("Sending instance change message.");
+        var playerIdsToNotify = dbContext.Players
+            .Where(p => p.Roles != null && p.Roles.Contains(Constants.Roles.Admin))
+            .Select(p => p.Id)
+            .ToHashSet();
+        playerIdsToNotify.Add(notification.PlayerId);
+        await webSocketService.PushEvent("instance", notification.Instance, playerIdsToNotify.Contains);
     }
 }

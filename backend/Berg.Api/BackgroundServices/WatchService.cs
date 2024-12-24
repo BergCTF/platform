@@ -1,6 +1,7 @@
 using Berg.Api.CustomResources;
 using Berg.Api.CustomResources.Berg;
 using Berg.Api.Notifications;
+using Berg.Api.Services;
 using k8s;
 using k8s.Models;
 using MediatR;
@@ -10,6 +11,7 @@ namespace Berg.Api.BackgroundServices;
 public class WatchService(
     ILogger<RefreshService> logger,
     Kubernetes kubernetes,
+    IChallengeService challengeService,
     IMediator mediator) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -20,6 +22,8 @@ public class WatchService(
             WatchConfig(cancellationToken),
             WatchChallenges(cancellationToken),
             WatchPages(cancellationToken),
+            WatchInstanceNamespaces(cancellationToken),
+            WatchInstancePods(cancellationToken)
         ]);
 
         logger.LogInformation("WatchService stopped");
@@ -30,7 +34,7 @@ public class WatchService(
         using var configMapListResponse = kubernetes.CoreV1.ListNamespacedConfigMapWithHttpMessagesAsync(bergNamespace, watch: true, cancellationToken: cancellationToken);
         await foreach (var (type, item) in configMapListResponse.WatchAsync<V1ConfigMap, V1ConfigMapList>(cancellationToken: cancellationToken))
         {
-            logger.LogInformation("ConfigMap {} was {}", item.Name(), type);
+            logger.LogDebug("ConfigMap {} was {}", item.Name(), type);
         }
         logger.LogInformation("WatchConfig stopped");
     }
@@ -41,7 +45,7 @@ public class WatchService(
         using var challengeListResponse = kubernetes.CustomObjects.ListNamespacedCustomObjectWithHttpMessagesAsync<CustomResourceList<V1Challenge>>(challenge.Group, challenge.Version, bergNamespace, challenge.Plural, watch: true, cancellationToken: cancellationToken);
         await foreach (var (type, item) in challengeListResponse.WatchAsync<V1Challenge, CustomResourceList<V1Challenge>>(cancellationToken: cancellationToken))
         {
-            logger.LogInformation("Challenge {} was {}", item.Name(), type);
+            logger.LogDebug("Challenge {} was {}", item.Name(), type);
             if (type == WatchEventType.Added) {
                 await mediator.Publish(new ChallengeCreateNotification
                 {
@@ -63,7 +67,7 @@ public class WatchService(
         using var pageListResponse = kubernetes.CustomObjects.ListNamespacedCustomObjectWithHttpMessagesAsync<CustomResourceList<V1Page>>(page.Group, page.Version, bergNamespace, page.Plural, watch: true, cancellationToken: cancellationToken);
         await foreach (var (type, item) in pageListResponse.WatchAsync<V1Page, CustomResourceList<V1Page>>(cancellationToken: cancellationToken))
         {
-            logger.LogInformation("Page {} was {}", item.Name(), type);
+            logger.LogDebug("Page {} was {}", item.Name(), type);
             if (type == WatchEventType.Added) {
                 await mediator.Publish(new PageCreateNotification
                 {
@@ -77,5 +81,40 @@ public class WatchService(
             }
         }
         logger.LogInformation("WatchPages stopped");
+    }
+
+    private async Task WatchInstanceNamespaces(CancellationToken cancellationToken) {
+        using var nsListResponse = kubernetes.CoreV1.ListNamespaceWithHttpMessagesAsync(watch: true, labelSelector: ChallengeService.ToLabelSelector(ChallengeService.ChallengeNamespaceLabelSelector), cancellationToken: cancellationToken);
+        await foreach (var (type, item) in nsListResponse.WatchAsync<V1Namespace, V1NamespaceList>(cancellationToken: cancellationToken))
+        {
+            logger.LogDebug("{} was {}", item.Name(), type);
+            var playerId = Guid.Parse(item.GetLabel(ChallengeService.PlayerIdLabel));
+            var instance = await challengeService.GetChallengeInstance(playerId, cancellationToken);
+            await mediator.Publish(new InstanceChangeNotification
+            {
+                PlayerId = playerId,
+                Instance = instance,
+            }, cancellationToken);
+        }
+        logger.LogInformation("WatchInstanceNamespaces stopped");
+    }
+
+    private async Task WatchInstancePods(CancellationToken cancellationToken) {
+        var labelSelector = ChallengeService.ChallengePodLabelSelector;
+        using var podListResponse = kubernetes.CoreV1.ListPodForAllNamespacesWithHttpMessagesAsync(watch: true, labelSelector: ChallengeService.ToLabelSelector(labelSelector), cancellationToken: cancellationToken);
+        await foreach (var (type, item) in podListResponse.WatchAsync<V1Pod, V1PodList>(cancellationToken: cancellationToken))
+        {
+            if (type == WatchEventType.Added)
+                continue;
+            logger.LogDebug("{} was {}", item.Name(), type);
+            var playerId = Guid.Parse(item.GetLabel(ChallengeService.PlayerIdLabel));
+            var instance = await challengeService.GetChallengeInstance(playerId, cancellationToken);
+            await mediator.Publish(new InstanceChangeNotification
+            {
+                PlayerId = playerId,
+                Instance = instance,
+            }, cancellationToken);
+        }
+        logger.LogInformation("WatchInstances stopped");
     }
 }
