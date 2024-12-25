@@ -9,6 +9,7 @@
       <p></p>
     }
     @else {
+      <p>Current API User: <code>{{ dataService.currentPlayerId }}</code></p>
       <p>Current API Key: <code>{{ (dataService.currentPlayer | async)?.apiKeyPlaceholder ?? 'Not yet generated' }}</code></p>
     }
     <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#resetApiKey"><i class="bi bi-trash text-info"></i>&nbsp;Reset API Key</button>
