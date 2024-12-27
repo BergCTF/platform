@@ -9,7 +9,7 @@ import { NgxEchartsModule } from 'ngx-echarts';
 import { AppComponent } from './app/app.component';
 import { importProvidersFrom, inject, provideAppInitializer } from '@angular/core';
 import { DataService } from './app/services/data.service';
-import { EMPTY, mergeMap, take } from 'rxjs';
+import { mergeMap, NEVER, take } from 'rxjs';
 
 bootstrapApplication(AppComponent, {
     providers: [
@@ -36,14 +36,24 @@ bootstrapApplication(AppComponent, {
         provideAnimations(),
         provideAppInitializer(() => {
             let dataService = inject(DataService);
-            return dataService.refreshMetadata().pipe(mergeMap(metadata => {
-                if (metadata.allowAnonymousAccess) {
-                    return dataService.refreshPages();
-                } else {
-                    dataService.login();
-                    return EMPTY;
-                }
-            }), mergeMap(_ => dataService.loginEvents.pipe(take(1))));
+            return dataService.refreshMetadata().pipe(
+                mergeMap(metadata => {
+                    return dataService.loginEvents.pipe(take(1), mergeMap(loginResponse => {
+                        if (!metadata.allowAnonymousAccess && !loginResponse.isAuthenticated) {
+                            console.log("Redirecting to authorization endpoint since anonymous access is disabled and the player is not logged in.");
+                            dataService.login();
+                            return NEVER; // Stall execution since login() triggers a redrect that forces a page reload anyways.
+                        } else {
+                            dataService.refreshAllData();
+                            if (loginResponse.isAuthenticated){
+                                dataService.refreshWebSocket(loginResponse.accessToken);
+                            } else {
+                                dataService.refreshWebSocket(null);
+                            }
+                            return dataService.refreshPages();
+                        }
+                    }));
+                }));
         }),
     ]
 }).catch(err => console.error(err));

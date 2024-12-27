@@ -19,7 +19,6 @@ export class DataService {
   private _pages = new BehaviorSubject<Page[]>([]);
   private _metadata= new BehaviorSubject<Metadata>(new Metadata());
   private _instance = new BehaviorSubject<Instance>(new Instance());
-  private _currentAccessToken = '';
 
   public readonly challenges: Observable<Challenge[]> = this._challenges.asObservable();
   public readonly players: Observable<Player[]> = this._players.asObservable();
@@ -44,23 +43,15 @@ export class DataService {
         if(isAuthenticated) {
           this.currentPlayerId = userData["sub"];
           this.refreshCurrentPlayer();
-          this._currentAccessToken = accessToken;
         } else {
           this.currentPlayerId = '00000000-0000-0000-0000-000000000000';
-          this._currentAccessToken = '';
         }
 
         this.isAuthenticated = isAuthenticated;
-        if (!this._metadata.getValue().allowAnonymousAccess && !isAuthenticated) {
-          this.oidcSecurityService.authorize();
-        }
-
-        this.refreshAllData();
-        this.refreshWebSocket();
     });
   }
 
-  private refreshAllData() {
+  refreshAllData() {
     this.apiService.getMetadata().subscribe(metadata => {
       this._metadata.next(metadata);
     });
@@ -86,15 +77,12 @@ export class DataService {
     }
   }
 
-  refreshWebSocket() {
+  refreshWebSocket(accessToken: string | null) {
     this._webSocket?.complete();
     let protocol = window.location.protocol == 'https:' ? 'wss' : 'ws';
-    let query = this._currentAccessToken == '' ? '' : ('?access_token=' + encodeURIComponent(this._currentAccessToken));
+    let query = accessToken == null ? '' : ('?access_token=' + encodeURIComponent(accessToken));
     this._webSocket = webSocket<WebSocketMessage<any>>({
-      url: protocol + '://' + window.location.host + '/api/v2/events' + query,
-      openObserver: {
-        next: () => {this.refreshAllData()}
-      }
+      url: protocol + '://' + window.location.host + '/api/v2/events' + query
     });
     this._webSocket.pipe(retry()).subscribe(message => {
       switch (message.type) {
@@ -145,8 +133,7 @@ export class DataService {
             currentPlayerId = null;
           if (playerId != currentPlayerId) {
             this.oidcSecurityService.getAccessToken().subscribe(accessToken => {
-              this._currentAccessToken = accessToken;
-              this.refreshWebSocket();
+              this.refreshWebSocket(accessToken);
             });
           }
           break;

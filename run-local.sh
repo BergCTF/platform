@@ -61,6 +61,7 @@ berg:
       tracingEndpoint: http://jaeger-operator-jaeger-collector.jaeger.svc.cluster.local:4317
   ctf:
     teams: true
+    allowAnonymousAccess: true
 
 postgresql:
   enabled: false
