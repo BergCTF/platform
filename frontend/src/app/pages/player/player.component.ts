@@ -57,7 +57,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   private handlePlayerUpdate() {
     this.player = this._players.find(p => p.id == this._uuid) || null;
-    this.playerSolves = this._solves.filter(s => s.playerId == this._uuid);
+    this.playerSolves = this._solves.filter(s => s.playerId == this._uuid).sort((a, b) => new Date(b.solvedAt).getTime() - new Date(a.solvedAt).getTime());
   }
 
   private handleChallengesUpdate(challenges: Challenge[]) {
