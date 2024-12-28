@@ -130,6 +130,11 @@ public class WatchService(
             {
                 await action();
             }
+            catch (TaskCanceledException) {
+                if (cancellationToken.IsCancellationRequested) {
+                    logger.LogDebug("WithRetry did not retry because the task was cancelled");
+                }
+            }
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "WithRetry swallowed an exception");

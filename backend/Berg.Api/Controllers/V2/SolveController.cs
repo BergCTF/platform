@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json.Serialization;
 using Berg.Api.Configuration;
@@ -9,7 +10,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
-using OpenIddict.Validation.AspNetCore;
 using Solve = Berg.Api.Models.V2.Solve;
 
 namespace Berg.Api.Controllers.V2;
@@ -73,7 +73,6 @@ public class SolveController(
                 ChallengeName = s.ChallengeId,
                 Id = s.Id,
                 PlayerId = s.PlayerId,
-                TeamId = s.Player.TeamId,
                 SolvedAt = s.SolvedAt
             })
         ];
@@ -93,7 +92,6 @@ public class SolveController(
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(Solve), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public ActionResult<Solve> AddSolve([FromBody] AddSolveRequest addSolveRequest)
     {
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
@@ -103,7 +101,7 @@ public class SolveController(
             return BadRequest(new ProblemDetails
             {
                 Title = "Bad Request",
-                Detail = "Challenge can't be empty",
+                Detail = "Challenge can't be empty.",
             });
         }
         var challengeConfig = challengeService.GetChallengeConfig(challengeName);
@@ -113,7 +111,7 @@ public class SolveController(
             return BadRequest(new ProblemDetails
             {
                 Title = "Bad Request",
-                Detail = "Challenge does not exist",
+                Detail = "Challenge does not exist.",
             });
         }
 
@@ -122,7 +120,7 @@ public class SolveController(
             return BadRequest(new ProblemDetails
             {
                 Title = "Bad Request",
-                Detail = "Flag can't be empty",
+                Detail = "Flag can't be empty.",
             });
         }
         if (addSolveRequest.Flag.Length > 1024)
@@ -130,7 +128,7 @@ public class SolveController(
             return BadRequest(new ProblemDetails
             {
                 Title = "Bad Request",
-                Detail = "Submitted flag can't be longer than 1024 chars",
+                Detail = "Submitted flag can't be longer than 1024 chars.",
             });
         }
 
@@ -140,7 +138,7 @@ public class SolveController(
             return BadRequest(new ProblemDetails
             {
                 Title = "Invalid submission time",
-                Detail = "CTF has not yet started"
+                Detail = "CTF has not yet started."
             });
         }
         if (ctfConfig.End < utcNow)
@@ -148,7 +146,7 @@ public class SolveController(
             return BadRequest(new ProblemDetails
             {
                 Title = "Invalid submission time",
-                Detail = "CTF has ended"
+                Detail = "CTF has ended."
             });
         }
 
@@ -166,7 +164,7 @@ public class SolveController(
                 return BadRequest(new ProblemDetails
                 {
                     Title = "Already solved",
-                    Detail = "You have already solved this challenge"
+                    Detail = "You have already solved this challenge."
                 });
             }
 
@@ -177,7 +175,13 @@ public class SolveController(
             if (latestFailedSubmissions.Count > ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerDay)
             {
                 logger.LogWarning("Player {PlayerId} has reached the daily submission limit", playerId);
-                return new StatusCodeResult(StatusCodes.Status429TooManyRequests);
+                Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                Response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromDays(1)).ToString();
+                return new ObjectResult(new ProblemDetails
+                {
+                    Title = "Too many requests",
+                    Detail = "You have reached the daily submission limit."
+                });
             }
 
             var oneHourAgo = utcNow.Subtract(TimeSpan.FromHours(1));
@@ -185,7 +189,13 @@ public class SolveController(
             if (submissionCountHour > ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerHour)
             {
                 logger.LogWarning("Player {PlayerId} has reached the hourly submission limit", playerId);
-                return new StatusCodeResult(StatusCodes.Status429TooManyRequests);
+                Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                Response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromHours(1)).ToString();
+                return new ObjectResult(new ProblemDetails
+                {
+                    Title = "Too many requests",
+                    Detail = "You have reached the hourly submission limit."
+                });
             }
 
             var oneMinuteAgo = utcNow.Subtract(TimeSpan.FromMinutes(1));
@@ -193,7 +203,13 @@ public class SolveController(
             if (submissionCountMinute > ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerMinute)
             {
                 logger.LogWarning("Player {PlayerId} has reached the minute submission limit", playerId);
-                return new StatusCodeResult(StatusCodes.Status429TooManyRequests);
+                Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                Response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromMinutes(1)).ToString();
+                return new ObjectResult(new ProblemDetails
+                {
+                    Title = "Too many requests",
+                    Detail = "You have reached the minute submission limit."
+                });
             }
 
             var dbChallenge = dbContext.Challenges.Single(c => c.Name == challengeName);
@@ -214,7 +230,7 @@ public class SolveController(
                 return BadRequest(new ProblemDetails
                 {
                     Title = "Invalid flag",
-                    Detail = "The flag you have provided is incorrect"
+                    Detail = "The flag you have provided is incorrect."
                 });
             }
 

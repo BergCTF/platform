@@ -19,7 +19,6 @@ public class MetadataController(CtfConfig ctfConfig) : ControllerBase
         {
             Start = ctfConfig.Start,
             End = ctfConfig.End,
-            ServerTime = DateTime.UtcNow,
             FreezeStart = ctfConfig.Scoring.FreezeStart,
             FreezeEnd = ctfConfig.Scoring.FreezeEnd,
             AllowAnonymousAccess = ctfConfig.AllowAnonymousAccess,

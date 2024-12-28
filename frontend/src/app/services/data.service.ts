@@ -89,7 +89,6 @@ export class DataService {
         case "solve":
           let solve = message.message as Solve;
           let solves = this._solves.getValue();
-          this.ensurePlayer(solve.playerId);
           solves.push(solve);
           this._solves.next(solves);
           break;
@@ -193,34 +192,23 @@ export class DataService {
     });
   }
 
+  joinTeam(joinToken: string) {
+    return this.apiService.joinTeam(joinToken);
+  }
+
+  createTeam(name: string) {
+    return this.apiService.createTeam(name);
+  }
+
+  leaveTeam() {
+    return this.apiService.leaveCurrentTeam();
+  }
+
+  getCurrentTeam() {
+    return this.apiService.getCurrentTeam();
+  }
+
   getPlayerName(id: string): Observable<string> {
     return this.players.pipe(mergeMap(p => p), filter(p => p.id == id), map(p => p.name));
   }
-
-  ensurePlayer(id: string) {
-    let player = this._players.getValue().find(p => p.id == id);
-    if (player === undefined) {
-      this.apiService.getPlayer(id).subscribe(player => {
-        let players = this._players.getValue();
-        if (players.find(p => p.id == id))
-          return;
-        players.push(player);
-        this._players.next(players);
-      });
-    }
-  }
-
-  ensureChallenge(name: string) {
-    let challenge = this._challenges.getValue().find(c => c.name == name);
-    if (challenge === undefined) {
-      this.apiService.getChallenge(name).subscribe(challenge => {
-        let challenges = this._challenges.getValue();
-        if (challenges.find(c => c.name == name))
-          return;
-        challenges.push(challenge);
-        this._challenges.next(challenges);
-      });
-    }
-  }
-
 }

@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
-using OpenIddict.Validation.AspNetCore;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using Player = Berg.Api.Models.V2.Player;

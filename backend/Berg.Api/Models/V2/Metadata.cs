@@ -10,9 +10,6 @@ public class Metadata
     [JsonPropertyName("end")]
     public DateTime End { get; set; }
 
-    [JsonPropertyName("serverTime")]
-    public DateTime ServerTime { get; set; }
-
     [JsonPropertyName("allowAnonymousAccess")]
     public bool AllowAnonymousAccess { get; set; }
 

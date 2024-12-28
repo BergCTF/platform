@@ -1,0 +1,79 @@
+@if (metadata && !metadata.teams) {
+    <div class="alert alert-warning mb-3" role="alert">Teams are not enabled for this event.</div>
+}
+@if (team) {
+    <h1>Team: {{ team.name }}</h1>
+    <div class="container mb-4">
+      <div class="row">
+        <div class="card">
+          <div class="card-body">
+            <h3>Members</h3>
+            @if (teamMembers && teamMembers.length > 0) {
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th scope="col">Player</th>
+                  </tr>
+                </thead>
+                @for (member of teamMembers; track member) {
+                  <tbody>
+                    <tr>
+                      <td>
+                        <a class="hover-underline cursor-pointer" [routerLink]="['/players', member.id]">
+                          {{ member.name }}
+                        </a>
+                      </td>
+                    </tr>
+                  </tbody>
+                }
+              </table>
+            } @else {
+              <p class="text-muted">No members.</p>
+            }
+            <h3>Solves</h3>
+            @if (teamSolves && teamSolves.length > 0) {
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th scope="col">Challenge</th>
+                    <th scope="col">Solved by</th>
+                    <th scope="col">Solved at</th>
+                  </tr>
+                </thead>
+                @for (solve of teamSolves; track solve) {
+                  <tbody>
+                    <tr>
+                      <td>
+                        <a class="hover-underline cursor-pointer" [routerLink]="['/challenges', solve.challengeName]">
+                          {{ solve.challengeName }}
+                        </a>
+                      </td>
+                      <td>
+                        <a class="hover-underline cursor-pointer" [routerLink]="['/players', solve.playerId]">
+                          {{ dataService.getPlayerName(solve.playerId) | async }}
+                        </a>
+                      </td>
+                      <td class="text-wrap">
+                        <app-pretty-date [date]="solve.solvedAt" />
+                        <wbr />
+                        <span class="text-muted text-nowrap">({{ helper.relativeTime(solve.solvedAt) }})</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                }
+              </table>
+              <span class="text-wrap">
+                Last solve:
+                <app-pretty-date [date]="teamSolves[0].solvedAt" />
+                <span class="text-muted ms-2 text-nowrap">({{ helper.relativeTime(teamSolves[0].solvedAt) }})</span>
+              </span>
+            } @else {
+              <p class="text-muted">No solves yet.</p>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+} @else {
+    <h1>Team not found</h1>
+}

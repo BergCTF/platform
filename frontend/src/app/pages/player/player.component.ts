@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute, Params, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Challenge, Player, Solve } from 'src/app/model';
 import { DataService } from 'src/app/services/data.service';
 import { HelperService } from 'src/app/services/helper.service';
@@ -18,12 +18,12 @@ export class PlayerComponent implements OnInit, OnDestroy {
   private _players: Player[] = [];
   private _solves: Solve[] = [];
   private _challenges: Challenge[] = [];
-  private routeUpdateSubscription: Subscription | undefined;
-  private playerUpdateSubscription: Subscription | undefined;
-  private solvesUpdateSubscription: Subscription | undefined;
-  private challengesUpdateSubscription: Subscription | undefined;
+  private routeParamsSubscription: Subscription | null = null;
+  private playersSubscription: Subscription | null = null;
+  private solvesSubscription: Subscription | null = null;
+  private challengesSubscription: Subscription | null = null;
 
-  player: Player | undefined = undefined;
+  player: Player | null = null;
   playerSolves: Solve[] = [];
 
   constructor(
@@ -33,49 +33,35 @@ export class PlayerComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.routeUpdateSubscription = this.route.params.subscribe(params => this.handleRouteUpdate(params));
-    this.playerUpdateSubscription = this.dataService.players.subscribe(players => this.handlePlayersUpdate(players));
-    this.solvesUpdateSubscription = this.dataService.solves.subscribe(solves => this.handleSolvesUpdate(solves));
-    this.challengesUpdateSubscription = this.dataService.challenges.subscribe(challenges => this.handleChallengesUpdate(challenges));
+    this.routeParamsSubscription = this.route.params.subscribe(params => {
+      this._uuid = params['uuid'];
+      this.handlePlayerUpdate();
+    });
+    this.playersSubscription = this.dataService.players.subscribe(players => {
+      this._players = players;
+      this.handlePlayerUpdate();
+    });
+    this.solvesSubscription = this.dataService.solves.subscribe(solves => {
+      this._solves = solves;
+      this.handlePlayerUpdate();
+    });
+    this.challengesSubscription = this.dataService.challenges.subscribe(challenges => this.handleChallengesUpdate(challenges));
   }
 
   ngOnDestroy(): void {
-    this.routeUpdateSubscription?.unsubscribe();
-    this.playerUpdateSubscription?.unsubscribe();
-    this.solvesUpdateSubscription?.unsubscribe();
-    this.challengesUpdateSubscription?.unsubscribe();
-  }
-
-  private handleRouteUpdate(params: Params) {
-    this._uuid = params['uuid'];
-    this.dataService.ensurePlayer(this._uuid);
-    this.handlePlayerUpdate();
-  }
-
-  private handlePlayersUpdate(players: Player[]) {
-    this._players = players;
-    this.handlePlayerUpdate();
+    this.routeParamsSubscription?.unsubscribe();
+    this.playersSubscription?.unsubscribe();
+    this.solvesSubscription?.unsubscribe();
+    this.challengesSubscription?.unsubscribe();
   }
 
   private handlePlayerUpdate() {
-    this.player = this._players.find(p => p.id == this._uuid);
+    this.player = this._players.find(p => p.id == this._uuid) || null;
     this.playerSolves = this._solves.filter(s => s.playerId == this._uuid);
-  }
-
-  private handleSolvesUpdate(solves: Solve[]) {
-    this._solves = solves;
-    this.handlePlayerUpdate();
   }
 
   private handleChallengesUpdate(challenges: Challenge[]) {
     this._challenges = challenges;
-  }
-
-  lastSolve(): string {
-    if (this.playerSolves) {
-      return this.playerSolves.reduce((a, b) => a < b ? b : a).solvedAt;
-    }
-    return '';
   }
 
   getPrimaryCategories() {

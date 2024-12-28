@@ -1,5 +1,5 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Challenge, Instance, Metadata, Solve } from 'src/app/model';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Challenge, Instance, Metadata, Solve, Team } from 'src/app/model';
 import { HelperService } from 'src/app/services/helper.service';
 import { DataService } from 'src/app/services/data.service';
 import { PrettyDateComponent } from '../../widgets/pretty-date/pretty-date.component';
@@ -23,45 +23,48 @@ export class ChallengesComponent implements OnInit, OnDestroy {
   private _metadata = new Metadata();
   private _challenges: Challenge[] = [];
   private _solves: Solve[] = [];
-  private instanceUpdateSubscription: Subscription | undefined;
-  private updateMetadataSubscription: Subscription | undefined;
-  private updateChallengesSubscription: Subscription | undefined;
-  private updateSolvesSubscription: Subscription | undefined;
+  private _teams: Team[] = [];
+  private instancesSubscription: Subscription | null = null;
+  private metadataSubscription: Subscription | null = null;
+  private challengesSubscription: Subscription | null = null;
+  private teamsSubscription: Subscription | null = null;
+  private solvesSubscription: Subscription | null = null;
 
   constructor(
     public dataService: DataService,
-    public helpers: HelperService
+    public helpers: HelperService,
+    private changeDetectorRef: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.hideSolved = localStorage.getItem('hideSolved') === 'true';
-    this.instanceUpdateSubscription = this.dataService.instance.subscribe(instance => this.handleInstanceUpdate(instance));
-    this.updateMetadataSubscription = this.dataService.metadata.subscribe(metadata => this.handleMetadataUpdate(metadata));
-    this.updateChallengesSubscription = this.dataService.challenges.subscribe(challenges => this.handleChallengesUpdate(challenges));
-    this.updateSolvesSubscription = this.dataService.solves.subscribe(solves => this.handleSolvesUpdate(solves));
+    this.instancesSubscription = this.dataService.instance.subscribe(instance => {
+      this.instance = instance;
+      this.changeDetectorRef.detectChanges();
+    });
+    this.metadataSubscription = this.dataService.metadata.subscribe(metadata => {
+      this._metadata = metadata;
+    });
+    this.challengesSubscription = this.dataService.challenges.subscribe(challenges => {
+      this._challenges = challenges;
+      this.changeDetectorRef.detectChanges();
+    });
+    this.teamsSubscription = this.dataService.teams.subscribe(teams => {
+      this._teams = teams;
+      this.changeDetectorRef.detectChanges();
+    })
+    this.solvesSubscription = this.dataService.solves.subscribe(solves => {
+      this._solves = solves;
+      this.changeDetectorRef.detectChanges();
+    });
   }
 
   ngOnDestroy(): void {
-    this.updateChallengesSubscription?.unsubscribe();
-    this.updateMetadataSubscription?.unsubscribe();
-    this.instanceUpdateSubscription?.unsubscribe();
-    this.updateSolvesSubscription?.unsubscribe();
-  }
-
-  private handleChallengesUpdate(challenges: Challenge[]) {
-    this._challenges = challenges;
-  }
-
-  private handleInstanceUpdate(instance: Instance | null) {
-    this.instance = instance;
-  }
-
-  private handleMetadataUpdate(metadata: Metadata) {
-    this._metadata = metadata;
-  }
-
-  private handleSolvesUpdate(solves: Solve[]) {
-    this._solves = solves;
+    this.challengesSubscription?.unsubscribe();
+    this.metadataSubscription?.unsubscribe();
+    this.instancesSubscription?.unsubscribe();
+    this.teamsSubscription?.unsubscribe();
+    this.solvesSubscription?.unsubscribe();
   }
 
   getChallenges(category: string, includeSolved: boolean = false): Challenge[] {
@@ -75,7 +78,12 @@ export class ChallengesComponent implements OnInit, OnDestroy {
   }
 
   hasSolvedChallenge(challengeName: string): boolean {
-    return this._solves.find(s => s.challengeName == challengeName && s.playerId == this.dataService.currentPlayerId) !== undefined;
+    let team = this._teams.find(t => t.players.includes(this.dataService.currentPlayerId));
+    if (team) {
+      return this._solves.find(s => s.challengeName == challengeName && team.players.includes(s.playerId)) != undefined;
+    } else {
+      return this._solves.find(s => s.challengeName == challengeName && s.playerId == this.dataService.currentPlayerId) != undefined;
+    }
   }
 
   getStart(): Date {
@@ -86,8 +94,8 @@ export class ChallengesComponent implements OnInit, OnDestroy {
     return new Date(this._metadata.end);
   }
 
-  getServerTime(): Date {
-    return new Date(this._metadata.serverTime);
+  now(): Date {
+    return new Date();
   }
 
   startChallengeInstance(challenge: string) {
@@ -119,12 +127,5 @@ export class ChallengesComponent implements OnInit, OnDestroy {
 
   updateHideState() {
     localStorage.setItem('hideSolved', Boolean(this.hideSolved).toString());
-  }
-
-  copyToClipboard(element: HTMLElement) {
-    navigator.clipboard
-      .writeText(element.innerText)
-      .then()
-      .catch(e => console.error(e));
   }
 }

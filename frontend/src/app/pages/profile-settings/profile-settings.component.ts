@@ -37,4 +37,8 @@ export class ProfileSettingsComponent implements OnDestroy {
       this.dataService.refreshCurrentPlayer();
     });
   }
+
+  getHost(): string {
+    return window.location.host;
+  }
 }

@@ -3,14 +3,14 @@
 <div class="card mb-3">
   <div class="card-body">
     <h4>API Key</h4>
+    <p>Username: <code>{{ dataService.currentPlayerId }}</code></p>
     @if (apiKey) {
-      <p>Make sure you copy the api key, as it will not be shown again.</p>
-      <code>{{ apiKey }}</code>
+      <p>API Key: <code>{{ apiKey }}</code></p>
+      <p>Make sure you copy this key, as it will not be shown again.</p>
       <p></p>
     }
     @else {
-      <p>Current API User: <code>{{ dataService.currentPlayerId }}</code></p>
-      <p>Current API Key: <code>{{ (dataService.currentPlayer | async)?.apiKeyPlaceholder ?? 'Not yet generated' }}</code></p>
+      <p>API Key: <code>{{ (dataService.currentPlayer | async)?.apiKeyPlaceholder ?? 'Not yet generated' }}</code></p>
     }
     <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#resetApiKey"><i class="bi bi-trash text-info"></i>&nbsp;Reset API Key</button>
     <div class="modal" tabindex="-1" id="resetApiKey">
@@ -26,6 +26,31 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             <button type="button" class="btn btn-warning" (click)="resetAPIKey()" data-bs-dismiss="modal"><i class="bi bi-trash text-white"></i>Reset API Key</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="accordion accordion-flush mt-3" id="accordionFlushExample">
+      <div class="accordion-item">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseOne" aria-expanded="false" aria-controls="flush-collapseOne">
+            API Usage
+          </button>
+        </h2>
+        <div id="flush-collapseOne" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
+          <div class="accordion-body">
+            <p>To get an API access token, you need to perform the <a href="https://www.rfc-editor.org/rfc/rfc6749#section-4.3">Resource Owner Password Credentials Grant</a>:</p>
+            <pre>
+POST /api/openid/token HTTP/1.1
+Host: {{ getHost() }}
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&username={{ dataService.currentPlayerId }}&password={{ apiKey || (dataService.currentPlayer | async)?.apiKeyPlaceholder ?? 'Not yet generated' }}
+            </pre>
+            <p>
+              You can then use the obtained access token to interact with the API.
+              <a href="/swagger" target="_blank">Swagger Docs of the Berg.API</a> are available.
+            </p>
           </div>
         </div>
       </div>

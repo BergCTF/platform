@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DataService } from './services/data.service';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { CurrentPlayer } from './model';
+import { Metadata } from './model';
 import { AsyncPipe } from '@angular/common';
 
 @Component({
@@ -12,8 +12,12 @@ import { AsyncPipe } from '@angular/common';
     imports: [RouterLink, RouterLinkActive, RouterOutlet, AsyncPipe]
 })
 export class AppComponent implements OnInit, OnDestroy {
+
+  private metadataSubscription: Subscription | null = null;
+
   title = 'Berg Frontend';
   theme: string | null = null;
+  metadata: Metadata | null = null;
 
   constructor(
     public dataService: DataService,
@@ -22,9 +26,13 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.theme = localStorage.getItem('theme');
     this.setTheme(this.getPreferredTheme());
+    this.metadataSubscription = this.dataService.metadata.subscribe(metadata => {
+      this.metadata = metadata;
+    });
   }
 
   ngOnDestroy(): void {
+    this.metadataSubscription?.unsubscribe();
   }
 
   getPreferredTheme(){

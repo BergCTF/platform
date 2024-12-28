@@ -27,7 +27,7 @@ The Berg API will then run, with the docs available at: https://berg.localhost/s
 
 ## API Authentication
 
-If you are not using the frontend that is running in the browser and want to use the Berg API, you will need to login via the frontend once to generate an API key. From then on, you can authenticate directly against the Berg API and use it:
+If you want to use the Berg API, you will need to login via the frontend once to generate an API key. From then on, you can authenticate directly against the Berg API:
 
 ```py
 import requests

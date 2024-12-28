@@ -10,9 +10,6 @@ public class Solve
     [JsonPropertyName("playerId")]
     public Guid PlayerId { get; set; }
 
-    [JsonPropertyName("teamId")]
-    public Guid? TeamId { get; set; }
-
     [JsonPropertyName("solvedAt")]
     public DateTime SolvedAt { get; set; }
 

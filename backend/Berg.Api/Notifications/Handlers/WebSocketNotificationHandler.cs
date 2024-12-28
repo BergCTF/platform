@@ -31,8 +31,7 @@ public class WebSocketNotificationHandler(
             Id = solve.Id,
             PlayerId = solve.PlayerId,
             ChallengeName = solve.Challenge,
-            SolvedAt = solve.SolvedAt,
-            TeamId = solve.TeamId
+            SolvedAt = solve.SolvedAt
         };
         if (!solve.IsFrozen)
         {

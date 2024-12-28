@@ -1,7 +1,6 @@
 export class Metadata {
   public start = '';
   public end = '';
-  public serverTime = '';
   public allowAnonymousAccess = true;
   public playerAttributes: PlayerAttribute[] = [];
   public freezeStart: string | null = null;
@@ -88,7 +87,6 @@ export class Instance {
 
 export class Solve {
   public playerId = '';
-  public teamId? = '';
   public solvedAt = '';
   public challengeName = '';
 }
@@ -103,4 +101,12 @@ export enum ChallengeInstanceState {
 export interface WebSocketMessage<T> {
   type: string;
   message: T;
+}
+
+export class ProblemDetails {
+  public type = '';
+  public title = '';
+  public status = 0;
+  public detail = '';
+  public instance = '';
 }
