@@ -297,7 +297,7 @@ public partial class TeamController(
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult> LeaveCurrentTeam(CancellationToken cancel)
+    public async Task<ActionResult> LeaveCurrentTeam()
     {
         if(!ctfConfig.Teams)
         {
@@ -311,7 +311,7 @@ public partial class TeamController(
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
         var player = await dbContext.Players
             .Include(p => p.Team)
-            .SingleAsync(p => p.Id == playerId, cancel);
+            .SingleAsync(p => p.Id == playerId);
 
         if (player.Team == null)
         {
@@ -322,24 +322,32 @@ public partial class TeamController(
             });
         }
 
-        var previousTeamId = player.Team.Id;
-        var previousTeamName = player.Team.Name;
+        var previousTeam = player.Team;
         player.Team = null;
-        await dbContext.SaveChangesAsync(cancel);
-        logger.LogInformation("Player {PlayerId} left team {TeamId}", playerId, previousTeamId);
+        await dbContext.SaveChangesAsync();
+        logger.LogInformation("Player {PlayerId} left team {TeamId}", playerId, previousTeam.Id);
+
+        var newTeamPlayerIds = dbContext.Players
+            .Where(p => p.TeamId == previousTeam.Id)
+            .Select(p => p.Id)
+            .ToList();
+
+        if (newTeamPlayerIds.Count == 0)
+        {
+            dbContext.Teams.Remove(previousTeam);
+            logger.LogInformation("Deleting Team {TeamId} since there are no more players in it.", previousTeam.Id);
+        }
+        await dbContext.SaveChangesAsync();
 
         var _ = mediator.Publish(new TeamUpdateNotification
         {
             Team = new Team
             {
-                Id = previousTeamId,
-                Name = previousTeamName,
-                Players = dbContext.Players
-                    .Where(p => p.TeamId == previousTeamId)
-                    .Select(p => p.Id)
-                    .ToList(),
+                Id = previousTeam.Id,
+                Name = previousTeam.Name,
+                Players = newTeamPlayerIds,
             }
-        }, cancel);
+        });
 
         return Ok();
     }
