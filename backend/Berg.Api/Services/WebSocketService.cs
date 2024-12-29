@@ -1,6 +1,7 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Berg.Api.Services;
 
@@ -17,6 +18,18 @@ public class BergWebSocketConnection
     public WebSocket WebSocket { get; set; } = null!;
     public Guid? PlayerId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.MinValue;
+}
+
+public class WebSocketMessage
+{
+    [JsonPropertyName("type")]
+    public required string Type { get; set; }
+}
+
+public class WebSocketMessage<T> : WebSocketMessage
+{
+    [JsonPropertyName("message")]
+    public required T Message { get; set; }
 }
 
 public class WebSocketService(ILogger<ChallengeService> logger) : IWebSocketService
@@ -45,6 +58,22 @@ public class WebSocketService(ILogger<ChallengeService> logger) : IWebSocketServ
                 // Do nothing with this, websocket is just for pushing events. We just keep this open.
                 var segment = new ArraySegment<byte>(buffer);
                 result = await webSocket.ReceiveAsync(segment, cancellationToken);
+                if (result.Count != 0)
+                {
+                    try {
+                        var receivedBytes = segment[0..result.Count];
+                        var message = JsonSerializer.Deserialize<WebSocketMessage<int>>(receivedBytes);
+                        if (message != null && message.Type == "ping") {
+                            var pongMessage = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new WebSocketMessage<int> {
+                                Type = "pong",
+                                Message = message.Message,
+                            }));
+                            await conn.WebSocket.SendAsync(pongMessage, WebSocketMessageType.Text, true, cancellationToken);
+                        }
+                    } catch (JsonException ex) {
+                        logger.LogWarning(ex, "WebSocket connection got invalid json from player: {PlayerId} {HexData}", playerId, Convert.ToHexString(segment));
+                    }
+                }
             } while (!result.CloseStatus.HasValue);
             await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, cancellationToken);
         }
@@ -60,7 +89,10 @@ public class WebSocketService(ILogger<ChallengeService> logger) : IWebSocketServ
 
     public async Task PushEvent<T>(string eventType, T message, Func<Guid, bool> filter)
     {
-        var buffer = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { type = eventType, message }));
+        var buffer = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new WebSocketMessage<T> {
+            Type = eventType,
+            Message = message
+        }));
         foreach (var conn in _connections)
         {
             if (!conn.PlayerId.HasValue || !filter(conn.PlayerId.Value))
@@ -79,7 +111,10 @@ public class WebSocketService(ILogger<ChallengeService> logger) : IWebSocketServ
 
     public async Task PushEventAll<T>(string eventType, T message)
     {
-        var buffer = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { type = eventType, message }));
+        var buffer = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new WebSocketMessage<T> {
+            Type = eventType,
+            Message = message
+        }));
         foreach (var conn in _connections)
         {
             if (conn.WebSocket.State == WebSocketState.Open)
@@ -114,7 +149,10 @@ public class WebSocketService(ILogger<ChallengeService> logger) : IWebSocketServ
     private static async Task SendPlayerIdMessage(WebSocket webSocket, Guid? playerId, CancellationToken cancellationToken)
     {
         string? playerIdStr = playerId?.ToString();
-        var buffer = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { type = "current-player", message = playerIdStr }));
+        var buffer = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new WebSocketMessage<string?> {
+            Type = "current-player",
+            Message = playerIdStr
+        }));
         await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, cancellationToken);
     }
 }

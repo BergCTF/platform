@@ -1,4 +1,13 @@
-<header class="p-3">
+@if (dataService.isDisconnected) {
+  <div class="sticky-top">
+    <div class="container-fluid bg-danger">
+      <div class="row">
+        <p class="text-white text-center p-1 mb-0">Disconnected</p>
+      </div>
+    </div>
+  </div>
+}
+<header class="pt-3 pb-3">
   <div class="container">
     <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start navbar navbar-expand-lg navbar-95">
       <a routerLink="/" class="d-flex align-items-center mb-2 mb-lg-0 text-primary text-decoration-none">

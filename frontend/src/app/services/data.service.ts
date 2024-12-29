@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
-import { BehaviorSubject, Observable, filter, map, mergeMap, retry, share, tap } from 'rxjs';
+import { BehaviorSubject, Observable, filter, map, mergeMap, retry, share, tap, timer } from 'rxjs';
 import { Challenge, CurrentPlayer, Instance, Metadata, Page, Player, Solve, Team, WebSocketMessage } from '../model';
 import { LoginResponse, OidcSecurityService } from 'angular-auth-oidc-client';
 
@@ -19,6 +19,9 @@ export class DataService {
   private _pages = new BehaviorSubject<Page[]>([]);
   private _metadata= new BehaviorSubject<Metadata>(new Metadata());
   private _instance = new BehaviorSubject<Instance>(new Instance());
+  private _pingSent = false;
+  private _lastCounterSent = 0;
+  private _lastCounterReceived = 0;
 
   public readonly challenges: Observable<Challenge[]> = this._challenges.asObservable();
   public readonly players: Observable<Player[]> = this._players.asObservable();
@@ -29,6 +32,7 @@ export class DataService {
   public readonly instance: Observable<Instance> = this._instance.asObservable();
   public readonly metadata: Observable<Metadata> = this._metadata.asObservable();
   public readonly loginEvents: Observable<LoginResponse>;
+  public isDisconnected = false;
   public isAuthenticated = false;
   public currentPlayerId = '00000000-0000-0000-0000-000000000000';
 
@@ -49,6 +53,21 @@ export class DataService {
 
         this.isAuthenticated = isAuthenticated;
     });
+
+    timer(10, 5000).subscribe(counter => {
+      if (this._pingSent && this._lastCounterSent != this._lastCounterReceived) {
+        this.isDisconnected = true;
+      } else {
+        this.isDisconnected = false;
+      }
+      this._lastCounterSent = counter;
+      let message: WebSocketMessage<number> = {
+        type: "ping",
+        message: this._lastCounterSent
+      };
+      this._pingSent = true;
+      this._webSocket?.next(message);
+    })
   }
 
   refreshAllData() {
@@ -86,6 +105,9 @@ export class DataService {
     });
     this._webSocket.pipe(retry()).subscribe(message => {
       switch (message.type) {
+        case "pong":
+          this._lastCounterReceived = message.message as number;
+          break;
         case "solve":
           let solve = message.message as Solve;
           let solves = this._solves.getValue();
