@@ -66,6 +66,7 @@ export class TeamDetailComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.routeParamsSubscription?.unsubscribe();
     this.metadataSubscription?.unsubscribe();
+    this.challengesSubscription?.unsubscribe();
     this.solvesSubscription?.unsubscribe();
     this.teamsSubscription?.unsubscribe();
     this.playersSubscription?.unsubscribe();
