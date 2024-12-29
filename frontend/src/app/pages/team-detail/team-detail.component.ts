@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Metadata, Player, Solve, Team } from 'src/app/model';
+import { Challenge, Metadata, Player, Solve, Team } from 'src/app/model';
 import { DataService } from 'src/app/services/data.service';
 import { Subscription } from 'rxjs';
 import { HelperService } from 'src/app/services/helper.service';
@@ -16,13 +16,15 @@ import { AsyncPipe } from '@angular/common';
 export class TeamDetailComponent implements OnInit, OnDestroy {
 
   private metadataSubscription: Subscription | null = null;
+  private challengesSubscription: Subscription | null = null;
   private teamsSubscription: Subscription | null = null;
   private playersSubscription: Subscription | null = null;
   private solvesSubscription: Subscription | null = null;
   private routeParamsSubscription: Subscription | null = null;
-  private solves: Solve[] = [];
-  private teams: Team[] = [];
-  private players: Player[] = [];
+  private _solves: Solve[] = [];
+  private _teams: Team[] = [];
+  private _players: Player[] = [];
+  private _challenges: Challenge[] = [];
 
   uuid = '';
   metadata: Metadata = new Metadata();
@@ -41,20 +43,22 @@ export class TeamDetailComponent implements OnInit, OnDestroy {
       this.uuid = params['uuid'];
       this.handleChange();
     });
-
     this.metadataSubscription = this.dataService.metadata.subscribe(metadata => {
       this.metadata = metadata;
     });
+    this.challengesSubscription = this.dataService.challenges.subscribe(challenges => {
+      this._challenges = challenges;
+    });
     this.solvesSubscription = this.dataService.solves.subscribe(solves => {
-      this.solves = solves;
+      this._solves = solves;
       this.handleChange();
     })
     this.teamsSubscription = this.dataService.teams.subscribe(teams => {
-      this.teams = teams;
+      this._teams = teams;
       this.handleChange();
     })
     this.playersSubscription = this.dataService.players.subscribe(players => {
-      this.players = players;
+      this._players = players;
       this.handleChange();
     })
   }
@@ -68,16 +72,39 @@ export class TeamDetailComponent implements OnInit, OnDestroy {
   }
 
   private handleChange() {
-    let team = this.teams.find(t => t.id == this.uuid) || null;
+    let team = this._teams.find(t => t.id == this.uuid) || null;
     this.team = team;
     if (team != null) {
-      this.teamMembers = this.players.filter(p => team.players.includes(p.id));
-      let solves = this.solves.filter(s => team.players.includes(s.playerId));
+      this.teamMembers = this._players.filter(p => team.players.includes(p.id));
+      let solves = this._solves.filter(s => team.players.includes(s.playerId));
       solves.sort((a, b) => new Date(b.solvedAt).getTime() - new Date(a.solvedAt).getTime());
       this.teamSolves = solves;
     } else {
       this.teamMembers = [];
       this.teamSolves = [];
     }
+  }
+
+  getPrimaryCategories() {
+    return [...new Set(this._challenges.map(c => c.categories.length == 0 ? 'uncategorized' : c.categories[0]))].sort();
+  }
+
+  getCategoryProgress(category: string) {
+    let categoryChallenges = this._challenges.filter(c => c.categories.includes(category));
+    let teamSolves = this.teamSolves;
+    if (teamSolves) {
+      let solvedChallenges = categoryChallenges.filter(challenge => teamSolves.some(solve => solve.challengeName === challenge.name));
+      return Math.floor((solvedChallenges.length / categoryChallenges.length) * 100);
+    } else {
+      return 0;
+    }
+  }
+
+  getBarColor(percentage: number) {
+    const minHue = 240;
+    const maxHue = 120;
+    percentage /= 100;
+    const colorString = `hsl(${percentage * (maxHue - minHue) + minHue},60%,${40 + 10 * percentage}%)`;
+    return colorString;
   }
 }

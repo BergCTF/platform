@@ -7,6 +7,25 @@
       <div class="row">
         <div class="card">
           <div class="card-body">
+            <h3 class="mb-3 mt-3">Progress</h3>
+            <div class="row mb-4">
+              @for (category of getPrimaryCategories(); track category) {
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3 col-xxl-2 mb-3">
+                  <div class="card h-100">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-start">
+                        <h5 class="card-title">{{ category }}</h5>
+                        <small>{{ getCategoryProgress(category) }}%</small>
+                      </div>
+                      <div class="progress mt-2">
+                        <div class="progress-bar" role="progressbar" [style.width]="getCategoryProgress(category) + '%'" [style.background-color]="getBarColor(getCategoryProgress(category))" aria-valuemin="0" aria-valuemax="100"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+
             <h3>Members</h3>
             @if (teamMembers && teamMembers.length > 0) {
               <table class="table table-striped">

@@ -26,6 +26,17 @@
           }
         </div>
 
+        @if (metadata && metadata.teams) {
+          <h3 class="mb-3 mt-3">Team</h3>
+          <div class="row mb-4">
+            @if (team) {
+              <p>Member of team <a [routerLink]="['/teams', team.id]">{{ team.name }}</a></p>
+            } @else {
+              <p>This player has not yet joined a team.</p>
+            }
+          </div>
+        }
+
         <h3 class="mb-3">Solves</h3>
         <div class="card p-2">
           @if (playerSolves != undefined && playerSolves.length > 0) {

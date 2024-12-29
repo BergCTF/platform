@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Challenge, Player, Solve } from 'src/app/model';
+import { Challenge, Metadata, Player, Solve, Team } from 'src/app/model';
 import { DataService } from 'src/app/services/data.service';
 import { HelperService } from 'src/app/services/helper.service';
 import { PrettyDateComponent } from '../../widgets/pretty-date/pretty-date.component';
@@ -8,22 +8,27 @@ import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-player',
-    templateUrl: './player.component.html',
-    styleUrls: ['./player.component.less'],
+    templateUrl: './player-detail.component.html',
+    styleUrls: ['./player-detail.component.less'],
     imports: [RouterLink, PrettyDateComponent]
 })
-export class PlayerComponent implements OnInit, OnDestroy {
+export class PlayerDetailComponent implements OnInit, OnDestroy {
 
   private _uuid = '';
   private _players: Player[] = [];
+  private _teams: Team[] = [];
   private _solves: Solve[] = [];
   private _challenges: Challenge[] = [];
   private routeParamsSubscription: Subscription | null = null;
+  private metadataSubscription: Subscription | null = null;
   private playersSubscription: Subscription | null = null;
+  private teamsSubscription: Subscription | null = null;
   private solvesSubscription: Subscription | null = null;
   private challengesSubscription: Subscription | null = null;
 
+  metadata: Metadata | null = null;
   player: Player | null = null;
+  team: Team | null = null;
   playerSolves: Solve[] = [];
 
   constructor(
@@ -37,10 +42,17 @@ export class PlayerComponent implements OnInit, OnDestroy {
       this._uuid = params['uuid'];
       this.handlePlayerUpdate();
     });
+    this.metadataSubscription = this.dataService.metadata.subscribe(metadata => {
+      this.metadata = metadata;
+    })
     this.playersSubscription = this.dataService.players.subscribe(players => {
       this._players = players;
       this.handlePlayerUpdate();
     });
+    this.teamsSubscription = this.dataService.teams.subscribe(teams => {
+      this._teams = teams;
+      this.handlePlayerUpdate();
+    })
     this.solvesSubscription = this.dataService.solves.subscribe(solves => {
       this._solves = solves;
       this.handlePlayerUpdate();
@@ -50,7 +62,9 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routeParamsSubscription?.unsubscribe();
+    this.metadataSubscription?.unsubscribe();
     this.playersSubscription?.unsubscribe();
+    this.teamsSubscription?.unsubscribe();
     this.solvesSubscription?.unsubscribe();
     this.challengesSubscription?.unsubscribe();
   }
@@ -58,6 +72,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   private handlePlayerUpdate() {
     this.player = this._players.find(p => p.id == this._uuid) || null;
     this.playerSolves = this._solves.filter(s => s.playerId == this._uuid).sort((a, b) => new Date(b.solvedAt).getTime() - new Date(a.solvedAt).getTime());
+    this.team = this._teams.find(t => t.players.includes(this._uuid)) || null;
   }
 
   private handleChallengesUpdate(challenges: Challenge[]) {
