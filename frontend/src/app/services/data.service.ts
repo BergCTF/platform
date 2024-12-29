@@ -101,7 +101,12 @@ export class DataService {
     let protocol = window.location.protocol == 'https:' ? 'wss' : 'ws';
     let query = accessToken == null ? '' : ('?access_token=' + encodeURIComponent(accessToken));
     this._webSocket = webSocket<WebSocketMessage<any>>({
-      url: protocol + '://' + window.location.host + '/api/v2/events' + query
+      url: protocol + '://' + window.location.host + '/api/v2/events' + query,
+      openObserver: {
+        next: () => {
+          this.refreshAllData();
+        }
+      }
     });
     this._webSocket.pipe(retry()).subscribe(message => {
       switch (message.type) {
