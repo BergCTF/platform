@@ -13,9 +13,6 @@ public class CurrentPlayer
     [JsonPropertyName("roles")]
     public List<string> Roles { get; set; } = [];
 
-    [JsonPropertyName("teamId")]
-    public Guid? TeamId { get; set; }
-
     [JsonPropertyName("federatedId")]
     public string FederatedId { get; set; } = "";
 

@@ -9,7 +9,9 @@ export class HelperService {
     return this.relativeTimeTo(new Date(time), new Date(Date.now()));
   }
 
-  relativeTimeTo(date: Date, now: Date): string {
+  relativeTimeTo(date: Date, now: Date | null): string {
+    if (now == null)
+      now = new Date();
     const rtf1 = new Intl.RelativeTimeFormat('en', {});
     const diff = date.getTime() - now.getTime();
     const seconds = Math.floor(Math.abs(diff / 1000));
@@ -29,7 +31,9 @@ export class HelperService {
     }
   }
 
-  getCountdownText(target: Date, now: Date): string {
+  getCountdownText(target: Date, now: Date | null): string {
+    if (now == null)
+      now = new Date();
     const diff = target.getTime() - now.getTime();
     const seconds = Math.floor(Math.abs(diff / 1000));
     let minutes = Math.floor(seconds / 60);
@@ -41,5 +45,13 @@ export class HelperService {
     countdown += hours.toString().padStart(2, '0') + 'h ';
     countdown += minutes.toString().padStart(2, '0') + 'm';
     return countdown;
+  }
+
+  getBarColor(percentage: number) {
+    const minHue = 240;
+    const maxHue = 120;
+    percentage /= 100;
+    const colorString = `hsl(${percentage * (maxHue - minHue) + minHue},60%,${40 + 10 * percentage}%)`;
+    return colorString;
   }
 }

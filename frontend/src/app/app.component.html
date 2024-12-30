@@ -14,28 +14,27 @@
         <img class="bi me-2" width="32" height="32" src="/assets/img/logo-small.png" alt="Logo" />
       </a>
       <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
-        @for (page of dataService.pages | async; track page) {
+        @for (page of pages; track page) {
           <li><a [routerLink]="page.path" routerLinkActive="text-decoration-underline" class="nav-link px-2">{{ page.title}}</a></li>
         }
         <li><a routerLink="/challenges" routerLinkActive="text-decoration-underline" class="nav-link px-2">Challenges</a></li>
-        @if (metadata && metadata.teams) {
+        @if (areTeamsEnabled) {
           <li><a routerLink="/team" routerLinkActive="text-decoration-underline" class="nav-link px-2">Team</a></li>
         }
         <li><a routerLink="/scoreboard" routerLinkActive="text-decoration-underline" class="nav-link px-2">Scoreboard</a></li>
       </ul>
-      @if (dataService.isAuthenticated) {
+      @if (currentPlayer) {
         <div class="dropdown text-end" role="button">
           <a class="d-block text-decoration-none link-secondary dropdown-toggle" data-bs-toggle="dropdown">
-            {{ (dataService.currentPlayer | async)?.name }}
+            {{ currentPlayer.name }}
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" [routerLink]="['/players', dataService.currentPlayerId]">Profile</a></li>
+            <li><a class="dropdown-item" [routerLink]="['/players', currentPlayer.id]">Profile</a></li>
             <li><a class="dropdown-item" routerLink="/profile-settings">Settings</a></li>
             <li><a class="dropdown-item" (click)="dataService.logout()">Logout</a></li>
           </ul>
         </div>
-      }
-      @if (!dataService.isAuthenticated) {
+      } @else {
         <div class="text-end">
           <a (click)="dataService.login()" class="btn btn-primary">Login</a>
         </div>

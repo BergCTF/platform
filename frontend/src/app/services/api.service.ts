@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Challenge, CurrentPlayer, CurrentTeam, Instance, Metadata, Page, Player, Solve, Team } from '../model';
+import { Challenge, CurrentPlayer, CurrentTeam, Instance, Metadata, Page, Player, Solve, Team } from '../api-model';
 import { Observable } from 'rxjs';
 
 @Injectable({
@@ -130,10 +130,10 @@ export class ApiService {
     return this.http.post<void>(this.baseUrl+'/api/v2/teams/create', data, this.httpOptions);
   }
 
-  joinTeam(joinToken: string): Observable<void> {
+  joinTeam(joinToken: string): Observable<CurrentTeam> {
     let data = {
       joinToken: joinToken
     };
-    return this.http.post<void>(this.baseUrl+'/api/v2/teams/join', data, this.httpOptions);
+    return this.http.post<CurrentTeam>(this.baseUrl+'/api/v2/teams/join', data, this.httpOptions);
   }
 }

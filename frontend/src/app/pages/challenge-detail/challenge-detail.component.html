@@ -1,6 +1,6 @@
-@if (challenge) {
+@if (challengeDetail) {
   <div class="row">
-    <h3 class="mb-3">{{ challenge.name }}</h3>
+    <h3 class="mb-3">{{ challengeDetail.challenge.name }}</h3>
   </div>
   <div>
     <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -8,7 +8,7 @@
       <button class="nav-link active" id="challenge-tab" data-bs-toggle="tab" data-bs-target="#challenge-tab-pane" type="button" role="tab" aria-controls="challenge-tab-pane" aria-selected="true">Challenge</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="player-solves-tab" data-bs-toggle="tab" data-bs-target="#player-solves-tab-pane" type="button" role="tab" aria-controls="player-solves-tab-pane" aria-selected="false">Solves ({{ solves.length }})</button>
+      <button class="nav-link" id="player-solves-tab" data-bs-toggle="tab" data-bs-target="#player-solves-tab-pane" type="button" role="tab" aria-controls="player-solves-tab-pane" aria-selected="false">Solves ({{ challengeDetail.solves.length }})</button>
     </li>
     </ul>
     <div class="tab-content border-start border-bottom border-end p-3" id="tabContent">
@@ -16,60 +16,60 @@
       <div class="d-flex justify-content-between">
       <h5>Difficulty</h5>
       </div>
-      @switch (challenge.difficulty) {
-      @case ('baby') {
-        <span class="badge text-bg-info me-1 mb-2">baby</span>
-      }
-      @case ('easy') {
-        <span class="badge text-bg-success me-1 mb-2">easy</span>
-      }
-      @case ('medium') {
-        <span class="badge text-bg-warning me-1 mb-2">medium</span>
-      }
-      @case ('hard') {
-        <span class="badge text-bg-danger me-1 mb-2">hard</span>
-      }
-      @case ('leet') {
-        <span class="badge text-bg-leet me-1 mb-2">leet</span>
-      }
-      @default {
-        <span class="badge text-bg-light me-1 mb-2">{{ challenge.difficulty }}</span>
-      }
+      @switch (challengeDetail.challenge.difficulty) {
+        @case ('baby') {
+          <span class="badge text-bg-info me-1 mb-2">baby</span>
+        }
+        @case ('easy') {
+          <span class="badge text-bg-success me-1 mb-2">easy</span>
+        }
+        @case ('medium') {
+          <span class="badge text-bg-warning me-1 mb-2">medium</span>
+        }
+        @case ('hard') {
+          <span class="badge text-bg-danger me-1 mb-2">hard</span>
+        }
+        @case ('leet') {
+          <span class="badge text-bg-leet me-1 mb-2">leet</span>
+        }
+        @default {
+          <span class="badge text-bg-light me-1 mb-2">{{ challengeDetail.challenge.difficulty }}</span>
+        }
       }
       <br />
       <h5>Categories</h5>
-      @for (c of challenge.categories; track c) {
+      @for (c of challengeDetail.challenge.categories; track c) {
       <span class="badge text-bg-dark me-1 mb-2">{{ c }}</span>
       }
       <br />
       <h5>Description</h5>
-      <p [innerHTML]="challenge.description"></p>
+      <p [innerHTML]="challengeDetail.challenge.description"></p>
       <h5>Author</h5>
-      <p>{{ challenge.author }}</p>
-      @if (challenge.attachments !== null && challenge.attachments.length > 0) {
+      <p>{{ challengeDetail.challenge.author }}</p>
+      @if (challengeDetail.challenge.attachments !== null && challengeDetail.challenge.attachments.length > 0) {
       <h5>Attachments</h5>
       }
       <div class="flex gap-2">
-        @for (attachment of challenge.attachments; track attachment) {
+        @for (attachment of challengeDetail.challenge.attachments; track attachment) {
           <a class="btn btn-secondary mb-2" href="{{ attachment.downloadUrl }}" target="_blank" download="{{ attachment.fileName }}">
           <i class="bi bi-download"></i>
           {{ attachment.fileName }}
           </a>
         }
       </div>
-      @if (challenge.hasRemote) {
+      @if (challengeDetail.challenge.hasRemote) {
         <h5>Service</h5>
       }
-      @if (challenge.hasRemote) {
+      @if (challengeDetail.challenge.hasRemote) {
         <div>
           @if (!dataService.isAuthenticated) {
             <div class="alert alert-warning mb-3" role="alert">You need to be logged in to start instances.</div>
           }
           @if (instance) {
             @if (instance.status === 0 && dataService.isAuthenticated) {
-              <button class="btn btn-outline-success" (click)="dataService.startInstance(challenge.name)"><i class="bi bi-play"></i>Start private instance</button>
+              <button class="btn btn-outline-success" (click)="dataService.startInstance(challengeDetail.challenge.name)"><i class="bi bi-play"></i>Start private instance</button>
             }
-            @if (instance.name !== challenge.name && dataService.isAuthenticated) {
+            @if (instance.name !== challengeDetail.challenge.name && dataService.isAuthenticated) {
             <div>
               @if (instance.status !== 0) {
                 <div class="alert alert-primary" role="alert">You need to stop the currently running private instance to start this service.</div>
@@ -79,7 +79,7 @@
               }
             </div>
             }
-            @if (instance.name === challenge.name) {
+            @if (instance.name === challengeDetail.challenge.name) {
               <app-challenge-status></app-challenge-status>
             }
           }
@@ -90,16 +90,16 @@
         @if (flagErrorText) {
           <div class="alert alert-warning mb-3" role="alert">{{ flagErrorText }}</div>
         }
-        @if (!isSolvedByPlayer && now() <= getEnd()) {
+        @if (!challengeDetail.solvedByPlayer && !hasCTFEnded) {
           <div class="input-group mb-3">
-            <input [disabled]="isFlagSubmitting" type="text" class="form-control" placeholder="{{ challenge.flagFormat }}" (keyup.enter)="submitFlag(flagInput.value)" #flagInput aria-describedby="button-submit" />
-            <button [disabled]="isFlagSubmitting" class="btn btn-primary" type="button" id="button-submit" (click)="submitFlag(flagInput.value)"><i class="bi bi-flag"></i> Submit Flag</button>
+            <input [disabled]="isFlagSubmitting" type="text" class="form-control" placeholder="{{ challengeDetail.challenge.flagFormat }}" (keyup.enter)="submitFlag(challengeDetail.challenge.name, flagInput.value)" #flagInput aria-describedby="button-submit" />
+            <button [disabled]="isFlagSubmitting" class="btn btn-primary" type="button" id="button-submit" (click)="submitFlag(challengeDetail.challenge.name, flagInput.value)"><i class="bi bi-flag"></i> Submit Flag</button>
           </div>
         }
-        @if (isSolvedByPlayer) {
+        @if (challengeDetail.solvedByPlayer) {
           <div class="alert alert-success mb-3" role="alert"><i class="bi bi-flag"></i> You have solved this challenge!</div>
         } @else {
-          @if (isSolvedByTeam) {
+          @if (challengeDetail.solvedByTeam) {
             <div class="alert alert-success mb-3" role="alert"><i class="bi bi-flag"></i> Your team has already solved this challenge! You can also submit the flag if you have worked on solving it to claim credit.</div>
           }
         }
@@ -114,14 +114,14 @@
         </tr>
       </thead>
       <tbody class="table-group-divider">
-        @for (solve of solves; track solve) {
+        @for (solve of challengeDetail.solves; track solve) {
         <tr [routerLink]="['/players', solve.playerId]">
           <td>
           <span placement="top" >
             <app-pretty-date [date]="solve.solvedAt" />
           </span>
           </td>
-          <td>{{ dataService.getPlayerName(solve.playerId) | async }}</td>
+          <td>{{ solve.playerName }}</td>
         </tr>
         }
       </tbody>

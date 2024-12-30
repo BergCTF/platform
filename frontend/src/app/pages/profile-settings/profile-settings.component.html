@@ -3,14 +3,14 @@
 <div class="card mb-3">
   <div class="card-body">
     <h4>API Key</h4>
-    <p>Username: <code>{{ dataService.currentPlayerId }}</code></p>
+    <p>Username: <code>{{ currentPlayerId }}</code></p>
     @if (apiKey) {
       <p>API Key: <code>{{ apiKey }}</code></p>
       <p>Make sure you copy this key, as it will not be shown again.</p>
       <p></p>
     }
     @else {
-      <p>API Key: <code>{{ (dataService.currentPlayer | async)?.apiKeyPlaceholder ?? 'Not yet generated' }}</code></p>
+      <p>API Key: <code>{{ apiKeyPlaceholder ?? 'Not yet generated' }}</code></p>
     }
     <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#resetApiKey"><i class="bi bi-trash text-info"></i>&nbsp;Reset API Key</button>
     <div class="modal" tabindex="-1" id="resetApiKey">
@@ -45,7 +45,7 @@ POST /api/openid/token HTTP/1.1
 Host: {{ getHost() }}
 Content-Type: application/x-www-form-urlencoded
 
-grant_type=password&username={{ dataService.currentPlayerId }}&password={{ apiKey || (dataService.currentPlayer | async)?.apiKeyPlaceholder ?? 'not-yet-generated' }}
+grant_type=password&username={{ currentPlayerId }}&password={{ (apiKey || apiKeyPlaceholder) ?? 'not-yet-generated' }}
             </pre>
             <p>
               You can then use the obtained access token to interact with the API.

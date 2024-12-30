@@ -1,131 +1,115 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { Challenge, Instance, Metadata, Solve, Team } from 'src/app/model';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { HelperService } from 'src/app/services/helper.service';
 import { DataService } from 'src/app/services/data.service';
 import { PrettyDateComponent } from '../../widgets/pretty-date/pretty-date.component';
 import { ChallengeStatusComponent } from '../../widgets/challenge-status/challenge-status.component';
-import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Subscription } from 'rxjs';
 import { RouterLink } from '@angular/router';
+import { ChallengeDetailCategory } from 'src/app/model';
+import { Instance } from 'src/app/api-model';
 
 @Component({
     selector: 'app-challenges',
     templateUrl: './challenges.component.html',
     styleUrls: ['./challenges.component.less'],
-    imports: [RouterLink, PrettyDateComponent, ChallengeStatusComponent, FormsModule]
+    imports: [RouterLink, PrettyDateComponent, ChallengeStatusComponent]
 })
 export class ChallengesComponent implements OnInit, OnDestroy {
-  public hideSolved = false;
-  public filterCategory = '';
-  public filterDifficulty = '';
-  public instance: Instance | null = null;
 
-  private _metadata = new Metadata();
-  private _challenges: Challenge[] = [];
-  private _solves: Solve[] = [];
-  private _teams: Team[] = [];
-  private instancesSubscription: Subscription | null = null;
-  private metadataSubscription: Subscription | null = null;
-  private challengesSubscription: Subscription | null = null;
-  private teamsSubscription: Subscription | null = null;
-  private solvesSubscription: Subscription | null = null;
+  public challengeDetailCategories: readonly ChallengeDetailCategory[] = [];
+  public hideSolvedValue = false;
+  public hasCTFStarted = true;
+  public hasCTFEnded = false;
+  public ctfStart: Date | null = null;
+  public instance: Instance | null = null;
+  public primaryChallengeCategories: readonly string[] = [];
+  public challengeDifficulties: readonly string[] = [];
+
+  private challengeDetailCategoriesSubscription: Subscription | null = null;
+  private ctfStartSubscription: Subscription | null = null;
+  private hasCTFStartedSubscription: Subscription | null = null;
+  private hasCTFEndedSubscription: Subscription | null = null;
+  private primaryChallengeCategoriesSubscription: Subscription | null = null;
+  private challengeDifficultiesSubscription: Subscription | null = null;
+  private instanceSubscription: Subscription | null = null;
+
+  private filterCategory = new BehaviorSubject<string>('');
+  private filterDifficulty = new BehaviorSubject<string>('');
+  private hideSolved = new BehaviorSubject<boolean>(false);
 
   constructor(
     public dataService: DataService,
-    public helpers: HelperService,
-    private changeDetectorRef: ChangeDetectorRef
+    public helper: HelperService
   ) {}
 
   ngOnInit(): void {
-    this.hideSolved = localStorage.getItem('hideSolved') === 'true';
-    this.instancesSubscription = this.dataService.instance.subscribe(instance => {
+    this.hideSolvedValue = localStorage.getItem('hideSolved') === 'true';
+    this.ctfStartSubscription = this.dataService.getCTFStart().subscribe(ctfStart => {
+      this.ctfStart = ctfStart;
+    });
+    this.hasCTFStartedSubscription = this.dataService.hasCTFStarted().subscribe(hasCTFStarted => {
+      this.hasCTFStarted = hasCTFStarted;
+    });
+    this.hasCTFEndedSubscription = this.dataService.hasCTFEnded().subscribe(hasCTFEnded => {
+      this.hasCTFEnded = hasCTFEnded;
+    });
+    this.primaryChallengeCategoriesSubscription = this.dataService.getPrimaryChallengeCategories().subscribe(primaryChallengeCategories => {
+      this.primaryChallengeCategories = primaryChallengeCategories;
+    });
+    this.challengeDifficultiesSubscription = this.dataService.getChallengeDifficulties().subscribe(challengeDifficulties => {
+      this.challengeDifficulties = challengeDifficulties;
+    });
+    this.instanceSubscription = this.dataService.instance.subscribe(instance => {
       this.instance = instance;
-      this.changeDetectorRef.detectChanges();
-    });
-    this.metadataSubscription = this.dataService.metadata.subscribe(metadata => {
-      this._metadata = metadata;
-    });
-    this.challengesSubscription = this.dataService.challenges.subscribe(challenges => {
-      this._challenges = challenges;
-      this.changeDetectorRef.detectChanges();
-    });
-    this.teamsSubscription = this.dataService.teams.subscribe(teams => {
-      this._teams = teams;
-      this.changeDetectorRef.detectChanges();
     })
-    this.solvesSubscription = this.dataService.solves.subscribe(solves => {
-      this._solves = solves;
-      this.changeDetectorRef.detectChanges();
+    this.challengeDetailCategoriesSubscription = combineLatest([
+      this.dataService.getChallengeDetailsByCategory(),
+      this.hideSolved.asObservable(),
+      this.filterCategory.asObservable(),
+      this.filterDifficulty.asObservable(),
+      this.dataService.currentPlayerId,
+    ]).pipe(map(data => {
+      let [challengeDetailCategories, hideSolved, filterCategory, filterDifficulty, currentPlayerId] = data;
+      let filteredChallengeDetailCategories = structuredClone(challengeDetailCategories);
+      if (filterCategory != '') {
+        filteredChallengeDetailCategories = filteredChallengeDetailCategories.filter(c => c.category == filterCategory);
+      }
+      for (let category of filteredChallengeDetailCategories) {
+        if (filterDifficulty != '') {
+          category.challenges = category.challenges.filter(c => c.challenge.difficulty == filterDifficulty);
+        }
+        if (currentPlayerId != null && hideSolved) {
+          category.challenges = category.challenges.filter(c => !(c.solvedByPlayer || c.solvedByTeam));
+        }
+      }
+      return Object.freeze(filteredChallengeDetailCategories);
+    })).subscribe(challengeDetailCategories => {
+      this.challengeDetailCategories = challengeDetailCategories;
     });
   }
 
   ngOnDestroy(): void {
-    this.challengesSubscription?.unsubscribe();
-    this.metadataSubscription?.unsubscribe();
-    this.instancesSubscription?.unsubscribe();
-    this.teamsSubscription?.unsubscribe();
-    this.solvesSubscription?.unsubscribe();
+    this.challengeDetailCategoriesSubscription?.unsubscribe();
+    this.ctfStartSubscription?.unsubscribe();
+    this.hasCTFStartedSubscription?.unsubscribe();
+    this.hasCTFEndedSubscription?.unsubscribe();
+    this.primaryChallengeCategoriesSubscription?.unsubscribe();
+    this.challengeDifficultiesSubscription?.unsubscribe();
+    this.instanceSubscription?.unsubscribe();
   }
 
-  getChallenges(category: string, includeSolved: boolean = false): Challenge[] {
-    return this._challenges.filter(c => c.categories.length != 0 && c.categories[0] == category)
-        // hide solved
-        .filter(c => includeSolved || !(this.hideSolved && this.hasSolvedChallenge(c.name)))
-        // filter by difficulty
-        .filter(c => this.filterDifficulty === '' || this.filterDifficulty === c.difficulty)
-        // filter by category
-        .filter(c => this.filterCategory === '' || c.categories.includes(this.filterCategory));
+  filterCategoryChange(value: string) {
+    this.filterCategory.next(value);
   }
 
-  hasSolvedChallenge(challengeName: string): boolean {
-    let team = this._teams.find(t => t.players.includes(this.dataService.currentPlayerId));
-    if (team) {
-      return this._solves.find(s => s.challengeName == challengeName && team.players.includes(s.playerId)) != undefined;
-    } else {
-      return this._solves.find(s => s.challengeName == challengeName && s.playerId == this.dataService.currentPlayerId) != undefined;
-    }
+  filterDifficultyChange(value: string) {
+    this.filterDifficulty.next(value);
   }
 
-  getStart(): Date {
-    return new Date(this._metadata.start);
-  }
-
-  getEnd(): Date {
-    return new Date(this._metadata.end);
-  }
-
-  now(): Date {
-    return new Date();
-  }
-
-  startChallengeInstance(challenge: string) {
-    this.dataService.startInstance(challenge);
-  }
-
-  stopChallengeInstance() {
-    this.dataService.stopInstance();
-  }
-
-  getAllCategories() {
-    return [...new Set(this._challenges.flatMap(c => c.categories.length == 0 ? ['uncategorized'] : c.categories))].sort();
-  }
-
-  getAllDifficulties() {
-    return [...new Set(this._challenges.map(c => c.difficulty))].sort();
-  }
-
-  getPrimaryCategories() {
-    return [...new Set(this._challenges.map(c => c.categories.length == 0 ? 'uncategorized' : c.categories[0]))].sort();
-  }
-
-  getCategorySolves(category: string) {
-    let challengeNames = this.getChallenges(category, true).map(c => c.name);
-    const numChallenges = challengeNames.length;
-    const playerSolves = this._solves.filter(s => s.playerId == this.dataService.currentPlayerId && challengeNames.includes(s.challengeName)).length;
-    return `(${playerSolves}/${numChallenges})`;
-  }
-
-  updateHideState() {
-    localStorage.setItem('hideSolved', Boolean(this.hideSolved).toString());
+  hideSolvedChange(event: any) {
+    let value = Boolean(event.target.checked);
+    this.hideSolvedValue = value;
+    this.hideSolved.next(value);
+    localStorage.setItem('hideSolved', value.toString());
   }
 }

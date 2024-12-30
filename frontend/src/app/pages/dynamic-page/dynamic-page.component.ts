@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { Page } from 'src/app/model';
+import { Page } from 'src/app/api-model';
 import { DataService } from 'src/app/services/data.service';
 
 @Component({
@@ -14,7 +14,7 @@ export class DynamicPageComponent implements OnInit, OnDestroy {
 
   private updatePagesSubscription: Subscription | undefined;
   private updateRouteSubscription: Subscription | undefined;
-  private _pages: Page[] = [];
+  private _pages: readonly Page[] = [];
   public page: Page = {
     title: 'Not found',
     index: 0,
@@ -37,7 +37,7 @@ export class DynamicPageComponent implements OnInit, OnDestroy {
     this.updateRouteSubscription?.unsubscribe();
   }
 
-  private handlePagesUpdate(pages: Page[]) {
+  private handlePagesUpdate(pages: readonly Page[]) {
     this._pages = pages;
     this.handleUpdate();
   }

@@ -1,81 +1,82 @@
 <h1>Team settings</h1>
 
-@if (metadata && !metadata.teams) {
+@if (!areTeamsEnabled) {
     <div class="alert alert-warning mb-3" role="alert">Teams are not enabled for this event.</div>
-}
-@if (dataService.isAuthenticated) {
-    @if (team) {
-        <p>Current Team: <b><a [routerLink]="['/teams', team.id]">{{ team.name }}</a></b></p>
-        <h5>Join token</h5>
-        <p>Only share this with people you want to invite!</p>
-        <p>
-            <code>{{ teamJoinToken }}</code>
-        </p>
-        <h5>Members</h5>
-        @if (teamMembers && teamMembers.length > 0) {
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th scope="col">Player</th>
-                    </tr>
-                </thead>
-            @for (member of teamMembers; track member) {
-                <tbody>
-                    <tr>
-                        <td>
-                            <a [routerLink]="['/players', member.id]">{{ member.name }}</a>
-                        </td>
-                    </tr>
-                </tbody>
-            }
-            </table>
-        } @else {
-            <p class="text-muted">No members.</p>
-        }
-        <h5>Danger Zone</h5>
-        <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#leaveTeam"><i class="bi bi-box-arrow-left"></i>&nbsp;Leave team</button>
-        <div class="modal" tabindex="-1" id="leaveTeam">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Leave Team</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>You can always re-join the team using the team join token.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger" (click)="leaveTeam()" data-bs-dismiss="modal"><i class="bi bi-box-arrow-left text-white"></i>&nbsp;Leave Team</button>
-                </div>
-                </div>
-            </div>
-        </div>
-    } @else {
-        <div class="alert alert-info" role="alert">You are not part of a team. You can either create or join a team.</div>
-        <h5>Join existing team</h5>
-        @if (joinError) {
-            <div class="alert alert-warning" role="alert">
-                {{ joinError }}
-            </div>
-        }
-        <div class="mb-3">
-            <label for="join-token" class="form-label">Team join token</label>
-            <input id="join-token" type="text" class="form-control" [(ngModel)]="joinToken" aria-describedby="button-join" />
-        </div>
-        <button class="btn btn-primary" type="button" id="button-join" (click)="joinTeam()"><i class="bi bi-box-arrow-in-right"></i> Join team</button>
-        <h5 class="mt-5">Create new team</h5>
-        @if (createError) {
-            <div class="alert alert-warning" role="alert">
-                {{ createError }}
-            </div>
-        }
-        <div class="mb-3">
-            <label for="team-name" class="form-label">Team name</label>
-            <input id="team-name" type="text" class="form-control" [(ngModel)]="teamName" aria-describedby="button-create" />
-        </div>
-        <button class="btn btn-primary" type="button" id="button-create" (click)="createTeam()"><i class="bi bi-plus-circle"></i> Create team</button>
-    }
 } @else {
-    <div class="alert alert-warning mb-3" role="alert">You need to be logged in to manage team settings.</div>
+    @if (dataService.isAuthenticated) {
+        @if (teamDetail) {
+            <p>Current Team: <b><a [routerLink]="['/teams', teamDetail.id]">{{ teamDetail.name }}</a></b></p>
+            <h5>Join token</h5>
+            <p>Only share this with people you want to invite!</p>
+            <p>
+                <code>{{ teamJoinToken }}</code>
+            </p>
+            <h5>Members</h5>
+            @if (teamDetail.players.length > 0) {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Player</th>
+                        </tr>
+                    </thead>
+                @for (player of teamDetail.players; track player) {
+                    <tbody>
+                        <tr>
+                            <td>
+                                <a [routerLink]="['/players', player.id]">{{ player.name }}</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                }
+                </table>
+            } @else {
+                <p class="text-muted">No members.</p>
+            }
+            <h5>Danger Zone</h5>
+            <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#leaveTeam"><i class="bi bi-box-arrow-left"></i>&nbsp;Leave team</button>
+            <div class="modal" tabindex="-1" id="leaveTeam">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Leave Team</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>You can always re-join the team using the team join token.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" (click)="leaveTeam()" data-bs-dismiss="modal"><i class="bi bi-box-arrow-left text-white"></i>&nbsp;Leave Team</button>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        } @else {
+            <div class="alert alert-info" role="alert">You are not part of a team. You can either create or join a team.</div>
+            <h5>Join existing team</h5>
+            @if (joinError) {
+                <div class="alert alert-warning" role="alert">
+                    {{ joinError }}
+                </div>
+            }
+            <div class="mb-3">
+                <label for="join-token" class="form-label">Team join token</label>
+                <input id="join-token" type="text" class="form-control" [(ngModel)]="joinToken" aria-describedby="button-join" />
+            </div>
+            <button class="btn btn-primary" type="button" id="button-join" (click)="joinTeam()"><i class="bi bi-box-arrow-in-right"></i> Join team</button>
+            <h5 class="mt-5">Create new team</h5>
+            @if (createError) {
+                <div class="alert alert-warning" role="alert">
+                    {{ createError }}
+                </div>
+            }
+            <div class="mb-3">
+                <label for="team-name" class="form-label">Team name</label>
+                <input id="team-name" type="text" class="form-control" [(ngModel)]="teamName" aria-describedby="button-create" />
+            </div>
+            <button class="btn btn-primary" type="button" id="button-create" (click)="createTeam()"><i class="bi bi-plus-circle"></i> Create team</button>
+        }
+    } @else {
+        <div class="alert alert-warning mb-3" role="alert">You need to be logged in to manage team settings.</div>
+    }
 }

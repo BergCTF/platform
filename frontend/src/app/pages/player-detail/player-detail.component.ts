@@ -1,99 +1,44 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Challenge, Metadata, Player, Solve, Team } from 'src/app/model';
 import { DataService } from 'src/app/services/data.service';
 import { HelperService } from 'src/app/services/helper.service';
 import { PrettyDateComponent } from '../../widgets/pretty-date/pretty-date.component';
-import { Subscription } from 'rxjs';
+import { map, Subscription } from 'rxjs';
+import { PlayerDetail } from 'src/app/model';
+import { KeyValuePipe } from '@angular/common';
 
 @Component({
     selector: 'app-player',
     templateUrl: './player-detail.component.html',
     styleUrls: ['./player-detail.component.less'],
-    imports: [RouterLink, PrettyDateComponent]
+    imports: [RouterLink, PrettyDateComponent, KeyValuePipe]
 })
 export class PlayerDetailComponent implements OnInit, OnDestroy {
 
-  private _uuid = '';
-  private _players: Player[] = [];
-  private _teams: Team[] = [];
-  private _solves: Solve[] = [];
-  private _challenges: Challenge[] = [];
-  private routeParamsSubscription: Subscription | null = null;
-  private metadataSubscription: Subscription | null = null;
-  private playersSubscription: Subscription | null = null;
-  private teamsSubscription: Subscription | null = null;
-  private solvesSubscription: Subscription | null = null;
-  private challengesSubscription: Subscription | null = null;
+  private playerDetailSubscription: Subscription | null = null;
+  private areTeamsEnabledSubscription: Subscription | null = null;
 
-  metadata: Metadata | null = null;
-  player: Player | null = null;
-  team: Team | null = null;
-  playerSolves: Solve[] = [];
+  playerDetail: PlayerDetail | null = null;
+  areTeamsEnabled = false;
 
   constructor(
     public dataService: DataService,
-    public helpers: HelperService,
+    public helper: HelperService,
     private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
-    this.routeParamsSubscription = this.route.params.subscribe(params => {
-      this._uuid = params['uuid'];
-      this.handlePlayerUpdate();
+    let playerId = this.route.params.pipe(map(params => params['uuid']));
+    this.playerDetailSubscription = this.dataService.getPlayerDetail(playerId).subscribe(playerDetail => {
+      this.playerDetail = playerDetail;
     });
-    this.metadataSubscription = this.dataService.metadata.subscribe(metadata => {
-      this.metadata = metadata;
-    })
-    this.playersSubscription = this.dataService.players.subscribe(players => {
-      this._players = players;
-      this.handlePlayerUpdate();
+    this.areTeamsEnabledSubscription = this.dataService.areTeamsEnabled().subscribe(areTeamsEnabled => {
+      this.areTeamsEnabled = areTeamsEnabled;
     });
-    this.teamsSubscription = this.dataService.teams.subscribe(teams => {
-      this._teams = teams;
-      this.handlePlayerUpdate();
-    })
-    this.solvesSubscription = this.dataService.solves.subscribe(solves => {
-      this._solves = solves;
-      this.handlePlayerUpdate();
-    });
-    this.challengesSubscription = this.dataService.challenges.subscribe(challenges => this.handleChallengesUpdate(challenges));
   }
 
   ngOnDestroy(): void {
-    this.routeParamsSubscription?.unsubscribe();
-    this.metadataSubscription?.unsubscribe();
-    this.playersSubscription?.unsubscribe();
-    this.teamsSubscription?.unsubscribe();
-    this.solvesSubscription?.unsubscribe();
-    this.challengesSubscription?.unsubscribe();
-  }
-
-  private handlePlayerUpdate() {
-    this.player = this._players.find(p => p.id == this._uuid) || null;
-    this.playerSolves = this._solves.filter(s => s.playerId == this._uuid).sort((a, b) => new Date(b.solvedAt).getTime() - new Date(a.solvedAt).getTime());
-    this.team = this._teams.find(t => t.players.includes(this._uuid)) || null;
-  }
-
-  private handleChallengesUpdate(challenges: Challenge[]) {
-    this._challenges = challenges;
-  }
-
-  getPrimaryCategories() {
-    return [...new Set(this._challenges.map(c => c.categories.length == 0 ? 'uncategorized' : c.categories[0]))].sort();
-  }
-
-  getCategoryProgress(category: string) {
-    let categoryChallenges = this._challenges.filter(c => c.categories.includes(category));
-    let solvedChallenges = categoryChallenges.filter(challenge => this.playerSolves.some(solve => solve.challengeName === challenge.name));
-    return Math.floor((solvedChallenges.length / categoryChallenges.length) * 100);
-  }
-
-  getBarColor(percentage: number) {
-    const minHue = 240;
-    const maxHue = 120;
-    percentage /= 100;
-    const colorString = `hsl(${percentage * (maxHue - minHue) + minHue},60%,${40 + 10 * percentage}%)`;
-    return colorString;
+    this.playerDetailSubscription?.unsubscribe();
+    this.areTeamsEnabledSubscription?.unsubscribe();
   }
 }

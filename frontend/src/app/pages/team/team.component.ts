@@ -3,7 +3,8 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { Metadata, Player, ProblemDetails, Team } from 'src/app/model';
+import { ProblemDetails } from 'src/app/api-model';
+import { TeamDetail } from 'src/app/model';
 import { DataService } from 'src/app/services/data.service';
 
 @Component({
@@ -14,63 +15,39 @@ import { DataService } from 'src/app/services/data.service';
 })
 export class TeamComponent {
 
-  private metadataSubscription: Subscription | null = null;
-  private teamsSubscription: Subscription | null = null;
-  private playersSubscription: Subscription | null = null;
-  private solvesSubscription: Subscription | null = null;
-  private routeParamsSubscription: Subscription | null = null;
-  private teams: Team[] = [];
-  private players: Player[] = [];
+  private teamDetailsSubscription: Subscription | null = null;
+  private currentTeamJoinTokenSubscription: Subscription | null = null;
+  private areTeamsEnabledSubscription: Subscription | null = null;
 
   joinError: string | null = null;
   createError: string | null = null;
-  teamJoinToken: string = '';
+  teamJoinToken: string | null = null;
   joinToken: string = '';
   teamName: string = '';
-  metadata: Metadata | null = null;
-  team: Team | null = null;
-  teamMembers: Player[] | null = null;
+  teamDetail: TeamDetail | null = null;
+  areTeamsEnabled = false;
 
   constructor(
     public dataService: DataService
   ) {}
 
   ngOnInit(): void {
-    this.metadataSubscription = this.dataService.metadata.subscribe(metadata => {
-      this.metadata = metadata;
+    this.teamDetailsSubscription = this.dataService.getCurrentTeamDetail().subscribe(teamDetail => {
+      this.teamDetail = teamDetail;
+    })
+    this.areTeamsEnabledSubscription = this.dataService.areTeamsEnabled().subscribe(areTeamsEnabled => {
+      this.areTeamsEnabled = areTeamsEnabled;
     });
-    this.teamsSubscription = this.dataService.teams.subscribe(teams => {
-      this.teams = teams;
-      this.handleChange();
-    })
-    this.playersSubscription = this.dataService.players.subscribe(players => {
-      this.players = players;
-      this.handleChange();
-    })
+
+    this.currentTeamJoinTokenSubscription = this.dataService.currentTeamJoinToken.subscribe(token => {
+      this.teamJoinToken = token;
+    });
   }
 
   ngOnDestroy(): void {
-    this.routeParamsSubscription?.unsubscribe();
-    this.metadataSubscription?.unsubscribe();
-    this.solvesSubscription?.unsubscribe();
-    this.teamsSubscription?.unsubscribe();
-    this.playersSubscription?.unsubscribe();
-  }
-
-  private handleChange() {
-    let team = this.teams.find(t => t.players.includes(this.dataService.currentPlayerId)) || null;
-    this.team = team;
-    if (team != null) {
-      this.teamMembers = this.players.filter(p => team.players.includes(p.id));
-      this.dataService.getCurrentTeam().subscribe(currentTeam => {
-        if (currentTeam.joinToken != null) {
-          this.teamJoinToken = currentTeam.joinToken;
-        }
-      });
-    } else {
-      this.teamMembers = [];
-      this.teamJoinToken = '';
-    }
+    this.teamDetailsSubscription?.unsubscribe();
+    this.currentTeamJoinTokenSubscription?.unsubscribe();
+    this.areTeamsEnabledSubscription?.unsubscribe();
   }
 
   leaveTeam() {
@@ -80,6 +57,7 @@ export class TeamComponent {
   joinTeam() {
     this.dataService.joinTeam(this.joinToken).subscribe({
       next: () => {
+        this.joinToken = '';
         this.joinError = null;
       },
       error: (err) => {
@@ -93,6 +71,7 @@ export class TeamComponent {
   createTeam() {
     this.dataService.createTeam(this.teamName).subscribe({
       next: () => {
+        this.teamName = '';
         this.createError = null;
       },
       error: (err) => {
