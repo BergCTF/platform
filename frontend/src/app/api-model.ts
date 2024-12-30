@@ -6,6 +6,9 @@ export class Metadata {
   public freezeStart: string | null = null;
   public freezeEnd: string | null = null;
   public teams = false;
+  public challengeMaximumValue = 0;
+  public challengeMinimumValue = 0;
+  public challengeSolvesBeforeMinimum = 0;
 }
 
 export class PlayerAttribute {

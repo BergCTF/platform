@@ -18,9 +18,11 @@ export class TeamDetail {
 
 export class ChallengeDetail {
     public challenge: Challenge = new Challenge();
-    public solves: SolveDetail[] = [];
+    public playerSolves: SolveDetail[] = [];
+    public teamSolves: TeamSolveDetail[] = [];
     public solvedByPlayer = false;
     public solvedByTeam = false;
+    public value = 0;
 }
 
 export class ChallengeDetailCategory {
@@ -32,9 +34,17 @@ export class ChallengeDetailCategory {
 
 export class SolveDetail {
     public playerId = '';
-    public solvedAt = '';
+    public solvedAt: Date = new Date();
     public challengeName = '';
     public playerName = '';
+    public teamId: string | null = null;
+    public teamName: string | null = null;
+}
+
+export class TeamSolveDetail {
+    public solvedAt: Date = new Date();
+    public challengeName = '';
+    public players: Player[] = [];
     public teamId: string | null = null;
     public teamName: string | null = null;
 }

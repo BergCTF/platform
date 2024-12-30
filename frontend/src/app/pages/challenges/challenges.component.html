@@ -77,11 +77,11 @@
           <span class="h5"> ({{ categoryDetail.numSolved }}/{{ categoryDetail.numTotal }})</span>
         }
       </h4>
-      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-gap-2 mb-3">
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-gap-3 mb-3">
         @for (challengeDetail of categoryDetail.challenges; track challengeDetail) {
           <div class="col">
             <div class="d-grid gap-2">
-              @let hasSolved = challengeDetail.solvedByPlayer || challengeDetail.solvedByTeam;
+              @let hasSolved = challengeDetail.solvedByPlayer || (areTeamsEnabled && challengeDetail.solvedByTeam);
               <a
                 class="btn btn-secondary"
                 tabindex="0"
@@ -93,6 +93,8 @@
                   <i class="bi bi-check"></i>
                 }
                 {{ challengeDetail.challenge.name }}
+                <br/>
+                <code>{{ challengeDetail.value }}</code>
                 <br />
                 @switch (challengeDetail.challenge.difficulty) {
                   @case ('baby') {

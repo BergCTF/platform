@@ -30,6 +30,9 @@ public class MetadataController(CtfConfig ctfConfig) : ControllerBase
                 Values = a.Values,
             }).ToList() ?? [],
             Teams = ctfConfig.Teams,
+            ChallengeMaximumValue = ctfConfig.Scoring.MaximumScore,
+            ChallengeMinimumValue = ctfConfig.Scoring.MinimumScore,
+            ChallengeSolvesBeforeMinimum = ctfConfig.Scoring.NumSolvesBeforeMinimum,
         };
     }
 }

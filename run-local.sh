@@ -62,6 +62,8 @@ berg:
   ctf:
     teams: true
     allowAnonymousAccess: true
+    scoring:
+      numSolvesBeforeMinimum: 10
 
 postgresql:
   enabled: false
@@ -127,6 +129,78 @@ spec:
           protocol: tcp
           appProtocol: http
           type: publicHttpRoute
+---
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: another-nginx
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: flag{test_flag}
+  description: another-nginx
+  difficulty: easy
+  categories:
+    - web
+    - misc
+  tags:
+    - nginx
+    - http
+  event: development
+---
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: yet-another-nginx
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: flag{test_flag}
+  description: yet-another-nginx
+  difficulty: medium
+  categories:
+    - web
+    - misc
+  tags:
+    - nginx
+    - http
+  event: development
+---
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: hard1-nginx
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: flag{test_flag}
+  description: hard-nginx
+  difficulty: hard
+  categories:
+    - web
+    - misc
+  tags:
+    - nginx
+    - http
+  event: development
+---
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: hard2-nginx
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: flag{test_flag}
+  description: hard-nginx
+  difficulty: hard
+  categories:
+    - web
+    - misc
+  tags:
+    - nginx
+    - http
+  event: development
 ---
 apiVersion: berg.norelect.ch/v1
 kind: Challenge

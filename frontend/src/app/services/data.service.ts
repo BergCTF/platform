@@ -4,7 +4,7 @@ import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { BehaviorSubject, Observable, combineLatest, distinctUntilChanged, filter, map, mergeMap, retry, share, tap, timer } from 'rxjs';
 import { Challenge, CurrentPlayer, Instance, Metadata, Page, Player, Solve, Team, WebSocketMessage } from '../api-model';
 import { LoginResponse, OidcSecurityService } from 'angular-auth-oidc-client';
-import { ChallengeDetail, ChallengeDetailCategory, PlayerDetail, SolveDetail, TeamDetail } from '../model';
+import { ChallengeDetail, ChallengeDetailCategory, PlayerDetail, SolveDetail, TeamDetail, TeamSolveDetail } from '../model';
 
 @Injectable({
   providedIn: 'root'
@@ -336,12 +336,26 @@ export class DataService {
   }
 
   getChallengeDetailsByCategory(): Observable<readonly ChallengeDetailCategory[]> {
-    return combineLatest([this.currentPlayerId, this.players, this.teams, this.solves, this.challenges]).pipe(map((params) => {
-      const [ currentPlayerId, players, teams, solves, challenges ] = params;
+    return combineLatest([this.currentPlayerId, this.metadata, this.players, this.teams, this.solves, this.challenges]).pipe(map((params) => {
+      const [ currentPlayerId, metadata, players, teams, solves, challenges ] = params;
       let categories = this.getPrimaryCategories(challenges);
       let result: ChallengeDetailCategory[] = [];
       for (let category of categories) {
-        let challs = this.getChallengesByCategory(category, challenges).map(c => this.toChallengeDetail(c, currentPlayerId, solves, players, teams));
+        let challs = this.getChallengesByCategory(category, challenges).map(c => this.toChallengeDetail(metadata, c, currentPlayerId, solves, players, teams));
+        challs.sort((a, b) => {
+          // Sort by value
+          let valueDifference = a.value - b.value;
+          if (valueDifference == 0) {
+            // If value is equal, sort by author rated difficulty
+            let difficultyDifference = this.difficultyToNumber(a.challenge.difficulty) - this.difficultyToNumber(b.challenge.difficulty);
+            if (difficultyDifference == 0) {
+              // Fallback to sort alphabetically
+              return a.challenge.name.localeCompare(b.challenge.name);
+            }
+            return difficultyDifference
+          }
+          return valueDifference;
+        });
         let challengeDetailCategory = new ChallengeDetailCategory();
         challengeDetailCategory.category = category;
         challengeDetailCategory.challenges = challs;
@@ -354,14 +368,14 @@ export class DataService {
   }
 
   getChallengeDetail(name: Observable<string | null>): Observable<ChallengeDetail | null> {
-    return combineLatest([name, this.currentPlayerId, this.solves, this.players, this.teams, this.challenges]).pipe(map((params) => {
-      const [ name, currentPlayerId, solves, players, teams, challenges ] = params;
+    return combineLatest([name, this.currentPlayerId, this.metadata, this.solves, this.players, this.teams, this.challenges]).pipe(map((params) => {
+      const [ name, currentPlayerId, metadata, solves, players, teams, challenges ] = params;
       if (name == null)
         return null;
       var challenge = challenges.find(c => c.name == name) || null;
       if (challenge == null)
         return null;
-      return this.toChallengeDetail(challenge, currentPlayerId, solves, players, teams);
+      return this.toChallengeDetail(metadata, challenge, currentPlayerId, solves, players, teams);
     }));
   }
 
@@ -393,7 +407,7 @@ export class DataService {
       teamDetail.solves = solves.filter(s => team!.players.includes(s.playerId)).map(s => this.toSolveDetail(s, players, teams));
       let categories = this.getPrimaryCategories(challenges);
       for (let category of categories) {
-        teamDetail.categoryProgress.set(category, this.getCategoryProgress(category, challenges, teamDetail.solves));
+        teamDetail.categoryProgress.set(category, this.getCategoryProgress(category, challenges, teamDetail.solves.map(s => s.challengeName)));
       }
       return Object.freeze(teamDetail);
     }));
@@ -414,16 +428,43 @@ export class DataService {
       playerDetail.solves = solves.filter(s => s.playerId == playerId).map(s => this.toSolveDetail(s, players, teams));
       let categories = this.getPrimaryCategories(challenges);
       for (let category of categories) {
-        playerDetail.categoryProgress.set(category, this.getCategoryProgress(category, challenges, playerDetail.solves));
+        playerDetail.categoryProgress.set(category, this.getCategoryProgress(category, challenges, playerDetail.solves.map(s => s.challengeName)));
       }
       return Object.freeze(playerDetail);
     }));
   }
 
-  private toChallengeDetail(challenge: Challenge, currentPlayerId: string | null, solves: readonly Solve[], players: readonly Player[], teams: readonly Team[]) {
+  private toChallengeDetail(metadata: Metadata, challenge: Challenge, currentPlayerId: string | null, solves: readonly Solve[], players: readonly Player[], teams: readonly Team[]) {
     var challDetail = new ChallengeDetail();
     challDetail.challenge = challenge;
-    challDetail.solves = solves.filter(s => s.challengeName == challenge.name).map(s => this.toSolveDetail(s, players, teams));
+    challDetail.playerSolves = solves.filter(s => s.challengeName == challenge.name).map(s => this.toSolveDetail(s, players, teams));
+    var teamSolves = new Map<string, SolveDetail[]>();
+    for (let solve of challDetail.playerSolves) {
+      if (solve.teamId != null) {
+        if (teamSolves.has(solve.teamId)) {
+          teamSolves.get(solve.teamId)!.push(solve);
+        } else {
+          teamSolves.set(solve.teamId, [solve]);
+        }
+      }
+    }
+    challDetail.teamSolves = [];
+    for (let [teamId, solves] of teamSolves.entries()) {
+      var teamSolveDetail = new TeamSolveDetail();
+      teamSolveDetail.challengeName = challenge.name;
+      teamSolveDetail.teamId = teamId;
+      solves.sort((a, b) => a.solvedAt.getTime() - b.solvedAt.getTime());
+      teamSolveDetail.teamName = solves[0].teamName;
+      teamSolveDetail.solvedAt = solves[0].solvedAt;
+      teamSolveDetail.players = solves.map(s => players.find(p => p.id == s.playerId)).filter(p => p != null);
+      challDetail.teamSolves.push(teamSolveDetail);
+    }
+    challDetail.teamSolves.sort((a, b) => a.solvedAt.getTime() - b.solvedAt.getTime());
+    let max = metadata.challengeMaximumValue;
+    let min = metadata.challengeMinimumValue;
+    let decay = metadata.challengeSolvesBeforeMinimum;
+    let numSolves = metadata.teams ? challDetail.teamSolves.length : challDetail.playerSolves.length;
+    challDetail.value = Math.ceil((((min - max) / (decay * decay)) * (numSolves * numSolves)) + max);
     if (currentPlayerId) {
       challDetail.solvedByPlayer = solves.find(s => s.challengeName == challenge.name && s.playerId == currentPlayerId) != undefined;
       var team = teams.find(t => t.players.includes(currentPlayerId)) || null;
@@ -431,7 +472,7 @@ export class DataService {
         challDetail.solvedByTeam = false;
       }
       else {
-        challDetail.solvedByTeam = challDetail.solves.find(s => team!.players.includes(s.playerId)) != undefined;
+        challDetail.solvedByTeam = challDetail.teamSolves.find(t => t.teamId == team!.id) != undefined;
       }
     }
     return Object.freeze(challDetail);
@@ -441,7 +482,7 @@ export class DataService {
     var solveDetail = new SolveDetail();
     solveDetail.challengeName = solve.challengeName;
     solveDetail.playerId = solve.playerId;
-    solveDetail.solvedAt = solve.solvedAt;
+    solveDetail.solvedAt = new Date(solve.solvedAt);
     solveDetail.playerName = players.find(p => p.id == solve.playerId)?.name ?? '';
     var team = teams.find(t => t.players.includes(solve.playerId)) || null;
     solveDetail.teamId = team?.id || null;
@@ -453,13 +494,30 @@ export class DataService {
     return challenges.filter(c => c.categories.length == 0 ? ('uncategorized' == category) : (c.categories[0] == category));
   }
 
-  private getCategoryProgress(category: string, challenges: readonly Challenge[], solves: Solve[]): number {
+  private getCategoryProgress(category: string, challenges: readonly Challenge[], solvedChallengeNames: string[]): number {
     let categoryChallenges = this.getChallengesByCategory(category, challenges);
-    let solvedChallenges = categoryChallenges.filter(challenge => solves.some(solve => solve.challengeName === challenge.name));
+    let solvedChallenges = categoryChallenges.filter(challenge => solvedChallengeNames.some(solve => solve === challenge.name));
     return Math.floor((solvedChallenges.length / categoryChallenges.length) * 100);
   }
 
   private getPrimaryCategories(challenges: readonly Challenge[]) {
     return [...new Set(challenges.map(c => c.categories.length == 0 ? 'uncategorized' : c.categories[0]))].sort();
+  }
+
+  private difficultyToNumber(difficulty: string): number {
+    switch (difficulty) {
+      case 'baby':
+        return 0;
+      case 'easy':
+        return 1;
+      case 'medium':
+        return 2;
+      case 'hard':
+        return 3;
+      case 'leet':
+        return 5;
+      default:
+        return 6;
+    }
   }
 }

@@ -20,6 +20,7 @@ export class ChallengesComponent implements OnInit, OnDestroy {
   public hideSolvedValue = false;
   public hasCTFStarted = true;
   public hasCTFEnded = false;
+  public areTeamsEnabled = false;
   public ctfStart: Date | null = null;
   public instance: Instance | null = null;
   public primaryChallengeCategories: readonly string[] = [];
@@ -29,6 +30,7 @@ export class ChallengesComponent implements OnInit, OnDestroy {
   private ctfStartSubscription: Subscription | null = null;
   private hasCTFStartedSubscription: Subscription | null = null;
   private hasCTFEndedSubscription: Subscription | null = null;
+  private areTeamsEnabledSubscription: Subscription | null = null;
   private primaryChallengeCategoriesSubscription: Subscription | null = null;
   private challengeDifficultiesSubscription: Subscription | null = null;
   private instanceSubscription: Subscription | null = null;
@@ -52,6 +54,9 @@ export class ChallengesComponent implements OnInit, OnDestroy {
     });
     this.hasCTFEndedSubscription = this.dataService.hasCTFEnded().subscribe(hasCTFEnded => {
       this.hasCTFEnded = hasCTFEnded;
+    });
+    this.areTeamsEnabledSubscription = this.dataService.areTeamsEnabled().subscribe(areTeamsEnabled => {
+      this.areTeamsEnabled = areTeamsEnabled;
     });
     this.primaryChallengeCategoriesSubscription = this.dataService.getPrimaryChallengeCategories().subscribe(primaryChallengeCategories => {
       this.primaryChallengeCategories = primaryChallengeCategories;
@@ -93,6 +98,7 @@ export class ChallengesComponent implements OnInit, OnDestroy {
     this.ctfStartSubscription?.unsubscribe();
     this.hasCTFStartedSubscription?.unsubscribe();
     this.hasCTFEndedSubscription?.unsubscribe();
+    this.areTeamsEnabledSubscription?.unsubscribe();
     this.primaryChallengeCategoriesSubscription?.unsubscribe();
     this.challengeDifficultiesSubscription?.unsubscribe();
     this.instanceSubscription?.unsubscribe();

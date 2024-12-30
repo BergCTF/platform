@@ -21,11 +21,13 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy {
   instance: Instance | null = null;
   isFlagSubmitting = false;
   hasCTFEnded = false;
+  areTeamsEnabled = false;
   flagErrorText: string | null = null;
 
   private challengeDetailSubscription: Subscription | null = null;
   private instanceSubscription: Subscription | null = null;
   private hasCTFEndedSubscription: Subscription | null = null;
+  private areTeamsEnabledSubscription: Subscription | null = null;
 
   constructor(
     public dataService: DataService,
@@ -44,12 +46,16 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy {
     this.hasCTFEndedSubscription = this.dataService.hasCTFEnded().subscribe(hasCTFEnded => {
       this.hasCTFEnded = hasCTFEnded;
     });
+    this.areTeamsEnabledSubscription = this.dataService.areTeamsEnabled().subscribe(areTeamsEnabled => {
+      this.areTeamsEnabled = areTeamsEnabled;
+    });
   }
 
   ngOnDestroy(): void {
     this.challengeDetailSubscription?.unsubscribe();
     this.instanceSubscription?.unsubscribe();
     this.hasCTFEndedSubscription?.unsubscribe();
+    this.areTeamsEnabledSubscription?.unsubscribe();
   }
 
   submitFlag(challenge: string, flag: string) {

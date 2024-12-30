@@ -1,6 +1,6 @@
 @if (challengeDetail) {
   <div class="row">
-    <h3 class="mb-3">{{ challengeDetail.challenge.name }}</h3>
+    <h3 class="mb-3">{{ challengeDetail.challenge.name }} ({{ challengeDetail.value }})</h3>
   </div>
   <div>
     <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -8,7 +8,7 @@
       <button class="nav-link active" id="challenge-tab" data-bs-toggle="tab" data-bs-target="#challenge-tab-pane" type="button" role="tab" aria-controls="challenge-tab-pane" aria-selected="true">Challenge</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="player-solves-tab" data-bs-toggle="tab" data-bs-target="#player-solves-tab-pane" type="button" role="tab" aria-controls="player-solves-tab-pane" aria-selected="false">Solves ({{ challengeDetail.solves.length }})</button>
+      <button class="nav-link" id="player-solves-tab" data-bs-toggle="tab" data-bs-target="#player-solves-tab-pane" type="button" role="tab" aria-controls="player-solves-tab-pane" aria-selected="false">Solves ({{ areTeamsEnabled ? challengeDetail.teamSolves.length : challengeDetail.playerSolves.length }})</button>
     </li>
     </ul>
     <div class="tab-content border-start border-bottom border-end p-3" id="tabContent">
@@ -99,34 +99,68 @@
         @if (challengeDetail.solvedByPlayer) {
           <div class="alert alert-success mb-3" role="alert"><i class="bi bi-flag"></i> You have solved this challenge!</div>
         } @else {
-          @if (challengeDetail.solvedByTeam) {
-            <div class="alert alert-success mb-3" role="alert"><i class="bi bi-flag"></i> Your team has already solved this challenge! You can also submit the flag if you have worked on solving it to claim credit.</div>
+          @if (challengeDetail.solvedByTeam && areTeamsEnabled) {
+            <div class="alert alert-success mb-3" role="alert"><i class="bi bi-flag"></i> Your team has already solved this challenge! You can also submit the flag if you have worked on solving it to claim credit. Note that this will not impact scoring.</div>
           }
         }
       }
     </div>
-    <div class="tab-pane" id="player-solves-tab-pane" role="tabpanel" aria-labelledby="player-solves-tab" tabindex="0">
-      <table class="table table-striped table-hover">
-      <thead>
-        <tr>
-        <th scope="col">Solved At</th>
-        <th scope="col">Player</th>
-        </tr>
-      </thead>
-      <tbody class="table-group-divider">
-        @for (solve of challengeDetail.solves; track solve) {
-        <tr [routerLink]="['/players', solve.playerId]">
-          <td>
-          <span placement="top" >
-            <app-pretty-date [date]="solve.solvedAt" />
-          </span>
-          </td>
-          <td>{{ solve.playerName }}</td>
-        </tr>
-        }
-      </tbody>
-      </table>
-    </div>
+    @if (areTeamsEnabled) {
+      <div class="tab-pane" id="player-solves-tab-pane" role="tabpanel" aria-labelledby="player-solves-tab" tabindex="0">
+        <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+          <th scope="col">Solved At</th>
+          <th scope="col">Team</th>
+          <th scope="col">Player(s)</th>
+          </tr>
+        </thead>
+        <tbody class="table-group-divider">
+          @for (solve of challengeDetail.teamSolves; track solve) {
+          <tr>
+            <td>
+            <span placement="top" >
+              <app-pretty-date [date]="solve.solvedAt" />
+            </span>
+            </td>
+            <td><a [routerLink]="['/teams', solve.teamId]">{{ solve.teamName }}</a></td>
+            <td>
+              @for (player of solve.players; track player) {
+                <a [routerLink]="['/players', player.id]">{{ player.name }}</a>
+                @if(!$last) {
+                  <span>,&nbsp;</span>
+                }
+              }
+            </td>
+          </tr>
+          }
+        </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="tab-pane" id="player-solves-tab-pane" role="tabpanel" aria-labelledby="player-solves-tab" tabindex="0">
+        <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+          <th scope="col">Solved At</th>
+          <th scope="col">Player</th>
+          </tr>
+        </thead>
+        <tbody class="table-group-divider">
+          @for (solve of challengeDetail.playerSolves; track solve) {
+          <tr>
+            <td>
+            <span placement="top" >
+              <app-pretty-date [date]="solve.solvedAt" />
+            </span>
+            </td>
+            <td><a [routerLink]="['/players', solve.playerId]">{{ solve.playerName }}</a></td>
+          </tr>
+          }
+        </tbody>
+        </table>
+      </div>
+    }
     </div>
   </div>
 } @else {

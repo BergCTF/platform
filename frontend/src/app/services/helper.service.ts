@@ -5,7 +5,7 @@ import { Injectable } from '@angular/core';
 })
 export class HelperService {
 
-  relativeTime(time: string): string {
+  relativeTime(time: string | Date): string {
     return this.relativeTimeTo(new Date(time), new Date(Date.now()));
   }
 

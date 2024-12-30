@@ -24,4 +24,13 @@ public class Metadata
 
     [JsonPropertyName("teams")]
     public bool Teams { get; set; }
+
+    [JsonPropertyName("challengeMaximumValue")]
+    public int ChallengeMaximumValue { get; set; }
+
+    [JsonPropertyName("challengeMinimumValue")]
+    public int ChallengeMinimumValue { get; set; }
+
+    [JsonPropertyName("challengeSolvesBeforeMinimum")]
+    public int ChallengeSolvesBeforeMinimum { get; set; }
 }
