@@ -47,7 +47,7 @@ export class HelperService {
     return countdown;
   }
 
-  getBarColor(percentage: number) {
+  getPercentageColor(percentage: number) {
     const minHue = 240;
     const maxHue = 120;
     percentage /= 100;

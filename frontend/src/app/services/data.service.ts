@@ -4,7 +4,7 @@ import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { BehaviorSubject, Observable, combineLatest, distinctUntilChanged, filter, map, mergeMap, retry, share, tap, timer } from 'rxjs';
 import { Challenge, CurrentPlayer, Instance, Metadata, Page, Player, Solve, Team, WebSocketMessage } from '../api-model';
 import { LoginResponse, OidcSecurityService } from 'angular-auth-oidc-client';
-import { ChallengeDetail, ChallengeDetailCategory, PlayerDetail, SolveDetail, TeamDetail, TeamSolveDetail } from '../model';
+import { ChallengeDetail, ChallengeDetailCategory, PlayerDetail, ScoreboardChallengeEntry, ScoreboardRanking, SolveDetail, TeamDetail, TeamSolveDetail } from '../model';
 
 @Injectable({
   providedIn: 'root'
@@ -335,6 +335,59 @@ export class DataService {
     }));
   }
 
+  getScoreboard(): Observable<readonly ScoreboardRanking[]> {
+    return combineLatest([this.metadata, this.getPlayerDetails(), this.getTeamDetails(), this.challenges]).pipe(map((params) => {
+      const [ metadata, players, teams, challenges ] = params;
+      var scoreboard: ScoreboardRanking[] = [];
+      if (metadata.teams) {
+        for (let team of teams) {
+          if (team.solves.length == 0)
+            continue;
+          var ranking = new ScoreboardRanking();
+          ranking.id = team.id;
+          ranking.name = team.name;
+          ranking.score = team.score;
+          ranking.challenges = challenges.map(c => {
+            var entry = new ScoreboardChallengeEntry();
+            entry.name = c.name;
+            entry.solvedAt = team.solves.find(s => s.challengeName == entry.name)?.solvedAt || null;
+            return entry;
+          });
+          if (team.solves.length > 0) {
+            ranking.lastSolveAt = ranking.challenges.filter(c => c.solvedAt).map(c => c.solvedAt!).reduce((a, b) => a > b ? a : b);
+          }
+          scoreboard.push(ranking);
+        }
+      } else {
+        for (let player of players) {
+          if (player.solves.length == 0)
+            continue;
+          var ranking = new ScoreboardRanking();
+          ranking.id = player.id;
+          ranking.name = player.name;
+          ranking.score = player.score;
+          ranking.challenges = challenges.map(c => {
+            var entry = new ScoreboardChallengeEntry();
+            entry.name = c.name;
+            entry.solvedAt = player.solves.find(s => s.challengeName == entry.name)?.solvedAt || null;
+            return entry;
+          });
+          if (player.solves.length > 0) {
+            ranking.lastSolveAt = ranking.challenges.filter(c => c.solvedAt).map(c => c.solvedAt!).reduce((a, b) => a > b ? a : b);
+          }
+          scoreboard.push(ranking);
+        }
+      }
+      scoreboard.sort((a, b) => this.compareScoreboardRanking(a, b));
+      var i = 1;
+      for (let ranking of scoreboard) {
+        ranking.rank = i;
+        i += 1;
+      }
+      return Object.freeze(scoreboard);
+    }));
+  }
+
   getChallengeDetailsByCategory(): Observable<readonly ChallengeDetailCategory[]> {
     return combineLatest([this.currentPlayerId, this.metadata, this.players, this.teams, this.solves, this.challenges]).pipe(map((params) => {
       const [ currentPlayerId, metadata, players, teams, solves, challenges ] = params;
@@ -342,28 +395,22 @@ export class DataService {
       let result: ChallengeDetailCategory[] = [];
       for (let category of categories) {
         let challs = this.getChallengesByCategory(category, challenges).map(c => this.toChallengeDetail(metadata, c, currentPlayerId, solves, players, teams));
-        challs.sort((a, b) => {
-          // Sort by value
-          let valueDifference = a.value - b.value;
-          if (valueDifference == 0) {
-            // If value is equal, sort by author rated difficulty
-            let difficultyDifference = this.difficultyToNumber(a.challenge.difficulty) - this.difficultyToNumber(b.challenge.difficulty);
-            if (difficultyDifference == 0) {
-              // Fallback to sort alphabetically
-              return a.challenge.name.localeCompare(b.challenge.name);
-            }
-            return difficultyDifference
-          }
-          return valueDifference;
-        });
+        challs.sort((a, b) => this.compareChallengeDetails(a, b));
         let challengeDetailCategory = new ChallengeDetailCategory();
         challengeDetailCategory.category = category;
         challengeDetailCategory.challenges = challs;
         challengeDetailCategory.numTotal = challs.length;
-        challengeDetailCategory.numSolved = challs.filter(c => c.solvedByPlayer || c.solvedByTeam).length;
+        challengeDetailCategory.numSolved = challs.filter(c => c.solvedByPlayer || (metadata.teams && c.solvedByTeam)).length;
         result.push(challengeDetailCategory);
       }
       return Object.freeze(result);
+    }));
+  }
+
+  getChallengeDetails(): Observable<readonly ChallengeDetail[]> {
+    return combineLatest([this.currentPlayerId, this.metadata, this.solves, this.players, this.teams, this.challenges]).pipe(map((params) => {
+      const [ currentPlayerId, metadata, solves, players, teams, challenges ] = params;
+      return Object.freeze(challenges.map(c => this.toChallengeDetail(metadata, c, currentPlayerId, solves, players, teams)));
     }));
   }
 
@@ -392,79 +439,92 @@ export class DataService {
     return this.getTeamDetail(currentTeamId);
   }
 
+  getTeamDetails(): Observable<readonly TeamDetail[]> {
+    return combineLatest([this.teams, this.players, this.solves, this.getChallengeDetails()]).pipe(map((params) => {
+      const [ teams, players, solves, challenges ] = params;
+      return Object.freeze(teams.map(t => this.toTeamDetail(t, players, solves, challenges)));
+    }));
+  }
+
   getTeamDetail(teamId: Observable<string | null>): Observable<TeamDetail | null> {
-    return combineLatest([teamId, this.teams, this.players, this.solves, this.challenges]).pipe(map((params) => {
+    return combineLatest([teamId, this.teams, this.players, this.solves, this.getChallengeDetails()]).pipe(map((params) => {
       const [ teamId, teams, players, solves, challenges ] = params;
       if (teamId == null)
         return null;
       var team = teams.find(t => t.id == teamId) || null;
       if (team == null)
         return null;
-      var teamDetail = new TeamDetail();
-      teamDetail.id = team.id;
-      teamDetail.name = team.name;
-      teamDetail.players = players.filter(p => team!.players.includes(p.id));
-      teamDetail.solves = solves.filter(s => team!.players.includes(s.playerId)).map(s => this.toSolveDetail(s, players, teams));
-      let categories = this.getPrimaryCategories(challenges);
-      for (let category of categories) {
-        teamDetail.categoryProgress.set(category, this.getCategoryProgress(category, challenges, teamDetail.solves.map(s => s.challengeName)));
-      }
-      return Object.freeze(teamDetail);
+      return this.toTeamDetail(team, players, solves, challenges);
+    }));
+  }
+
+  getPlayerDetails(): Observable<readonly PlayerDetail[]> {
+    return combineLatest([this.teams, this.players, this.solves, this.getChallengeDetails()]).pipe(map((params) => {
+      const [ teams, players, solves, challenges ] = params;
+      return players.map(p => this.toPlayerDetail(p, players, teams, solves, challenges));
     }));
   }
 
   getPlayerDetail(playerId: Observable<string | null>): Observable<PlayerDetail | null> {
-    return combineLatest([playerId, this.teams, this.players, this.solves, this.challenges]).pipe(map((params) => {
+    return combineLatest([playerId, this.teams, this.players, this.solves, this.getChallengeDetails()]).pipe(map((params) => {
       const [ playerId, teams, players, solves, challenges ] = params;
       if (playerId == null)
         return null;
       var player = players.find(t => t.id == playerId) || null;
       if (player == null)
         return null;
-      var playerDetail = new PlayerDetail();
-      playerDetail.id = player.id;
-      playerDetail.name = player.name;
-      playerDetail.team = teams.find(t => t.players.includes(playerId)) || null;
-      playerDetail.solves = solves.filter(s => s.playerId == playerId).map(s => this.toSolveDetail(s, players, teams));
-      let categories = this.getPrimaryCategories(challenges);
-      for (let category of categories) {
-        playerDetail.categoryProgress.set(category, this.getCategoryProgress(category, challenges, playerDetail.solves.map(s => s.challengeName)));
-      }
-      return Object.freeze(playerDetail);
+      return this.toPlayerDetail(player, players, teams, solves, challenges);
     }));
+  }
+
+  private toPlayerDetail(player: Player, players: readonly Player[], teams: readonly Team[], solves: readonly Solve[], challenges: readonly ChallengeDetail[]): PlayerDetail {
+    var playerDetail = new PlayerDetail();
+    playerDetail.id = player.id;
+    playerDetail.name = player.name;
+    playerDetail.team = teams.find(t => t.players.includes(player.id)) || null;
+    playerDetail.solves = solves.filter(s => s.playerId == player.id).map(s => this.toSolveDetail(s, players, teams));
+    let solvedChallengeNames = playerDetail.solves.map(s => s.challengeName);
+    playerDetail.score = challenges.filter(c => solvedChallengeNames.includes(c.challenge.name)).map(c => c.value).reduce((a,b) => a + b, 0);
+    let plainChallenges = challenges.map(c => c.challenge);
+    let categories = this.getPrimaryCategories(plainChallenges);
+    for (let category of categories) {
+      playerDetail.categoryProgress.set(category, this.getCategoryProgress(category, plainChallenges, playerDetail.solves.map(s => s.challengeName)));
+    }
+    return Object.freeze(playerDetail)
+  }
+
+  private toTeamDetail(team: Team, players: readonly Player[], solves: readonly Solve[], challenges: readonly ChallengeDetail[]): TeamDetail {
+    var teamDetail = new TeamDetail();
+      teamDetail.id = team.id;
+      teamDetail.name = team.name;
+      teamDetail.players = players.filter(p => team!.players.includes(p.id));
+      let solvedChallengeNames = solves.filter(s => team!.players.includes(s.playerId)).map(s => s.challengeName);
+      let solvedChallengeDetails = challenges.filter(c => solvedChallengeNames.includes(c.challenge.name));
+      teamDetail.solves = solvedChallengeDetails.flatMap(c => c.teamSolves).filter(s => s.teamId == team.id);
+      teamDetail.score = solvedChallengeDetails.map(c => c.value).reduce((a,b) => a + b, 0);
+      let plainChallenges = challenges.map(c => c.challenge);
+      let categories = this.getPrimaryCategories(plainChallenges);
+      for (let category of categories) {
+        teamDetail.categoryProgress.set(category, this.getCategoryProgress(category, plainChallenges, teamDetail.solves.map(s => s.challengeName)));
+      }
+      return Object.freeze(teamDetail);
   }
 
   private toChallengeDetail(metadata: Metadata, challenge: Challenge, currentPlayerId: string | null, solves: readonly Solve[], players: readonly Player[], teams: readonly Team[]) {
     var challDetail = new ChallengeDetail();
     challDetail.challenge = challenge;
     challDetail.playerSolves = solves.filter(s => s.challengeName == challenge.name).map(s => this.toSolveDetail(s, players, teams));
-    var teamSolves = new Map<string, SolveDetail[]>();
-    for (let solve of challDetail.playerSolves) {
-      if (solve.teamId != null) {
-        if (teamSolves.has(solve.teamId)) {
-          teamSolves.get(solve.teamId)!.push(solve);
-        } else {
-          teamSolves.set(solve.teamId, [solve]);
-        }
-      }
-    }
-    challDetail.teamSolves = [];
-    for (let [teamId, solves] of teamSolves.entries()) {
-      var teamSolveDetail = new TeamSolveDetail();
-      teamSolveDetail.challengeName = challenge.name;
-      teamSolveDetail.teamId = teamId;
-      solves.sort((a, b) => a.solvedAt.getTime() - b.solvedAt.getTime());
-      teamSolveDetail.teamName = solves[0].teamName;
-      teamSolveDetail.solvedAt = solves[0].solvedAt;
-      teamSolveDetail.players = solves.map(s => players.find(p => p.id == s.playerId)).filter(p => p != null);
-      challDetail.teamSolves.push(teamSolveDetail);
-    }
+    var solvedPlayerIds = challDetail.playerSolves.map(s => s.playerId);
+    var teamsWithSolves = teams.filter(t => t.players.some(p => solvedPlayerIds.includes(p)));
+    challDetail.teamSolves = teamsWithSolves.map(t => this.toTeamSolveDetail(t, challenge, solves, players));
     challDetail.teamSolves.sort((a, b) => a.solvedAt.getTime() - b.solvedAt.getTime());
+
     let max = metadata.challengeMaximumValue;
     let min = metadata.challengeMinimumValue;
     let decay = metadata.challengeSolvesBeforeMinimum;
     let numSolves = metadata.teams ? challDetail.teamSolves.length : challDetail.playerSolves.length;
     challDetail.value = Math.ceil((((min - max) / (decay * decay)) * (numSolves * numSolves)) + max);
+
     if (currentPlayerId) {
       challDetail.solvedByPlayer = solves.find(s => s.challengeName == challenge.name && s.playerId == currentPlayerId) != undefined;
       var team = teams.find(t => t.players.includes(currentPlayerId)) || null;
@@ -478,7 +538,20 @@ export class DataService {
     return Object.freeze(challDetail);
   }
 
-  private toSolveDetail(solve: Solve, players: readonly Player[], teams: readonly Team[]) {
+  private toTeamSolveDetail(team: Team, challenge: Challenge, solves: readonly Solve[], players: readonly Player[]): TeamSolveDetail {
+    var teamSolveDetail = new TeamSolveDetail();
+    teamSolveDetail.challengeName = challenge.name;
+    teamSolveDetail.teamId = team.id;
+    teamSolveDetail.teamName = team.name;
+    let teamChallengeSolves = solves.filter(s => s.challengeName == challenge.name && team.players.includes(s.playerId));
+    teamChallengeSolves.sort((a, b) => new Date(a.solvedAt).getTime() - new Date(b.solvedAt).getTime());
+    teamSolveDetail.solvedAt = new Date(teamChallengeSolves[0].solvedAt);
+    let playerIds = teamChallengeSolves.map(s => s.playerId);
+    teamSolveDetail.players = players.filter(p => playerIds.includes(p.id));
+    return Object.freeze(teamSolveDetail);
+  }
+
+  private toSolveDetail(solve: Solve, players: readonly Player[], teams: readonly Team[]): SolveDetail {
     var solveDetail = new SolveDetail();
     solveDetail.challengeName = solve.challengeName;
     solveDetail.playerId = solve.playerId;
@@ -488,6 +561,37 @@ export class DataService {
     solveDetail.teamId = team?.id || null;
     solveDetail.teamName = team?.name || null;
     return Object.freeze(solveDetail);
+  }
+
+  private compareChallengeDetails(a: ChallengeDetail, b: ChallengeDetail): number {
+    // Sort by value
+    let valueDifference = a.value - b.value;
+    if (valueDifference == 0) {
+      // If value is equal, sort by author rated difficulty
+      let difficultyDifference = this.difficultyToNumber(a.challenge.difficulty) - this.difficultyToNumber(b.challenge.difficulty);
+      if (difficultyDifference == 0) {
+        // Fallback to sort alphabetically
+        return a.challenge.name.localeCompare(b.challenge.name);
+      }
+      return difficultyDifference
+    }
+    return valueDifference;
+  }
+
+  private compareScoreboardRanking(a: ScoreboardRanking, b: ScoreboardRanking): number {
+    // Sort by score (higher is better)
+    let scoreDifference = b.score - a.score;
+    if (scoreDifference == 0) {
+      // If score is equal, solve by last solve (lower is better)
+      let now = new Date().getTime();
+      let lastSolveDifference = (a.lastSolveAt?.getTime() ?? now) - (b.lastSolveAt?.getTime() ?? now);
+      if (lastSolveDifference == 0) {
+        // If all else fails, sort alphabetically by team name (lower is better)
+        return a.name.localeCompare(b.name);
+      }
+      return lastSolveDifference;
+    }
+    return scoreDifference;
   }
 
   private getChallengesByCategory(category: string, challenges: readonly Challenge[]): Challenge[] {

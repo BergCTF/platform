@@ -1,5 +1,6 @@
 @if (playerDetail) {
   <h1>Player: {{ playerDetail.name }}</h1>
+  <p>Score: {{ playerDetail.score }}</p>
   <div class="container mb-4">
     <div class="row">
       <div class="card">
@@ -15,7 +16,7 @@
                       <small>{{ item.value }}%</small>
                     </div>
                     <div class="progress mt-2">
-                      <div class="progress-bar" role="progressbar" [style.width]="item.value + '%'" [style.background-color]="helper.getBarColor(item.value)" aria-valuemin="0" aria-valuemax="100"></div>
+                      <div class="progress-bar" role="progressbar" [style.width]="item.value + '%'" [style.background-color]="helper.getPercentageColor(item.value)" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                   </div>
                 </div>

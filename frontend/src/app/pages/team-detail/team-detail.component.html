@@ -3,6 +3,7 @@
 }
 @if (teamDetail) {
     <h1>Team: {{ teamDetail.name }}</h1>
+    <p>Score: {{ teamDetail.score }}</p>
     <div class="container mb-4">
       <div class="row">
         <div class="card">
@@ -18,7 +19,7 @@
                         <small>{{ item.value }}%</small>
                       </div>
                       <div class="progress mt-2">
-                        <div class="progress-bar" role="progressbar" [style.width]="item.value + '%'" [style.background-color]="helper.getBarColor(item.value)" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div class="progress-bar" role="progressbar" [style.width]="item.value + '%'" [style.background-color]="helper.getPercentageColor(item.value)" aria-valuemin="0" aria-valuemax="100"></div>
                       </div>
                     </div>
                   </div>
@@ -68,9 +69,12 @@
                         </a>
                       </td>
                       <td>
-                        <a class="hover-underline cursor-pointer" [routerLink]="['/players', solve.playerId]">
-                          {{ solve.playerName }}
-                        </a>
+                        @for (player of solve.players; track player) {
+                          <a [routerLink]="['/players', player.id]">{{ player.name }}</a>
+                          @if(!$last) {
+                            <span>,&nbsp;</span>
+                          }
+                        }
                       </td>
                       <td class="text-wrap">
                         <app-pretty-date [date]="solve.solvedAt" />

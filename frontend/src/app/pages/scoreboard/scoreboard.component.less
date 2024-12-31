@@ -1,0 +1,38 @@
+th.rotate {
+    height: 200px;
+    white-space: nowrap;
+}
+
+th.rotate > div {
+    transform: translate(-7px, 0px) rotate(315deg);
+    width: 30px;
+}
+th.rotate > div > span {
+    border-bottom: 1px solid var(--bs-body-color);
+    padding: 5px 10px;
+}
+
+.other-hover {
+    opacity: 0.4;
+}
+
+table td:nth-child(2), table th:nth-child(2) {
+    position: sticky;
+    left: 0;
+    z-index: 100;
+    opacity: 1;
+    background-color: var(--bs-body-bg);
+}
+
+#chartDiv div {
+    height: 28em;
+    margin-bottom: 4em;
+}
+
+#chartDiv:fullscreen {
+    background-color: var(--bs-body-bg);
+}
+
+#chartDiv:fullscreen div{
+    height: 100vh;
+}

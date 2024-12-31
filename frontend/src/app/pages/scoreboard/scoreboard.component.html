@@ -1,1 +1,66 @@
-<p>scoreboard works!</p>
+<h3 class="mb-3">Scoreboard</h3>
+<div class="row">
+  <div class="col d-flex">
+    <button class="btn btn-outline-secondary ms-auto" (click)="chart.requestFullscreen()"><span class="bi bi-fullscreen"></span></button>
+  </div>
+</div>
+
+<div class="row text-center">
+  <h5 style="color: var(--bs-body-color)">Top 10 {{ areTeamsEnabled ? 'teams' : 'players' }}</h5>
+</div>
+<div class="row" #chart id="chartDiv">
+  <div echarts [options]="echartsOptions"></div>
+</div>
+<div class="row mb-2">
+  <div class="col-lg-3 col-md-6 col-sm-12 mb-2">
+    <input type="text" class="form-control md-w-25 w-100" placeholder="Search {{ areTeamsEnabled ? 'teams' : 'players' }}" />
+  </div>
+  <div class="col d-flex mb-4">
+    <button class="btn btn-outline-secondary ms-auto" (click)="toggleAdvancedView()" #btn>
+      <span class="bi" [class.bi-three-dots-vertical]="!advancedView" [class.bi-123]="advancedView"></span>
+    </button>
+    <button class="btn btn-outline-secondary ms-2" (click)="table.requestFullscreen()"><span class="bi bi-fullscreen"></span></button>
+  </div>
+</div>
+<div class="row">
+  <div class="col overflow-x-scroll" style="background-color: var(--bs-body-bg)" #table>
+    <table class="table table-striped table-hover">
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Name</th>
+          <th scope="col">Score</th>
+          <th scope="col">Last solve (UTC)</th>
+          @for (category of primaryChallengeCategories; track category) {
+            <th scope="col">{{ category }}</th>
+          }
+        </tr>
+      </thead>
+      @if (scoreboardRanking.length === 0) {
+        <tbody>
+          <tr>
+            <td [attr.colspan]="4 + primaryChallengeCategories.length" class="text-center">No solves yet.</td>
+          </tr>
+        </tbody>
+      }
+      <tbody class="table-group-divider">
+        @for (ranking of scoreboardRanking; track ranking) {
+          <tr>
+            <th scope="row">{{ ranking.rank }}</th>
+            <td>
+              <a [routerLink]="[areTeamsEnabled ? '/teams' : '/players', ranking.id]">{{ ranking.name }}</a>
+            </td>
+            <td>{{ ranking.score }}</td>
+            <td class="text-nowrap">
+              <span placement="top">
+                @if (ranking.lastSolveAt) {
+                  <app-pretty-date [date]="ranking.lastSolveAt" />
+                }
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
