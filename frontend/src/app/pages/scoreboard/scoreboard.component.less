@@ -1,19 +1,5 @@
-th.rotate {
-    height: 200px;
-    white-space: nowrap;
-}
-
-th.rotate > div {
-    transform: translate(-7px, 0px) rotate(315deg);
-    width: 30px;
-}
-th.rotate > div > span {
-    border-bottom: 1px solid var(--bs-body-color);
-    padding: 5px 10px;
-}
-
-.other-hover {
-    opacity: 0.4;
+.use-background-color {
+    background-color: var(--bs-body-bg);
 }
 
 table td:nth-child(2), table th:nth-child(2) {
@@ -24,15 +10,15 @@ table td:nth-child(2), table th:nth-child(2) {
     background-color: var(--bs-body-bg);
 }
 
-#chartDiv div {
-    height: 28em;
-    margin-bottom: 4em;
+#top-score-chart:fullscreen div {
+    height: 100vh !important;
 }
 
-#chartDiv:fullscreen {
-    background-color: var(--bs-body-bg);
+#scoreboard-table:fullscreen {
+    padding: 2em;
 }
 
-#chartDiv:fullscreen div{
-    height: 100vh;
+.other-hover {
+    opacity: 0.3;
+    transition: opacity 0.25s ease-in-out;
 }

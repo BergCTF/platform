@@ -3,9 +3,9 @@ import { RouterLink } from '@angular/router';
 import { EChartsCoreOption } from 'echarts/core';
 import { SeriesOption } from 'echarts/types/dist/shared';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { combineLatest, Subscription } from 'rxjs';
+import { BehaviorSubject, combineLatest, distinctUntilChanged, map, Subscription } from 'rxjs';
 import { Metadata } from 'src/app/api-model';
-import { ChallengeDetail, PlayerDetail, ScoreboardRanking, TeamDetail } from 'src/app/model';
+import { ChallengeDetail, PlayerDetail, ScoreboardChallengeEntry, ScoreboardRanking, TeamDetail } from 'src/app/model';
 import { DataService } from 'src/app/services/data.service';
 import { HelperService } from 'src/app/services/helper.service';
 import { PrettyDateComponent } from 'src/app/widgets/pretty-date/pretty-date.component';
@@ -24,11 +24,13 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
   public areTeamsEnabled = false;
   public primaryChallengeCategories: readonly string[] = [];
   public advancedView = false;
+  public hoveredChallenge = '';
 
   private scoreboardSubscription: Subscription | null = null;
   private primaryChallengeCategoriesSubscription: Subscription | null = null;
   private areTeamsEnabledSubsciption: Subscription | null = null;
   private chartSubscription: Subscription | null = null;
+  private searchText = new BehaviorSubject<string>('');
 
   constructor(
     public helper: HelperService,
@@ -36,7 +38,16 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.scoreboardSubscription = this.dataService.getScoreboard().subscribe(scoreboardRanking => {
+    this.scoreboardSubscription = combineLatest([
+      this.dataService.getScoreboard(),
+      this.searchText.asObservable().pipe(distinctUntilChanged())
+    ]).pipe(
+      map(params => {
+        const [scoreboard, searchText] = params;
+        var searchTextLower = searchText.toLowerCase();
+        return scoreboard.filter(s => s.name.toLowerCase().includes(searchTextLower));
+      })
+    ).subscribe(scoreboardRanking => {
       this.scoreboardRanking = scoreboardRanking;
     });
     this.primaryChallengeCategoriesSubscription = this.dataService.getPrimaryChallengeCategories().subscribe(primaryChallengeCategories => {
@@ -65,6 +76,26 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
 
   toggleAdvancedView() {
     this.advancedView = !this.advancedView;
+  }
+
+  setHover(hoveredChallenge: string) {
+    this.hoveredChallenge = hoveredChallenge;
+  }
+
+  searchTextChanged(searchText: string) {
+    this.searchText.next(searchText);
+  }
+
+  getChallengeClasses(entry: ScoreboardChallengeEntry) {
+    let classes = 'bi me-1';
+    if (this.hoveredChallenge !== '' && this.hoveredChallenge !== entry.challenge.name) {
+      classes += ' other-hover ';
+    }
+    if (entry.solved) {
+      return classes + ' bi-hexagon-fill ' + this.helper.getDifficultyTextColorClass(entry.challenge.difficulty);
+    } else {
+      return classes + ' bi-hexagon';
+    }
   }
 
   updateChart(metadata: Metadata, challenges: readonly ChallengeDetail[], players: readonly PlayerDetail[], teams: readonly TeamDetail[]) {

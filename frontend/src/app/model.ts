@@ -57,10 +57,18 @@ export class ScoreboardRanking {
     public id: string = '';
     public score: number = 0;
     public rank: number = 0;
-    public challenges: ScoreboardChallengeEntry[] = [];
+    public challengesByCategory: ScoreboardChallengeByCategory[] = [];
+}
+
+export class ScoreboardChallengeByCategory {
+    public category: string = '';
+    public scoreboardChallengeEntries: ScoreboardChallengeEntry[] = [];
+    public numSolved: number = 0;
+    public numTotal: number = 0;
 }
 
 export class ScoreboardChallengeEntry {
-    public name: string = '';
+    public challenge: Challenge = new Challenge();
+    public solved: boolean = false;
     public solvedAt: Date | null = null;
 }

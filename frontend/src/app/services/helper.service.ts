@@ -54,4 +54,18 @@ export class HelperService {
     const colorString = `hsl(${percentage * (maxHue - minHue) + minHue},60%,${40 + 10 * percentage}%)`;
     return colorString;
   }
+
+  getDifficultyTextColorClass(difficulty: string) {
+    const colorMap = new Map();
+    colorMap.set('baby', 'text-info');
+    colorMap.set('easy', 'text-success');
+    colorMap.set('medium', 'text-warning');
+    colorMap.set('hard', 'text-danger');
+    colorMap.set('leet', 'text-leet');
+    let color = colorMap.get(difficulty);
+    if (color) {
+      return color;
+    }
+    return 'text-primary';
+  }
 }
