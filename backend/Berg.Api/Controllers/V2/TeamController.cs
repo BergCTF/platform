@@ -339,15 +339,22 @@ public partial class TeamController(
         }
         await dbContext.SaveChangesAsync();
 
-        var _ = mediator.Publish(new TeamUpdateNotification
-        {
-            Team = new Team
+        if (newTeamPlayerIds.Count == 0) {
+            var _ = mediator.Publish(new TeamDeleteNotification
             {
-                Id = previousTeam.Id,
-                Name = previousTeam.Name,
-                Players = newTeamPlayerIds,
-            }
-        });
+                TeamId = previousTeam.Id,
+            });
+        } else {
+            var _ = mediator.Publish(new TeamUpdateNotification
+            {
+                Team = new Team
+                {
+                    Id = previousTeam.Id,
+                    Name = previousTeam.Name,
+                    Players = newTeamPlayerIds,
+                }
+            });
+        }
 
         return Ok();
     }

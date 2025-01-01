@@ -126,59 +126,93 @@ export class DataService {
     this._webSocket.pipe(retry()).subscribe(message => {
       switch (message.type) {
         case "pong":
-          this._lastCounterReceived = message.message as number;
+          {
+            this._lastCounterReceived = message.message as number;
+          }
           break;
         case "solve":
-          let solve = message.message as Solve;
-          let solves = this._solves.getValue();
-          let modifiedSolves = solves.filter(_ => true);
-          modifiedSolves.push(solve);
-          this._solves.next(Object.freeze(modifiedSolves));
+          {
+            let solve = message.message as Solve;
+            let solves = this._solves.getValue();
+            let modifiedSolves = solves.filter(_ => true);
+            modifiedSolves.push(solve);
+            this._solves.next(Object.freeze(modifiedSolves));
+          }
           break;
         case "team":
-          let team = message.message as Team;
-          let teams = this._teams.getValue();
-          let modifiedTeams = teams.filter(t => t.id != team.id)
-          modifiedTeams.push(team);
-          this._teams.next(Object.freeze(modifiedTeams));
+          {
+            let team = message.message as Team;
+            let teams = this._teams.getValue();
+            let modifiedTeams = teams.filter(t => t.id != team.id);
+            modifiedTeams.push(team);
+            this._teams.next(Object.freeze(modifiedTeams));
+          }
+          break;
+        case "team-delete":
+          {
+            let teamId = message.message as string;
+            let teams = this._teams.getValue();
+            let modifiedTeams = teams.filter(t => t.id != teamId);
+            this._teams.next(Object.freeze(modifiedTeams));
+          }
           break;
         case "player":
-          let player = message.message as Player;
-          let players = this._players.getValue();
-          let modifiedPlayers = players.filter(t => t.id != player.id)
-          modifiedPlayers.push(player);
-          this._players.next(Object.freeze(modifiedPlayers));
+          {
+            let player = message.message as Player;
+            let players = this._players.getValue();
+            let modifiedPlayers = players.filter(t => t.id != player.id);
+            modifiedPlayers.push(player);
+            this._players.next(Object.freeze(modifiedPlayers));
+          }
+          break;
+        case "player-delete":
+          {
+            let playerId = message.message as string;
+            let players = this._players.getValue();
+            let modifiedPlayers = players.filter(t => t.id != playerId);
+            this._players.next(Object.freeze(modifiedPlayers));
+          }
           break;
         case "challenge":
-          let challenge = message.message as Challenge;
-          let challenges = this._challenges.getValue();
-          let modifiedChallenges = challenges.filter(t => t.name != challenge.name)
-          modifiedChallenges.push(challenge);
-          this._challenges.next(Object.freeze(modifiedChallenges));
+          {
+            let challenge = message.message as Challenge;
+            let challenges = this._challenges.getValue();
+            let modifiedChallenges = challenges.filter(t => t.name != challenge.name);
+            modifiedChallenges.push(challenge);
+            this._challenges.next(Object.freeze(modifiedChallenges));
+          }
           break;
         case "page":
-          let page = message.message as Page;
-          let pages = this._pages.getValue();
-          let modifiedPages = pages.filter(p => p.path != page.path);
-          modifiedPages.push(page);
-          modifiedPages.sort((a,b) => a.index - b.index);
-          this._pages.next(Object.freeze(modifiedPages));
+          {
+            let page = message.message as Page;
+            let pages = this._pages.getValue();
+            let modifiedPages = pages.filter(p => p.path != page.path);
+            modifiedPages.push(page);
+            modifiedPages.sort((a,b) => a.index - b.index);
+            this._pages.next(Object.freeze(modifiedPages));
+          }
           break;
         case "instance":
-          let instance = message.message as Instance;
-          this._instance.next(Object.freeze(instance));
+          {
+            let instance = message.message as Instance;
+            this._instance.next(Object.freeze(instance));
+          }
           break;
         case "metadata":
-          let metadata = message.message as Metadata;
-          this._metadata.next(Object.freeze(metadata));
+          {
+            let metadata = message.message as Metadata;
+            this._metadata.next(Object.freeze(metadata));
+          }
           break;
         case "current-player":
-          let playerId = message.message as string | null;
-          var currentPlayerId: string | null = this._currentPlayerId.getValue();
-          if (playerId != currentPlayerId) {
-            this.oidcSecurityService.getAccessToken().subscribe(accessToken => {
-              this.refreshWebSocket(accessToken);
-            });
+          {
+            let playerId = message.message as string | null;
+            var currentPlayerId: string | null = this._currentPlayerId.getValue();
+            if (playerId != currentPlayerId) {
+              this.oidcSecurityService.getAccessToken().subscribe(accessToken => {
+                this.refreshWebSocket(accessToken);
+              });
+            }
           }
           break;
         default:

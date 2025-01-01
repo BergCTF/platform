@@ -15,8 +15,10 @@ public class WebSocketNotificationHandler(
     INotificationHandler<SolveNotification>,
     INotificationHandler<PlayerCreateNotification>,
     INotificationHandler<PlayerUpdateNotification>,
+    INotificationHandler<PlayerDeleteNotification>,
     INotificationHandler<TeamCreateNotification>,
     INotificationHandler<TeamUpdateNotification>,
+    INotificationHandler<TeamDeleteNotification>,
     INotificationHandler<PageCreateNotification>,
     INotificationHandler<PageUpdateNotification>,
     INotificationHandler<ChallengeCreateNotification>,
@@ -67,6 +69,12 @@ public class WebSocketNotificationHandler(
         await webSocketService.PushEventAll("player", player);
     }
 
+    public async Task Handle(PlayerDeleteNotification notification, CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Sending player delete message to websocket clients.");
+        await webSocketService.PushEventAll("player-delete", notification.PlayerId);
+    }
+
     public async Task Handle(TeamCreateNotification notification, CancellationToken cancellationToken)
     {
         logger.LogDebug("Sending team created message to websocket clients.");
@@ -77,6 +85,12 @@ public class WebSocketNotificationHandler(
     {
         logger.LogDebug("Sending team updated message to websocket clients.");
         await webSocketService.PushEventAll("team", notification.Team);
+    }
+
+    public async Task Handle(TeamDeleteNotification notification, CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Sending team delete message to websocket clients.");
+        await webSocketService.PushEventAll("team-delete", notification.TeamId);
     }
 
     public async Task Handle(PageCreateNotification notification, CancellationToken cancellationToken)

@@ -107,7 +107,7 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
     const scores: { [key: string]: { name: string; scores: [string, number][]; totalPoints: number } } = {};
 
     if (metadata.teams) {
-      let teamsCopy = structuredClone(teams).filter(t => t.solves.length > 0);
+      let teamsCopy = structuredClone(teams).filter(_ => true);
       teamsCopy.sort((a,b) => b.score - a.score);
       teamsCopy = teamsCopy.slice(0, 10);
       let solves = teamsCopy.flatMap(p => p.solves);
@@ -125,7 +125,7 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
         }
       });
     } else {
-      let playersCopy = structuredClone(players).filter(p => p.solves.length > 0);
+      let playersCopy = structuredClone(players).filter(_ => true);
       playersCopy.sort((a,b) => b.score - a.score);
       playersCopy = playersCopy.slice(0, 10);
       let solves = playersCopy.flatMap(p => p.solves);

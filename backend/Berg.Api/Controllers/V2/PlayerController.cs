@@ -155,6 +155,11 @@ public class PlayerController(CtfConfig ctfConfig,
         dbContext.Players.Remove(player);
         dbContext.SaveChanges();
 
+        var _ = mediator.Publish(new PlayerDeleteNotification
+        {
+            PlayerId = player.Id,
+        });
+
         return SignOut();
     }
 
