@@ -1,5 +1,7 @@
+import { SlicePipe } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { NgbPaginationModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { EChartsCoreOption } from 'echarts/core';
 import { SeriesOption } from 'echarts/types/dist/shared';
 import { NgxEchartsDirective } from 'ngx-echarts';
@@ -14,7 +16,7 @@ import { PrettyDateComponent } from 'src/app/widgets/pretty-date/pretty-date.com
   selector: 'app-scoreboard',
   templateUrl: './scoreboard.component.html',
   styleUrl: './scoreboard.component.less',
-  imports: [RouterLink, PrettyDateComponent, NgxEchartsDirective],
+  imports: [RouterLink, PrettyDateComponent, NgxEchartsDirective, SlicePipe, NgbTooltipModule, NgbPaginationModule],
 })
 export class ScoreboardComponent implements OnInit, OnDestroy {
 
@@ -25,8 +27,11 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
   public primaryChallengeCategories: readonly string[] = [];
   public advancedView = false;
   public hoveredChallenge = '';
+  public pageIndex = 1;
+  public pageSize = 30;
 
   private scoreboardSubscription: Subscription | null = null;
+  private searchTextSubscription: Subscription | null = null;
   private primaryChallengeCategoriesSubscription: Subscription | null = null;
   private areTeamsEnabledSubsciption: Subscription | null = null;
   private chartSubscription: Subscription | null = null;
@@ -38,9 +43,10 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    let searchTextObservable = this.searchText.asObservable().pipe(distinctUntilChanged());
     this.scoreboardSubscription = combineLatest([
       this.dataService.getScoreboard(),
-      this.searchText.asObservable().pipe(distinctUntilChanged())
+      searchTextObservable
     ]).pipe(
       map(params => {
         const [scoreboard, searchText] = params;
@@ -65,10 +71,16 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
       const [metadata, challenges, players, teams] = params;
       this.updateChart(metadata, challenges, players, teams)
     });
+
+    this.searchTextSubscription = searchTextObservable.subscribe(text => {
+      // Reset the page index to page 1 as soon as the search text changes.
+      this.pageIndex = 1;
+    });
   }
 
   ngOnDestroy(): void {
     this.scoreboardSubscription?.unsubscribe();
+    this.searchTextSubscription?.unsubscribe();
     this.primaryChallengeCategoriesSubscription?.unsubscribe();
     this.areTeamsEnabledSubsciption?.unsubscribe();
     this.chartSubscription?.unsubscribe();
@@ -84,6 +96,10 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
 
   searchTextChanged(searchText: string) {
     this.searchText.next(searchText);
+  }
+
+  pageSizeChanged(pageSizeValue: string) {
+    this.pageSize = parseInt(pageSizeValue);
   }
 
   getChallengeClasses(entry: ScoreboardChallengeEntry) {

@@ -1,7 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component } from '@angular/core';
+import { Component, TemplateRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Subscription } from 'rxjs';
 import { ProblemDetails } from 'src/app/api-model';
 import { TeamDetail } from 'src/app/model';
@@ -28,7 +29,8 @@ export class TeamComponent {
   areTeamsEnabled = false;
 
   constructor(
-    public dataService: DataService
+    public dataService: DataService,
+    private modalService: NgbModal
   ) {}
 
   ngOnInit(): void {
@@ -48,6 +50,10 @@ export class TeamComponent {
     this.teamDetailsSubscription?.unsubscribe();
     this.currentTeamJoinTokenSubscription?.unsubscribe();
     this.areTeamsEnabledSubscription?.unsubscribe();
+  }
+
+  open(content: TemplateRef<any>) {
+    this.modalService.open(content);
   }
 
   leaveTeam() {

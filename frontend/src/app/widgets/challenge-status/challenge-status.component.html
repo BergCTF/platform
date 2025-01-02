@@ -44,12 +44,12 @@
               }
               @if (service.appProtocol !== 'http' && service.appProtocol !== 'ssh') {
                 <div>
-                  <div class="dropdown">
-                    <a class="btn btn-sm btn-outline-secondary dropdown-toggle" href="#" type="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="bi bi-clipboard"></i> Copy </a>
-                    <span class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-                      <a class="dropdown-item" tabindex="0" (click)="copyToClipboardNcat(service.hostname, service.port, service.tls)" (keyup.enter)="copyToClipboardNcat(service.hostname, service.port, service.tls)">Copy as ncat</a>
-                      <a class="dropdown-item" tabindex="0" (click)="copyToClipboardPwntools(service.hostname, service.port, service.tls)" (keyup.enter)="copyToClipboardPwntools(service.hostname, service.port, service.tls)">Copy as pwntools</a>
-                    </span>
+                  <div ngbDropdown>
+                    <button ngbDropdownToggle type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"><i class="bi bi-clipboard"></i>&nbsp;Copy</button>
+                    <div ngbDropdownMenu>
+                      <button ngbDropdownItem (click)="copyToClipboardNcat(service.hostname, service.port, service.tls)" (keyup.enter)="copyToClipboardNcat(service.hostname, service.port, service.tls)">Copy as ncat</button>
+                      <button ngbDropdownItem tabindex="0" (click)="copyToClipboardPwntools(service.hostname, service.port, service.tls)" (keyup.enter)="copyToClipboardPwntools(service.hostname, service.port, service.tls)">Copy as pwntools</button>
+                    </div>
                   </div>
                 </div>
               }

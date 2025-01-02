@@ -8,12 +8,13 @@ import { ChallengeStatusComponent } from 'src/app/widgets/challenge-status/chall
 import { PrettyDateComponent } from 'src/app/widgets/pretty-date/pretty-date.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChallengeDetail } from 'src/app/model';
+import { NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   selector: 'app-challenge-detail',
-  imports: [ChallengeStatusComponent, PrettyDateComponent, RouterLink],
   templateUrl: './challenge-detail.component.html',
-  styleUrl: './challenge-detail.component.less'
+  styleUrl: './challenge-detail.component.less',
+  imports: [ChallengeStatusComponent, PrettyDateComponent, RouterLink, NgbNavModule]
 })
 export class ChallengeDetailComponent implements OnInit, OnDestroy {
 

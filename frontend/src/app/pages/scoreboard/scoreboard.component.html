@@ -5,9 +5,10 @@
   </div>
 </div>
 
+@let entryType = areTeamsEnabled ? 'teams' : 'players';
 <div class="mb-5">
   <div class="row text-center">
-    <h5>Top 10 {{ areTeamsEnabled ? 'teams' : 'players' }}</h5>
+    <h5>Top 10 {{ entryType }}</h5>
   </div>
   <div #chart id="top-score-chart" class="use-background-color row">
     <div echarts [options]="echartsOptions"></div>
@@ -16,7 +17,7 @@
 <div #table id="scoreboard-table" class="use-background-color">
   <div class="row mb-2">
     <div class="col-lg-3 col-md-6 col-sm-12 mb-2">
-      <input #searchText type="text" class="form-control md-w-25 w-100" placeholder="Search {{ areTeamsEnabled ? 'teams' : 'players' }}" (change)="searchTextChanged(searchText.value)" (keyup)="searchTextChanged(searchText.value)" />
+      <input #searchText type="text" class="form-control md-w-25 w-100" placeholder="Search {{ entryType }}" (change)="searchTextChanged(searchText.value)" (keyup)="searchTextChanged(searchText.value)" />
     </div>
     <div class="col d-flex mb-4">
       <button class="btn btn-outline-secondary ms-auto" (click)="toggleAdvancedView()" #btn>
@@ -47,7 +48,7 @@
           </tbody>
         }
         <tbody class="table-group-divider">
-          @for (ranking of scoreboardRanking; track ranking) {
+          @for (ranking of scoreboardRanking | slice: (pageIndex-1) * pageSize : pageIndex * pageSize; track ranking) {
             <tr>
               <th scope="row">{{ ranking.rank }}</th>
               <td>
@@ -70,7 +71,9 @@
                         [class]="getChallengeClasses(entry)"
                         [routerLink]="['/challenges', entry.challenge.name]"
                         (mouseenter)="setHover(entry.challenge.name)"
-                        (mouseleave)="setHover('')"></span>
+                        (mouseleave)="setHover('')"
+                        placement="top"
+                        [ngbTooltip]="entry.challenge.name"></span>
                     }
                   </td>
                 } @else {
@@ -84,5 +87,16 @@
         </tbody>
       </table>
     </div>
+  </div>
+</div>
+<div class="row">
+  <div class="d-flex flex-column flex-sm-row justify-content-between">
+    <ngb-pagination [maxSize]="5" [collectionSize]="scoreboardRanking.length" [(page)]="pageIndex" [pageSize]="pageSize"></ngb-pagination>
+    <select #pageSizeSelect class="form-select form-control pagination-select auto-width" name="pageSize" (change)="pageSizeChanged(pageSizeSelect.value)">
+      <option value="20">20 {{ entryType }} per page</option>
+      <option value="30">30 {{ entryType }} per page</option>
+      <option value="50">50 {{ entryType }} per page</option>
+      <option value="100">100 {{ entryType }} per page</option>
+    </select>
   </div>
 </div>

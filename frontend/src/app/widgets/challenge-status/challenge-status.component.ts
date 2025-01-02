@@ -1,11 +1,13 @@
 import { Component, OnInit } from '@angular/core';
+import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { Instance } from 'src/app/api-model';
 import { DataService } from 'src/app/services/data.service';
 
 @Component({
     selector: 'app-challenge-status',
     templateUrl: './challenge-status.component.html',
-    styleUrls: ['./challenge-status.component.less']
+    styleUrls: ['./challenge-status.component.less'],
+    imports: [NgbDropdownModule]
 })
 export class ChallengeStatusComponent implements OnInit {
   public instance: Instance | null = null;

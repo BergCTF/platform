@@ -24,45 +24,40 @@
         <li><a routerLink="/scoreboard" routerLinkActive="text-decoration-underline" class="nav-link px-2">Scoreboard</a></li>
       </ul>
       @if (currentPlayer) {
-        <div class="dropdown text-end" role="button">
-          <a class="d-block text-decoration-none link-secondary dropdown-toggle" data-bs-toggle="dropdown">
+        <div ngbDropdown class="text-end" role="button">
+          <a ngbDropdownToggle class="d-block text-decoration-none link-secondary dropdown-toggle">
             {{ currentPlayer.name }}
           </a>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" [routerLink]="['/players', currentPlayer.id]">Profile</a></li>
-            <li><a class="dropdown-item" routerLink="/profile-settings">Settings</a></li>
-            <li><a class="dropdown-item" (click)="dataService.logout()">Logout</a></li>
-          </ul>
+          <div ngbDropdownMenu class="dropdown-menu">
+            <a ngbDropdownItem [routerLink]="['/players', currentPlayer.id]">Profile</a>
+            <a ngbDropdownItem routerLink="/profile-settings">Settings</a>
+            <a ngbDropdownItem (click)="dataService.logout()">Logout</a>
+          </div>
         </div>
       } @else {
         <div class="text-end">
           <a (click)="dataService.login()" class="btn btn-primary">Login</a>
         </div>
       }
-      <div class="dropdown text-end ms-3">
-        <a class="d-block text-decoration-none dropdown-toggle link-secondary theme-icon-active" type="button" data-bs-toggle="dropdown">
-          <i class="bi bi-circle-half"></i>
+      <div ngbDropdown class="text-end ms-3">
+        <a ngbDropdownToggle class="d-block text-decoration-none link-secondary theme-icon-active" role="button">
+          <i class="bi"
+          [class.bi-sun-fill]="theme == 'light'"
+          [class.bi-moon-stars-fill]="theme == 'dark'"
+          [class.bi-circle-half]="theme == 'auto'"
+          ></i>
         </a>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li>
-            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light" [class.active]="theme == 'light'" (click)="setTheme('light')">
-              <i class="bi bi-sun-fill" [class.theme-icon-active]="theme == 'light'"></i>
-              &nbsp; Light
-            </button>
-          </li>
-          <li>
-            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark" [class.active]="theme == 'dark'" (click)="setTheme('dark')">
-              <i class="bi bi-moon-stars-fill" [class.theme-icon-active]="theme == 'dark'"></i>
-              &nbsp; Dark
-            </button>
-          </li>
-          <li>
-            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="auto" [class.active]="theme == null || theme == 'auto'" (click)="setTheme('auto')">
-              <i class="bi bi-circle-half" [class.theme-icon-active]="theme == null || theme == 'auto'"></i>
-              &nbsp; Auto
-            </button>
-          </li>
-        </ul>
+        <div ngbDropdownMenu class="dropdown-menu dropdown-menu-end">
+          <button ngbDropdownItem [class.active]="theme == 'light'" (click)="setTheme('light')">
+            <i class="bi bi-sun-fill" [class.theme-icon-active]="theme == 'light'"></i>&nbsp; Light
+          </button>
+          <button ngbDropdownItem [class.active]="theme == 'dark'" (click)="setTheme('dark')">
+            <i class="bi bi-moon-stars-fill" [class.theme-icon-active]="theme == 'dark'"></i>&nbsp; Dark
+          </button>
+          <button ngbDropdownItem [class.active]="theme == null || theme == 'auto'" (click)="setTheme('auto')">
+            <i class="bi bi-circle-half" [class.theme-icon-active]="theme == null || theme == 'auto'"></i>&nbsp; Auto
+          </button>
+        </div>
       </div>
     </div>
   </div>

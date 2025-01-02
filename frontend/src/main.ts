@@ -1,3 +1,5 @@
+/// <reference types="@angular/localize" />
+
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor, provideAuth } from 'angular-auth-oidc-client';
 import { BrowserModule, bootstrapApplication } from '@angular/platform-browser';

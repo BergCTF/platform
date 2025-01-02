@@ -1,14 +1,15 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, TemplateRef } from '@angular/core';
 import { ApiService } from 'src/app/services/api.service';
 import { Router } from '@angular/router';
 import { DataService } from 'src/app/services/data.service';
 import { Subscription } from 'rxjs';
+import { NgbAccordionModule, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
     selector: 'app-profile-settings',
     templateUrl: './profile-settings.component.html',
     styleUrls: ['./profile-settings.component.less'],
-    imports: []
+    imports: [NgbAccordionModule]
 })
 export class ProfileSettingsComponent implements OnInit, OnDestroy {
 
@@ -21,6 +22,7 @@ export class ProfileSettingsComponent implements OnInit, OnDestroy {
   constructor(
     public apiService: ApiService,
     public dataService: DataService,
+    private modalService: NgbModal,
     private router: Router
   ) {}
 
@@ -36,6 +38,10 @@ export class ProfileSettingsComponent implements OnInit, OnDestroy {
     this.apiKey = null;
     this.apiKeyPlaceholder = null;
   }
+
+	open(content: TemplateRef<any>) {
+		this.modalService.open(content);
+	}
 
   deleteAccount() {
     this.apiService.deleteCurrentPlayer().subscribe(() => {
