@@ -107,10 +107,11 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
     if (this.hoveredChallenge !== '' && this.hoveredChallenge !== entry.challenge.name) {
       classes += ' other-hover ';
     }
+    let primaryCategory = this.helper.getPrimaryCategory(entry.challenge.categories);
     if (entry.solved) {
-      return classes + ' bi-hexagon-fill ' + this.helper.getDifficultyTextColorClass(entry.challenge.difficulty);
+      return classes + ' ' + this.helper.getSolvedCategoryIconClass(primaryCategory) + ' ' + this.helper.getDifficultyTextColorClass(entry.challenge.difficulty);
     } else {
-      return classes + ' bi-hexagon';
+      return classes + ' ' + this.helper.getUnsolvedCategoryIconClass(primaryCategory) + ' unsolved';
     }
   }
 

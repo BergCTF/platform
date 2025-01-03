@@ -5,6 +5,7 @@ import { BehaviorSubject, Observable, combineLatest, distinctUntilChanged, filte
 import { Challenge, CurrentPlayer, Instance, Metadata, Page, Player, Solve, Team, WebSocketMessage } from '../api-model';
 import { LoginResponse, OidcSecurityService } from 'angular-auth-oidc-client';
 import { ChallengeDetail, ChallengeDetailCategory, PlayerDetail, ScoreboardChallengeByCategory as ScoreboardChallengesByCategory, ScoreboardChallengeEntry, ScoreboardRanking, SolveDetail, TeamDetail, TeamSolveDetail, ActivityEntry } from '../model';
+import { HelperService } from './helper.service';
 
 @Injectable({
   providedIn: 'root'
@@ -43,6 +44,7 @@ export class DataService {
 
   constructor(
     private apiService: ApiService,
+    private helper: HelperService,
     private oidcSecurityService: OidcSecurityService) {
     this.loginEvents = this.oidcSecurityService.checkAuth().pipe(share());
     this.loginEvents.subscribe((loginResponse: LoginResponse) => {
@@ -641,7 +643,7 @@ export class DataService {
     let valueDifference = a.value - b.value;
     if (valueDifference == 0) {
       // If value is equal, sort by author rated difficulty
-      let difficultyDifference = this.difficultyToNumber(a.challenge.difficulty) - this.difficultyToNumber(b.challenge.difficulty);
+      let difficultyDifference = this.helper.difficultyToNumber(a.challenge.difficulty) - this.helper.difficultyToNumber(b.challenge.difficulty);
       if (difficultyDifference == 0) {
         // Fallback to sort alphabetically
         return a.challenge.name.localeCompare(b.challenge.name);
@@ -678,23 +680,6 @@ export class DataService {
   }
 
   private getPrimaryCategory(challenge: Challenge) {
-    return challenge.categories.length == 0 ? 'uncategorized' : challenge.categories[0];
-  }
-
-  private difficultyToNumber(difficulty: string): number {
-    switch (difficulty) {
-      case 'baby':
-        return 0;
-      case 'easy':
-        return 1;
-      case 'medium':
-        return 2;
-      case 'hard':
-        return 3;
-      case 'leet':
-        return 5;
-      default:
-        return 6;
-    }
+    return this.helper.getPrimaryCategory(challenge.categories);
   }
 }

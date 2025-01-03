@@ -68,4 +68,57 @@ export class HelperService {
     }
     return 'text-primary';
   }
+
+  difficultyToNumber(difficulty: string): number {
+    switch (difficulty) {
+      case 'baby':
+        return 0;
+      case 'easy':
+        return 1;
+      case 'medium':
+        return 2;
+      case 'hard':
+        return 3;
+      case 'leet':
+        return 5;
+      default:
+        return 6;
+    }
+  }
+
+  getPrimaryCategory(categories: string[]): string {
+    return categories.length == 0 ? 'uncategorized' : categories[0];
+  }
+
+  getUnsolvedCategoryIconClass(category: string) {
+    const iconMap = new Map();
+    iconMap.set('crypto', 'bi-key');
+    iconMap.set('forensics', 'bi-fingerprint');
+    iconMap.set('misc', 'bi-puzzle');
+    iconMap.set('pwn', 'bi-cpu');
+    iconMap.set('re', 'bi-gear');
+    iconMap.set('rev', 'bi-gear');
+    iconMap.set('web', 'bi-globe2');
+    let icon = iconMap.get(category);
+    if (icon) {
+      return icon;
+    }
+    return 'bi-hexagon';
+  }
+
+  getSolvedCategoryIconClass(category: string) {
+    const iconMap = new Map();
+    iconMap.set('crypto', 'bi-key-fill');
+    iconMap.set('forensics', 'bi-fingerprint');
+    iconMap.set('misc', 'bi-puzzle-fill');
+    iconMap.set('pwn', 'bi-cpu-fill');
+    iconMap.set('re', 'bi-gear-fill');
+    iconMap.set('rev', 'bi-gear-fill');
+    iconMap.set('web', 'bi-globe2');
+    let icon = iconMap.get(category);
+    if (icon) {
+      return icon;
+    }
+    return 'bi-hexagon-fill';
+  }
 }
