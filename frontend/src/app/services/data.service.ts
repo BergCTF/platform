@@ -4,7 +4,7 @@ import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { BehaviorSubject, Observable, combineLatest, distinctUntilChanged, filter, map, mergeMap, retry, share, tap, timer } from 'rxjs';
 import { Challenge, CurrentPlayer, Instance, Metadata, Page, Player, Solve, Team, WebSocketMessage } from '../api-model';
 import { LoginResponse, OidcSecurityService } from 'angular-auth-oidc-client';
-import { ChallengeDetail, ChallengeDetailCategory, PlayerDetail, ScoreboardChallengeByCategory as ScoreboardChallengesByCategory, ScoreboardChallengeEntry, ScoreboardRanking, SolveDetail, TeamDetail, TeamSolveDetail } from '../model';
+import { ChallengeDetail, ChallengeDetailCategory, PlayerDetail, ScoreboardChallengeByCategory as ScoreboardChallengesByCategory, ScoreboardChallengeEntry, ScoreboardRanking, SolveDetail, TeamDetail, TeamSolveDetail, ActivityEntry } from '../model';
 
 @Injectable({
   providedIn: 'root'
@@ -356,6 +356,27 @@ export class DataService {
         return players.find(p => p.id == currentPlayerId) || null;
       }
       return null;
+    }));
+  }
+
+  getSolveDetails(): Observable<readonly SolveDetail[]> {
+    return combineLatest([this.solves, this.players, this.teams]).pipe(map(params => {
+      const [solves, players, teams] = params;
+      return solves.map(s => this.toSolveDetail(s, players, teams));
+    }));
+  }
+
+  getActivityEntries(): Observable<readonly ActivityEntry[]> {
+    return combineLatest([this.getSolveDetails(), this.getChallengeDetails()]).pipe(map(params => {
+      const [solveDetails, challengeDetails] = params;
+      var entries = solveDetails.map(solveDetail => {
+        var entry = new ActivityEntry();
+        entry.solve = solveDetail;
+        entry.challenge = challengeDetails.find(c => c.challenge.name == solveDetail.challengeName) || null;
+        return entry;
+      });
+      entries.sort((a, b) => b.solve.solvedAt.getTime() - a.solve.solvedAt.getTime());
+      return entries;
     }));
   }
 

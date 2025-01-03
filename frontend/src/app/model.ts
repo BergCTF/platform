@@ -72,3 +72,8 @@ export class ScoreboardChallengeEntry {
     public solved: boolean = false;
     public solvedAt: Date | null = null;
 }
+
+export class ActivityEntry {
+    public challenge: ChallengeDetail | null = null;
+    public solve: SolveDetail = new SolveDetail();
+}

@@ -8,6 +8,7 @@ import { DynamicPageComponent } from './pages/dynamic-page/dynamic-page.componen
 import { TeamDetailComponent } from './pages/team-detail/team-detail.component';
 import { TeamComponent } from './pages/team/team.component';
 import { ScoreboardComponent } from './pages/scoreboard/scoreboard.component';
+import { ActivityComponent } from './pages/activity/activity.component';
 
 const routes: Routes = [
   { path: 'challenges', component: ChallengesComponent },
@@ -18,6 +19,7 @@ const routes: Routes = [
   { path: 'teams/:uuid', component: TeamDetailComponent },
   { path: 'team/:uuid', component: TeamDetailComponent },
   { path: 'team', component: TeamComponent },
+  { path: 'activity', component: ActivityComponent },
   { path: 'scoreboard', component: ScoreboardComponent },
   { path: '', pathMatch: 'full', redirectTo: '/challenges' },
   { path: '**', component: DynamicPageComponent },
