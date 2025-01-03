@@ -243,45 +243,50 @@ public class OAuthController(
 
             var discordUserId = ulong.Parse(userId ?? "0");
 
-            var discordClient = new DiscordRestClient();
-            await discordClient.LoginAsync(Discord.TokenType.Bot, discordConfig.BotToken);
-
-            if (discordConfig.GuildIdRequirement != 0)
+            if (discordConfig.GuildIdRequirement != 0 ||
+                (discordConfig.AuthorGuildId != 0 && discordConfig.AuthorRoleId != 0) ||
+                (discordConfig.AdminGuildId != 0 && discordConfig.AdminRoleId != 0))
             {
-                // Apply discord server membership check
-                var guildUser = await discordClient.GetGuildUserAsync(discordConfig.GuildIdRequirement, discordUserId);
-                if (guildUser == null)
+                var discordClient = new DiscordRestClient();
+                await discordClient.LoginAsync(Discord.TokenType.Bot, discordConfig.BotToken);
+
+                if (discordConfig.GuildIdRequirement != 0)
                 {
-                    logger.LogDebug("Prevented discord user {DiscordId} from logging in because the guild membership requirement is not met.", discordUserId);
-                    return Results.Problem(new ProblemDetails
+                    // Apply discord server membership check
+                    var guildUser = await discordClient.GetGuildUserAsync(discordConfig.GuildIdRequirement, discordUserId);
+                    if (guildUser == null)
                     {
-                        Title = "Missing discord server membership",
-                        Detail = "This event requires players to be members of a specific discord server."
-                    });
+                        logger.LogDebug("Prevented discord user {DiscordId} from logging in because the guild membership requirement is not met.", discordUserId);
+                        return Results.Problem(new ProblemDetails
+                        {
+                            Title = "Missing discord server membership",
+                            Detail = "This event requires players to be members of a specific discord server."
+                        });
+                    }
                 }
-            }
 
-            if (discordConfig.AuthorGuildId != 0 && discordConfig.AuthorRoleId != 0)
-            {
-                // If configured, assign the author role based on a specific discord role
-                var guildUser = await discordClient.GetGuildUserAsync(discordConfig.AuthorGuildId, discordUserId);
-                if (guildUser != null && guildUser.RoleIds.Contains(discordConfig.AuthorRoleId))
+                if (discordConfig.AuthorGuildId != 0 && discordConfig.AuthorRoleId != 0)
                 {
-                    roles.Add(Constants.Roles.Author);
+                    // If configured, assign the author role based on a specific discord role
+                    var guildUser = await discordClient.GetGuildUserAsync(discordConfig.AuthorGuildId, discordUserId);
+                    if (guildUser != null && guildUser.RoleIds.Contains(discordConfig.AuthorRoleId))
+                    {
+                        roles.Add(Constants.Roles.Author);
+                    }
                 }
-            }
 
-            if (discordConfig.AdminGuildId != 0 && discordConfig.AdminRoleId != 0)
-            {
-                // If configured, assign the admin role based on a specific discord role
-                var guildUser = await discordClient.GetGuildUserAsync(discordConfig.AdminGuildId, discordUserId);
-                if (guildUser != null && guildUser.RoleIds.Contains(discordConfig.AdminRoleId))
+                if (discordConfig.AdminGuildId != 0 && discordConfig.AdminRoleId != 0)
                 {
-                    roles.Add(Constants.Roles.Admin);
+                    // If configured, assign the admin role based on a specific discord role
+                    var guildUser = await discordClient.GetGuildUserAsync(discordConfig.AdminGuildId, discordUserId);
+                    if (guildUser != null && guildUser.RoleIds.Contains(discordConfig.AdminRoleId))
+                    {
+                        roles.Add(Constants.Roles.Admin);
+                    }
                 }
-            }
 
-            await discordClient.LogoutAsync();
+                await discordClient.LogoutAsync();
+            }
 
             // Every user that logs in with discord gets at least the player role
             roles.Add(Constants.Roles.Player);

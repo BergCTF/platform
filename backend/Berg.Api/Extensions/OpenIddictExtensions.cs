@@ -91,6 +91,13 @@ public static class OpenIddictBuilder
     {
         var keyProvider = new KubernetesSecretKeyProvider(kubernetes);
 
+        if ((discordConfig.GuildIdRequirement != 0 ||
+            (discordConfig.AuthorGuildId != 0 && discordConfig.AuthorRoleId != 0) ||
+            (discordConfig.AdminGuildId != 0 && discordConfig.AdminRoleId != 0)) && string.IsNullOrEmpty(discordConfig.BotToken))
+        {
+            throw new InvalidOperationException("Discord bot token must be provided if discord role mapping is configured.");
+        }
+
         builder.Services.AddDataProtection()
             .SetApplicationName("Berg");
         builder.Services.Configure<KeyManagementOptions>(options =>
