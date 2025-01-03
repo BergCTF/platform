@@ -37,9 +37,7 @@
             </td>
             <td>
               @if (activity.challenge) {
-                <a role="button" [routerLink]="['/challenges', activity.solve.challengeName]">
-                  {{ activity.solve.challengeName }}
-                </a>
+                <a role="button" [routerLink]="['/challenges', activity.solve.challengeName]">{{ activity.solve.challengeName }}</a>
                 <wbr /> <span class="text-muted"> ({{ activity.challenge.value }})</span>
               } @else {
                 {{ activity.solve.challengeName }}
