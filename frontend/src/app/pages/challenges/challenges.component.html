@@ -94,8 +94,8 @@
                 }
                 {{ challengeDetail.challenge.name }}
                 <br/>
-                <code>{{ challengeDetail.value }}</code>
-                <br />
+                <span>{{ challengeDetail.value }}</span>
+                <br/>
                 @switch (challengeDetail.challenge.difficulty) {
                   @case ('baby') {
                     <span class="badge text-bg-info me-1">baby</span>
