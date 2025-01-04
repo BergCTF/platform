@@ -317,7 +317,7 @@ public class OAuthController(
             });
         }
 
-        var player = await GetOrCreatePlayerByFederatedId(userId, username, email, roles, cancellationToken);
+        var player = GetOrCreatePlayerByFederatedId(userId, username, email, roles);
 
         var identity = CreateClaimsIdentityForPlayer(player, Constants.LoginTypes.Federation,
             roles);
@@ -360,13 +360,12 @@ public class OAuthController(
     /// <param name="federatedUsername">The federated username of the player</param>
     /// <param name="federatedEmail">The federated email of the player</param>
     /// <param name="roles">The roles of the player</param>
-    /// <param name="cancellationToken">The CancellationToken of the request</param>
     /// <returns>The player object corresponding to the federated id</returns>
-    private async Task<Player> GetOrCreatePlayerByFederatedId(string federatedId, string federatedUsername,
-        string federatedEmail, List<string> roles, CancellationToken cancellationToken)
+    private Player GetOrCreatePlayerByFederatedId(string federatedId, string federatedUsername,
+        string federatedEmail, List<string> roles)
     {
         using var activity = Constants.BergActivitySource.StartActivity();
-        await bergDbContext.Database.BeginTransactionAsync(cancellationToken);
+        bergDbContext.Database.BeginTransaction();
         var player = bergDbContext.Players.SingleOrDefault(u => u.FederatedId == federatedId);
 
         if (player == null)
@@ -378,13 +377,14 @@ public class OAuthController(
                 Email = federatedEmail,
                 FederatedId = federatedId,
                 Roles = roles,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                Attributes = [],
             };
             bergDbContext.Players.Add(player);
             var _ = mediator.Publish(new PlayerCreateNotification
             {
                 DbPlayer = player,
-            }, cancellationToken);
+            });
         }
         else
         {
@@ -393,8 +393,8 @@ public class OAuthController(
             player.Email = federatedEmail;
             player.Roles = roles;
         }
-        await bergDbContext.SaveChangesAsync(cancellationToken);
-        await bergDbContext.Database.CommitTransactionAsync(cancellationToken);
+        bergDbContext.SaveChanges();
+        bergDbContext.Database.CommitTransaction();
         return player;
     }
 

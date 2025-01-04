@@ -6,6 +6,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using OpenIddict.Abstractions;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -151,7 +152,8 @@ public class PlayerController(CtfConfig ctfConfig,
             });
         }
 
-        var player = dbContext.Players.First(p => p.Id == playerId);
+        var player = dbContext.Players
+            .First(p => p.Id == playerId);
         dbContext.Players.Remove(player);
         dbContext.SaveChanges();
 
@@ -159,6 +161,24 @@ public class PlayerController(CtfConfig ctfConfig,
         {
             PlayerId = player.Id,
         });
+
+        if (player.TeamId != null) {
+            // Also send a team update if the player was part of a team
+            var dbTeam = dbContext.Teams
+                .Include(t => t.Players)
+                .Single(t => t.Id == player.TeamId);
+            var __ = mediator.Publish(new TeamUpdateNotification
+            {
+                Team = new Models.V2.Team
+                {
+                    Id = dbTeam.Id,
+                    Name = dbTeam.Name,
+                    Players = dbTeam.Players
+                        .Select(p => p.Id)
+                        .ToList(),
+                }
+            });
+        }
 
         return SignOut();
     }

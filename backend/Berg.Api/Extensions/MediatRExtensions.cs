@@ -28,14 +28,19 @@ public class OpenTelemetryTracingTaskWhenAllPublisher(
             .ToArray();
 
         await Task.WhenAll(tasks);
+        logger.LogTrace("Finished notification of type: {RequestType}", notificationName);
     }
 
     private async Task ExecuteHandlerCallback(NotificationHandlerExecutor handler, INotification notification, CancellationToken cancellationToken)
     {
         var handlerName = handler.HandlerInstance.GetType().Name;
         using var activity = Constants.BergActivitySource.StartActivity(handlerName);
-        logger.LogTrace("Calling handler: {HandlerType}", handlerName);
-        await handler.HandlerCallback(notification, cancellationToken);
+        logger.LogTrace("Calling notification handler: {HandlerType}", handlerName);
+        try {
+            await handler.HandlerCallback(notification, cancellationToken);
+        } catch (Exception ex) {
+            logger.LogError(ex, "Exception calling notification handler: {HandlerType}", handlerName);
+        }
         activity?.Stop();
     }
 }
@@ -48,7 +53,7 @@ public class OpenTelemetryTracingBehavior<TRequest, TResponse>(
     {
         var requestName = typeof(TRequest).Name;
         using var activity = Constants.BergActivitySource.StartActivity(requestName);
-        logger.LogTrace("Starting request of type: {RequestType}", requestName);
+        logger.LogTrace("Sending request of type: {RequestType}", requestName);
         var response = await next();
         activity?.Stop();
         logger.LogTrace("Finished request of type: {RequestType}", requestName);
