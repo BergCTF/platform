@@ -13,6 +13,13 @@
         </tr>
       </thead>
       <tbody class="table-group-divider">
+        @if (activityEntries.length === 0) {
+          <tr>
+            <td [attr.colspan]="areTeamsEnabled ? 4 : 3" class="text-center">
+              No activity yet.
+            </td>
+          </tr>
+        }
         @for (activity of activityEntries | slice: (pageIndex-1) * pageSize : pageIndex * pageSize; track activity) {
           <tr>
             <th scope="row">

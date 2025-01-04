@@ -40,8 +40,8 @@
             }
           </tr>
         </thead>
-        @if (scoreboardRanking.length === 0) {
-          <tbody>
+        <tbody class="table-group-divider">
+          @if (scoreboardRanking.length === 0) {
             <tr>
               <td [attr.colspan]="4 + primaryChallengeCategories.length" class="text-center">
                 @if (searchText.value == '') {
@@ -51,9 +51,7 @@
                 }
               </td>
             </tr>
-          </tbody>
-        }
-        <tbody class="table-group-divider">
+          }
           @for (ranking of scoreboardRanking | slice: (pageIndex-1) * pageSize : pageIndex * pageSize; track ranking) {
             <tr>
               <th scope="row">{{ ranking.rank }}</th>
