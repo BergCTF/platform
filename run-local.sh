@@ -69,6 +69,9 @@ postgresql:
   enabled: false
 EOF
 
+echo "Upgrading CRD's"
+kubectl --context kind-berg-dev-cluster apply -f crds/challenge.yaml
+kubectl --context kind-berg-dev-cluster apply -f crds/page.yaml
 
 echo "Deploying example pages"
 cat <<EOF | kubectl --context kind-berg-dev-cluster apply -f -
@@ -154,6 +157,7 @@ metadata:
   name: yet-another-nginx
   namespace: berg
 spec:
+  displayName: yet another nginx!
   author: NoRelect
   flag: flag{test_flag}
   description: yet-another-nginx

@@ -362,9 +362,9 @@ export class DataService {
   }
 
   getSolveDetails(): Observable<readonly SolveDetail[]> {
-    return combineLatest([this.solves, this.players, this.teams]).pipe(map(params => {
-      const [solves, players, teams] = params;
-      return solves.map(s => this.toSolveDetail(s, players, teams));
+    return combineLatest([this.solves, this.challenges, this.players, this.teams]).pipe(map(params => {
+      const [solves, challenges, players, teams] = params;
+      return solves.map(s => this.toSolveDetail(s, challenges.find(c => c.name == s.challengeName) || null, players, teams));
     }));
   }
 
@@ -557,7 +557,7 @@ export class DataService {
     playerDetail.id = player.id;
     playerDetail.name = player.name;
     playerDetail.team = teams.find(t => t.players.includes(player.id)) || null;
-    playerDetail.solves = solves.filter(s => s.playerId == player.id).map(s => this.toSolveDetail(s, players, teams));
+    playerDetail.solves = solves.filter(s => s.playerId == player.id).map(s => this.toSolveDetail(s, challenges.find(c => c.challenge.name == s.challengeName)?.challenge || null, players, teams));
     let solvedChallengeNames = playerDetail.solves.map(s => s.challengeName);
     playerDetail.score = challenges.filter(c => solvedChallengeNames.includes(c.challenge.name)).map(c => c.value).reduce((a,b) => a + b, 0);
     let plainChallenges = challenges.map(c => c.challenge);
@@ -588,7 +588,7 @@ export class DataService {
   private toChallengeDetail(metadata: Metadata, challenge: Challenge, currentPlayerId: string | null, solves: readonly Solve[], players: readonly Player[], teams: readonly Team[]) {
     var challDetail = new ChallengeDetail();
     challDetail.challenge = challenge;
-    challDetail.playerSolves = solves.filter(s => s.challengeName == challenge.name).map(s => this.toSolveDetail(s, players, teams));
+    challDetail.playerSolves = solves.filter(s => s.challengeName == challenge.name).map(s => this.toSolveDetail(s, challenge, players, teams));
     var solvedPlayerIds = challDetail.playerSolves.map(s => s.playerId);
     var teamsWithSolves = teams.filter(t => t.players.some(p => solvedPlayerIds.includes(p)));
     challDetail.teamSolves = teamsWithSolves.map(t => this.toTeamSolveDetail(t, challenge, solves, players));
@@ -616,6 +616,7 @@ export class DataService {
   private toTeamSolveDetail(team: Team, challenge: Challenge, solves: readonly Solve[], players: readonly Player[]): TeamSolveDetail {
     var teamSolveDetail = new TeamSolveDetail();
     teamSolveDetail.challengeName = challenge.name;
+    teamSolveDetail.challengeDisplayName = challenge.displayName;
     teamSolveDetail.teamId = team.id;
     teamSolveDetail.teamName = team.name;
     let teamChallengeSolves = solves.filter(s => s.challengeName == challenge.name && team.players.includes(s.playerId));
@@ -626,9 +627,10 @@ export class DataService {
     return Object.freeze(teamSolveDetail);
   }
 
-  private toSolveDetail(solve: Solve, players: readonly Player[], teams: readonly Team[]): SolveDetail {
+  private toSolveDetail(solve: Solve, challenge: Challenge | null, players: readonly Player[], teams: readonly Team[]): SolveDetail {
     var solveDetail = new SolveDetail();
     solveDetail.challengeName = solve.challengeName;
+    solveDetail.challengeDisplayName = challenge?.displayName ?? solve.challengeName;
     solveDetail.playerId = solve.playerId;
     solveDetail.solvedAt = new Date(solve.solvedAt);
     solveDetail.playerName = players.find(p => p.id == solve.playerId)?.name ?? '';
