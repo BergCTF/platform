@@ -15,6 +15,9 @@ public class V1Challenge : CustomResource<V1ChallengeSpec>
 
 public class V1ChallengeSpec
 {
+    [JsonPropertyName("displayName")]
+    public string? DisplayName { get; set; } = null;
+
     [JsonPropertyName("author")]
     public string Author { get; set; } = "";
 

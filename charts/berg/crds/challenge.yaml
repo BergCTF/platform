@@ -25,6 +25,9 @@ spec:
             spec:
               type: object
               properties:
+                displayName:
+                  type: string
+                  nullable: true
                 author:
                   type: string
                 description:
