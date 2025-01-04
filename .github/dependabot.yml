@@ -4,15 +4,31 @@ updates:
     directory: /backend
     schedule:
       interval: weekly
+    groups:
+      nuget-deps:
+        patterns:
+          - "*"
   - package-ecosystem: devcontainers
     directory: /
     schedule:
       interval: weekly
+    groups:
+      devcontainers-deps:
+        patterns:
+          - "*"
   - package-ecosystem: npm
     directory: /frontend
     schedule:
       interval: weekly
+    groups:
+      npm-deps:
+        patterns:
+          - "*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: weekly
+    groups:
+      actions-deps:
+        patterns:
+          - "*"
