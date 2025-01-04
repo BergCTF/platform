@@ -38,6 +38,7 @@ export class SolveDetail {
     public playerId: string = '';
     public solvedAt: Date = new Date();
     public challengeName: string = '';
+    public challengeDisplayName: string = '';
     public playerName: string = '';
     public teamId: string | null = null;
     public teamName: string | null = null;
@@ -46,6 +47,7 @@ export class SolveDetail {
 export class TeamSolveDetail {
     public solvedAt: Date = new Date();
     public challengeName: string = '';
+    public challengeDisplayName: string = '';
     public players: Player[] = [];
     public teamId: string = '';
     public teamName: string | null = null;

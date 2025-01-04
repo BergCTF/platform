@@ -7,6 +7,9 @@ public class Challenge
     [JsonPropertyName("name")]
     public string Name { get; set; } = "";
 
+    [JsonPropertyName("displayName")]
+    public string DisplayName { get; set; } = "";
+
     [JsonPropertyName("author")]
     public string Author { get; set; } = "";
 

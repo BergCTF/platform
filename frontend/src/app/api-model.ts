@@ -20,6 +20,7 @@ export class PlayerAttribute {
 
 export class Challenge {
   public name = '';
+  public displayName = '';
   public author = '';
   public description = '';
   public event: string = '';

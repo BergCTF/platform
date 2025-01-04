@@ -56,6 +56,7 @@ public class ChallengeController(IChallengeService challengeService, CtfConfig c
         return new Challenge
         {
             Name = challengeName,
+            DisplayName = c.Spec.DisplayName ?? challengeName,
             Author = c.Spec.Author,
             Description = c.Spec.Description,
             Difficulty = c.Spec.Difficulty,
