@@ -43,7 +43,13 @@
         @if (scoreboardRanking.length === 0) {
           <tbody>
             <tr>
-              <td [attr.colspan]="4 + primaryChallengeCategories.length" class="text-center">No solves yet.</td>
+              <td [attr.colspan]="4 + primaryChallengeCategories.length" class="text-center">
+                @if (searchText.value == '') {
+                  No solves yet.
+                } @else {
+                  No {{ entryType }} found for the given search.
+                }
+              </td>
             </tr>
           </tbody>
         }
