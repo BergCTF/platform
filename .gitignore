@@ -353,4 +353,3 @@ MigrationBackup/
 .idea/
 
 appsettings.Development.json
-kubeconfig.yaml
