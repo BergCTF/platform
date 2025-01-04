@@ -83,7 +83,7 @@ jobs:
       - name: Build and push Berg API
         if: steps.semrel.outputs.version != ''
         id: berg-api-docker
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: backend
           file: backend/Berg.Api/Dockerfile
@@ -95,7 +95,7 @@ jobs:
       - name: Build and push Berg Frontend
         if: steps.semrel.outputs.version != ''
         id: berg-frontend-docker
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: frontend
           file: frontend/Dockerfile
