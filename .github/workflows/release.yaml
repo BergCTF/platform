@@ -97,7 +97,7 @@ jobs:
         id: berg-frontend-docker
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: frontend
           file: frontend/Dockerfile
           push: true
           tags: ${{ steps.berg-frontend-meta.outputs.tags }}
