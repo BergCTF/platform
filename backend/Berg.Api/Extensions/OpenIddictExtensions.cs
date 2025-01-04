@@ -35,10 +35,10 @@ public sealed class InternalBackChannelReplacement(IConfiguration configuration)
             return default;
 
         var baseUri = new Uri(internalIssuer);
-        if(context.Configuration.JwksUri != null)
-            context.Configuration.JwksUri = ReplaceBaseUri(baseUri, context.Configuration.JwksUri);
-        if(context.Configuration.UserinfoEndpoint != null)
-            context.Configuration.UserinfoEndpoint = ReplaceBaseUri(baseUri, context.Configuration.UserinfoEndpoint);
+        if(context.Configuration.JsonWebKeySetUri != null)
+            context.Configuration.JsonWebKeySetUri = ReplaceBaseUri(baseUri, context.Configuration.JsonWebKeySetUri);
+        if(context.Configuration.UserInfoEndpoint != null)
+            context.Configuration.UserInfoEndpoint = ReplaceBaseUri(baseUri, context.Configuration.UserInfoEndpoint);
         if(context.Configuration.IntrospectionEndpoint != null)
             context.Configuration.IntrospectionEndpoint = ReplaceBaseUri(baseUri, context.Configuration.IntrospectionEndpoint);
         if(context.Configuration.TokenEndpoint != null)
@@ -185,7 +185,7 @@ public static class OpenIddictBuilder
                             AuthorizationEndpoint = new Uri("https://discord.com/oauth2/authorize"),
                             RevocationEndpoint = new Uri("https://discord.com/api/oauth2/token/revoke"),
                             TokenEndpoint = new Uri("https://discord.com/api/oauth2/token"),
-                            UserinfoEndpoint = new Uri("https://discord.com/api/users/@me")
+                            UserInfoEndpoint = new Uri("https://discord.com/api/users/@me")
                         },
                         RedirectUri = new Uri(Constants.Endpoints.FederationCallback, UriKind.RelativeOrAbsolute)
                     };
@@ -235,8 +235,8 @@ public static class OpenIddictBuilder
                 options.SetAuthorizationEndpointUris(Constants.Endpoints.Authorization);
                 options.SetTokenEndpointUris(Constants.Endpoints.Token);
                 options.SetIntrospectionEndpointUris(Constants.Endpoints.Introspect);
-                options.SetLogoutEndpointUris(Constants.Endpoints.Logout);
-                options.SetUserinfoEndpointUris(Constants.Endpoints.UserInfo);
+                options.SetEndSessionEndpointUris(Constants.Endpoints.EndSession);
+                options.SetUserInfoEndpointUris(Constants.Endpoints.UserInfo);
 
                 options.SetAccessTokenLifetime(Constants.Lifetimes.AccessTokenLifetime);
                 options.SetRefreshTokenLifetime(Constants.Lifetimes.RefreshTokenLifetime);
@@ -252,7 +252,7 @@ public static class OpenIddictBuilder
                 options.UseAspNetCore()
                     .EnableAuthorizationEndpointPassthrough()
                     .EnableTokenEndpointPassthrough()
-                    .EnableLogoutEndpointPassthrough()
+                    .EnableEndSessionEndpointPassthrough()
                     .DisableTransportSecurityRequirement();
             })
             .AddValidation(options =>
@@ -281,7 +281,7 @@ public static class OpenIddictBuilder
             {
                 Permissions.Endpoints.Authorization,
                 Permissions.Endpoints.Token,
-                Permissions.Endpoints.Logout,
+                Permissions.Endpoints.EndSession,
                 Permissions.GrantTypes.Implicit,
                 Permissions.GrantTypes.Password,
                 Permissions.GrantTypes.RefreshToken,

@@ -137,12 +137,12 @@ public static class Constants
         public const string Introspect = $"{BasePath}/introspect";
 
         /// <summary>
-        /// Logout endpoint
+        /// EndSession endpoint
         /// </summary>
-        public const string Logout = $"{BasePath}/logout";
+        public const string EndSession = $"{BasePath}/end-session";
 
         /// <summary>
-        /// Userinfo endpoint
+        /// UserInfo endpoint
         /// </summary>
         public const string UserInfo = $"{BasePath}/user-info";
     }

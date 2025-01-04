@@ -144,7 +144,7 @@ public class OAuthController(
             return Results.Challenge(properties, [Constants.Schemes.FederatedLogin]);
         }
 
-        if (oauthRequest.HasPrompt("login"))
+        if (oauthRequest.HasPromptValue("login"))
         {
             // Remove prompt property from redirect url to prevent infinite loop
             var newQuery = new Dictionary<string, StringValues>(HttpContext.Request.Query);
@@ -334,7 +334,7 @@ public class OAuthController(
     /// <returns>The logout response</returns>
     [HttpGet]
     [HttpPost]
-    [Route(Constants.Endpoints.Logout)]
+    [Route(Constants.Endpoints.EndSession)]
     [AllowAnonymous]
     [IgnoreAntiforgeryToken]
     public async Task<IActionResult> Logout()
