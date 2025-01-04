@@ -46,6 +46,7 @@ export class ChallengesComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.hideSolvedValue = localStorage.getItem('hideSolved') === 'true';
+    this.hideSolved.next(this.hideSolvedValue);
     this.ctfStartSubscription = this.dataService.getCTFStart().subscribe(ctfStart => {
       this.ctfStart = ctfStart;
     });
