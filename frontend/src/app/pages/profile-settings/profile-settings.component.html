@@ -1,0 +1,76 @@
+<h1>Profile settings</h1>
+<p>Manage your account.</p>
+<div class="card mb-3">
+  <div class="card-body">
+    <h4>API Key</h4>
+    <p>Username: <code>{{ currentPlayerId }}</code></p>
+    @if (apiKey) {
+      <p>API Key: <code>{{ apiKey }}</code></p>
+      <p>Make sure you copy this key, as it will not be shown again.</p>
+      <p></p>
+    }
+    @else {
+      <p>API Key: <code>{{ apiKeyPlaceholder ?? 'Not yet generated' }}</code></p>
+    }
+    <button class="btn btn-warning" (click)="open(resetApiKeyModal)"><i class="bi bi-trash"></i>&nbsp;Reset API Key</button>
+    <ng-template #resetApiKeyModal let-modal>
+      <div class="modal-header">
+        <h5 class="modal-title">Reset API Key</h5>
+        <button type="button" class="btn-close" (click)="modal.dismiss('Cancel')"></button>
+      </div>
+      <div class="modal-body">
+        <p>This action will ensure that the previous API Key will no longer work for new authentications.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.dismiss('Cancel')">Cancel</button>
+        <button type="button" class="btn btn-warning" (click)="resetAPIKey(); modal.dismiss('Reset API')"><i class="bi bi-trash"></i>Reset API Key</button>
+      </div>
+    </ng-template>
+    <div ngbAccordion class="mt-3">
+      <div ngbAccordionItem>
+        <h2 ngbAccordionHeader>
+          <button ngbAccordionButton type="button">
+            API Usage
+          </button>
+        </h2>
+        <div ngbAccordionCollapse>
+          <div ngbAccordionBody>
+            <ng-template>
+              <p>To get an API access token, you need to perform the <a href="https://www.rfc-editor.org/rfc/rfc6749#section-4.3">Resource Owner Password Credentials Grant</a>:</p>
+              <pre>
+POST /api/openid/token HTTP/1.1
+Host: {{ getHost() }}
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&username={{ currentPlayerId }}&password={{ (apiKey || apiKeyPlaceholder) ?? 'not-yet-generated' }}
+              </pre>
+              <p>
+                You can then use the obtained access token to interact with the API.
+                <a href="/swagger" target="_blank">Swagger Docs of the Berg.API</a> are available.
+              </p>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card mb-3">
+  <div class="card-body">
+    <h4>Danger zone</h4>
+    <button class="btn btn-danger" (click)="open(deleteAccountModal)"><i class="bi bi-trash"></i>&nbsp;Delete account</button>
+    <ng-template #deleteAccountModal let-modal>
+      <div class="modal-header">
+        <h5 class="modal-title">Delete account</h5>
+        <button type="button" class="btn-close" (click)="modal.dismiss('Cancel')"></button>
+      </div>
+      <div class="modal-body">
+        <p>Please note that this action is irriversibe and will remove all of your account data.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.dismiss('Cancel')">Cancel</button>
+        <button type="button" class="btn btn-danger" (click)="deleteAccount(); modal.dismiss('Cancel')"><i class="bi bi-trash text-white"></i>Delete account</button>
+      </div>
+    </ng-template>
+  </div>
+</div>

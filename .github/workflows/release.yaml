@@ -12,7 +12,7 @@ jobs:
     permissions:
       actions: none
       checks: none
-      contents: write # needed to create release
+      contents: write
       deployments: none
       issues: none
       packages: write
@@ -32,12 +32,12 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           allow-initial-development-versions: true
 
-      - name: Docker meta
-        id: meta
+      - name: Berg API docker meta
+        id: berg-api-meta
         if: steps.semrel.outputs.version != ''
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/norelect/berg-challenge-server
+          images: ghcr.io/norelect/berg/api
           flavor: |
             latest=auto
           tags: |
@@ -45,7 +45,27 @@ jobs:
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.semrel.outputs.version }}
             type=semver,pattern={{major}},value=${{ steps.semrel.outputs.version }}
           labels: |
-            org.opencontainers.image.title=berg-challenge-server
+            org.opencontainers.image.title=berg-api
+            org.opencontainers.image.description=${{ github.event.repository.description }}
+            org.opencontainers.image.url=${{ github.event.repository.html_url }}
+            org.opencontainers.image.source=${{ github.event.repository.clone_url }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
+
+      - name: Berg Frontend docker meta
+        id: berg-frontend-meta
+        if: steps.semrel.outputs.version != ''
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/norelect/berg/frontend
+          flavor: |
+            latest=auto
+          tags: |
+            type=semver,pattern={{version}},value=${{ steps.semrel.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.semrel.outputs.version }}
+            type=semver,pattern={{major}},value=${{ steps.semrel.outputs.version }}
+          labels: |
+            org.opencontainers.image.title=berg-frontend
             org.opencontainers.image.description=${{ github.event.repository.description }}
             org.opencontainers.image.url=${{ github.event.repository.html_url }}
             org.opencontainers.image.source=${{ github.event.repository.clone_url }}
@@ -60,14 +80,40 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push Berg API
+        if: steps.semrel.outputs.version != ''
+        id: docker
+        uses: docker/build-push-action@v5
+        with:
+          context: backend
+          file: backend/Berg.Api/Dockerfile
+          push: true
+          tags: ${{ steps.berg-api-meta.outputs.tags }}
+          labels: |
+            ${{ steps.berg-api-meta.outputs.labels }}
+
+      - name: Build and push Berg Frontend
         if: steps.semrel.outputs.version != ''
         id: docker
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Berg.ChallengeServer/Dockerfile
+          file: frontend/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.berg-frontend-meta.outputs.tags }}
           labels: |
-            ${{ steps.meta.outputs.labels }}
+            ${{ steps.berg-frontend-meta.outputs.labels }}
+
+      - name: Build and push Berg helm chart
+        if: steps.semrel.outputs.version != ''
+        uses: appany/helm-oci-chart-releaser@v0.4.2
+        with:
+          name: berg
+          repository: norelect/charts
+          tag: ${{ steps.semrel.outputs.version }}
+          app_version: ${{ steps.semrel.outputs.version }}
+          path: charts/berg
+          registry: ghcr.io
+          registry_username: ${{ github.repository_owner }}
+          registry_password: ${{ secrets.GITHUB_TOKEN }}
+          update_dependencies: 'true'

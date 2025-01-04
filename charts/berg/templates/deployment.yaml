@@ -1,0 +1,83 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "berg.fullname" . }}-api
+  labels:
+    {{- include "berg.labels" . | nindent 4 }}
+    component: api
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "berg.selectorLabels" . | nindent 6 }}
+      component: api
+  template:
+    metadata:
+      labels:
+        {{- include "berg.selectorLabels" . | nindent 8 }}
+        component: api
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.berg.pullSecretName }}
+      serviceAccountName: {{ include "berg.fullname" . }}
+      containers:
+        - name: berg-api
+          image: "{{ .Values.berg.image.repository }}:{{ .Values.berg.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.berg.image.imagePullPolicy }}
+          env:
+            - name: "BERG_NAMESPACE"
+              value: {{ .Release.Namespace | quote }}
+            - name: "BERG_RELEASE"
+              value: {{ include "berg.fullname" . | quote }}
+            - name: "ASPNETCORE_URLS"
+              value: "http://0.0.0.0:8080"
+            - name: "ASPNETCORE_FORWARDEDHEADERS_ENABLED"
+              value: "true"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: appsettings
+              mountPath: /app/appsettings.json
+              subPath: appsettings.json
+          resources:
+            {{- toYaml .Values.berg.resources | nindent 12 }}
+      volumes:
+        - name: appsettings
+          configMap:
+            name: {{ include "berg.fullname" . }}-appsettings
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "berg.fullname" . }}-frontend
+  labels:
+    {{- include "berg.labels" . | nindent 4 }}
+    component: frontend
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "berg.selectorLabels" . | nindent 6 }}
+      component: frontend
+  template:
+    metadata:
+      labels:
+        {{- include "berg.selectorLabels" . | nindent 8 }}
+        component: frontend
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.berg.pullSecretName }}
+      serviceAccountName: {{ include "berg.fullname" . }}
+      containers:
+        - name: berg-frontend
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.frontend.image.imagePullPolicy }}
+          ports:
+            - containerPort: 80
+          resources:
+            {{- toYaml .Values.berg.resources | nindent 12 }}

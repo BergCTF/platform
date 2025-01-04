@@ -1,0 +1,36 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "berg.fullname" . }}-appsettings
+  labels:
+    {{- include "berg.labels" . | nindent 4 }}
+data:
+  appsettings.json: |
+    {
+      "Logging": {
+        "LogLevel": {{ .Values.berg.logLevel | toJson }}
+      },
+      "AllowedHosts": {{ .Values.berg.domain | quote }},
+      "ConnectionStrings": {
+        "BergDbConnection": "Host={{ .Values.berg.postgresql.host }}; Database={{ .Values.berg.postgresql.database }}; Username={{ .Values.berg.postgresql.username }}; Password={{ .Values.berg.postgresql.password }};"
+      },
+      "infra": {
+        "challengeDomain": {{ .Values.gateway.domain | quote }},
+        "platformDomain": {{ .Values.berg.domain | quote }},
+        "gatewayName": "{{ include "berg.fullname" . }}-gateway",
+        "challengeHttpPort": {{ .Values.gateway.httpPort }},
+        "challengeTlsPort": {{ .Values.gateway.tlsPort }},
+        "challengeHttpListenerName": "http-chall",
+        "challengeTlsListenerName": "tls-chall",
+        "playerIdNamespace": {{ .Values.berg.playerIdNamespace | quote }},
+        "redirectUris": {{ .Values.berg.redirectUris | toJson }},
+        "pullSecretName": {{ .Values.berg.pullSecretName | quote }},
+        "openTelemetryGrpcTracingEndpoint": {{ .Values.berg.openTelemetry.grpc.tracingEndpoint | toJson }},
+        "openTelemetryGrpcMetricsEndpoint": {{ .Values.berg.openTelemetry.grpc.metricsEndpoint | toJson }},
+        "openTelemetryGrpcLoggingEndpoint": {{ .Values.berg.openTelemetry.grpc.loggingEndpoint | toJson }}
+      },
+      "discord": {{ .Values.berg.discord | toJson }},
+      "genericOpenId": {{ .Values.berg.genericOpenId | toJson }},
+      "ctf": {{ .Values.berg.ctf | toJson }}
+    }

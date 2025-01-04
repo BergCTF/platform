@@ -1,0 +1,125 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: challenges.berg.norelect.ch
+spec:
+  group: berg.norelect.ch
+  scope: Namespaced
+  names:
+    plural: challenges
+    singular: challenge
+    kind: Challenge
+    shortNames:
+      - chall
+    categories:
+    - all
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                author:
+                  type: string
+                description:
+                  type: string
+                flag:
+                  type: string
+                flagFormat:
+                  type: string
+                hideUntil:
+                  type: string
+                  format: date-time
+                difficulty:
+                  type: string
+                staticValue:
+                  type: number
+                  nullable: true
+                categories:
+                  type: array
+                  items:
+                    type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+                event:
+                  type: string
+                allowOutboundTraffic:
+                  type: boolean
+                containers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      hostname:
+                        type: string
+                      image:
+                        type: string
+                      environment:
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
+                      resourceLimits:
+                        type: object
+                        properties:
+                          cpu:
+                            type: string
+                          memory:
+                            type: string
+                      ports:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            port:
+                              type: integer
+                            protocol:
+                              type: string
+                            appProtocol:
+                              type: string
+                            type:
+                              type: string
+                              enum:
+                                - internalPort
+                                - publicPort
+                                - publicHttpRoute
+                                - publicTlsRoute
+                attachments:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      fileName:
+                        type: string
+                      downloadUrl:
+                        type: string
+      additionalPrinterColumns:
+        - name: Event
+          type: string
+          jsonPath: .spec.event
+        - name: Category
+          type: string
+          jsonPath: .spec.categories[0]
+        - name: Author
+          type: string
+          description: The challenge author
+          jsonPath: .spec.author
+        - name: Outbound Traffic
+          type: boolean
+          description: If outbound traffic is allowed
+          jsonPath: .spec.allowOutboundTraffic
+        - name: Hidden Until
+          type: date
+          jsonPath: .spec.hideUntil
+        - name: Static Value
+          type: integer
+          description: The static value assigned to the challenge
+          jsonPath: .spec.staticValue

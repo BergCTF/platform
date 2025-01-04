@@ -1,0 +1,113 @@
+---
+nameOverride: ""
+fullnameOverride: ""
+
+gateway:
+  domain: ""
+  gatewayClassName: ""
+  tlsSecretName: ""
+  httpPort: 1337
+  tlsPort: 31337
+
+frontend:
+  image:
+    repository: "ghcr.io/norelect/berg/frontend"
+    imagePullPolicy: IfNotPresent
+    tag: ""
+
+berg:
+  domain: ""
+  tlsSecretName: ""
+  image:
+    repository: "ghcr.io/norelect/berg/api"
+    imagePullPolicy: IfNotPresent
+    tag: ""
+  pullSecretName: ""
+  logLevel:
+    Default: Information
+    Microsoft.AspNetCore: Warning
+    Microsoft.EntityFrameworkCore.Database: Warning
+    OpenIddict: Warning
+    Quartz: Warning
+    System.Net.Http.HttpClient.OpenIddict: Warning
+  resources:
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+    requests:
+      cpu: "0.2"
+      memory: "100Mi"
+  postgresql:
+    host: ""
+    database: ""
+    username: ""
+    password: ""
+  playerIdNamespace: "00000000-0000-0000-0000-000000000000"
+  discord:
+    clientId: ""
+    clientSecret: ""
+    botToken: ""
+    notificationGuildId: "0"
+    notificationChannelId: "0"
+    guildIdRequirement: "0"
+    authorGuildId: "0"
+    authorRoleId: "0"
+    adminGuildId: "0"
+    adminRoleId: "0"
+  genericOpenId:
+    issuer: ""
+    internalIssuer: ""
+    clientId: ""
+    clientSecret: ""
+    scopes: []
+    # - "profile"
+    # - "email"
+    claims:
+      id: "sub"
+      name: "name"
+      email: "email"
+  openTelemetry:
+    grpc:
+      tracingEndpoint: null
+      metricsEndpoint: null
+      loggingEndpoint: null
+  redirectUris: []
+  # - "https://frontend.example.com/callback"
+  ctf:
+    start: "1970-01-01T00:00:00+00:00"
+    end: "2099-01-01T00:00:00+00:00"
+    allowAnonymousAccess: true
+    teams: false
+    playerAttributes: []
+    # - name: category
+    #   public: true
+    #   required: false
+    #   values:
+    #     - junior
+    #     - senior
+    #     - open
+    scoring:
+      freezeStart: "2099-01-01T00:00:00+00:00"
+      freezeEnd: "2099-01-01T00:00:00+00:00"
+      numSolvesBeforeMinimum: 50
+
+postgresql:
+  enabled: true
+  auth:
+    username: berg
+    password: ""
+    postgresPassword: ""
+    database: berg
+    volumePermissions:
+      enabled: true
+  persistence:
+    storageClass: ""
+    accessModes: [ReadWriteOnce]
+    size: 20Gi
+  resources:
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+    requests:
+      cpu: "0.5"
+      memory: "300Mi"
