@@ -20,8 +20,10 @@ spec:
         {{- include "berg.selectorLabels" . | nindent 8 }}
         component: api
     spec:
+      {{ if .Values.berg.pullSecretName }}
       imagePullSecrets:
         - name: {{ .Values.berg.pullSecretName }}
+      {{ end }}
       serviceAccountName: {{ include "berg.fullname" . }}
       containers:
         - name: berg-api
@@ -70,9 +72,10 @@ spec:
         {{- include "berg.selectorLabels" . | nindent 8 }}
         component: frontend
     spec:
+      {{ if .Values.frontend.pullSecretName }}
       imagePullSecrets:
-        - name: {{ .Values.berg.pullSecretName }}
-      serviceAccountName: {{ include "berg.fullname" . }}
+        - name: {{ .Values.frontend.pullSecretName }}
+      {{ end }}
       containers:
         - name: berg-frontend
           image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag | default .Chart.AppVersion }}"
@@ -81,3 +84,39 @@ spec:
             - containerPort: 80
           resources:
             {{- toYaml .Values.berg.resources | nindent 12 }}
+{{ if .Values.handout.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "berg.fullname" . }}-handout
+  labels:
+    {{- include "berg.labels" . | nindent 4 }}
+    component: handout
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "berg.selectorLabels" . | nindent 6 }}
+      component: handout
+  template:
+    metadata:
+      labels:
+        {{- include "berg.selectorLabels" . | nindent 8 }}
+        component: handout
+    spec:
+      {{ if .Values.handout.pullSecretName }}
+      imagePullSecrets:
+        - name: {{ .Values.handout.pullSecretName }}
+      {{ end }}
+      containers:
+        - name: berg-handout
+          image: "{{ .Values.handout.image.repository }}:{{ .Values.handout.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.handout.image.imagePullPolicy }}
+          ports:
+            - containerPort: 80
+          resources:
+            {{- toYaml .Values.berg.resources | nindent 12 }}
+{{ end }}

@@ -8,13 +8,15 @@ kubectl --context kind-berg-dev-cluster create secret generic berg-pull-secret \
     --from-file=.dockerconfigjson=/home/$USER/.docker/config.json \
     --type=kubernetes.io/dockerconfigjson -n berg
 
-echo "Build image"
+echo "Build images"
 docker build -t kind.localhost/berg/api:local -f backend/Berg.Api/Dockerfile backend
 docker build -t kind.localhost/berg/frontend:local -f frontend/Dockerfile frontend
+docker build -t kind.localhost/berg/handout:local -f handout/Dockerfile handout
 
-echo "Transfer image"
+echo "Transfer images"
 kind load docker-image --name=berg-dev-cluster kind.localhost/berg/api:local
 kind load docker-image --name=berg-dev-cluster kind.localhost/berg/frontend:local
+kind load docker-image --name=berg-dev-cluster kind.localhost/berg/handout:local
 
 cd charts/berg
 echo "Uninstalling berg"
@@ -28,6 +30,11 @@ gateway:
 frontend:
   image:
     repository: "kind.localhost/berg/frontend"
+    tag: local
+handout:
+  enabled: true
+  image:
+    repository: "kind.localhost/berg/handout"
     tag: local
 berg:
   image:
@@ -169,6 +176,9 @@ spec:
     - nginx
     - http
   event: development
+  attachments:
+    - downloadUrl: /handouts/yet-another-nginx.tar.gz
+      fileName: yet-another-nginx.tar.gz
 ---
 apiVersion: berg.norelect.ch/v1
 kind: Challenge

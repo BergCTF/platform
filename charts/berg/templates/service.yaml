@@ -28,3 +28,20 @@ spec:
   selector:
     {{- include "berg.selectorLabels" . | nindent 4 }}
     component: frontend
+{{ if .Values.handout.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "berg.fullname" . }}-handout
+  labels:
+    {{- include "berg.labels" . | nindent 4 }}
+spec:
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  selector:
+    {{- include "berg.selectorLabels" . | nindent 4 }}
+    component: handout
+{{ end }}
