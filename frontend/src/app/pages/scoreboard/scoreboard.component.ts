@@ -1,7 +1,7 @@
 import { SlicePipe } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { NgbPaginationModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbHighlight, NgbPaginationModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { EChartsCoreOption } from 'echarts/core';
 import { SeriesOption } from 'echarts/types/dist/shared';
 import { NgxEchartsDirective } from 'ngx-echarts';
@@ -16,7 +16,7 @@ import { PrettyDateComponent } from 'src/app/widgets/pretty-date/pretty-date.com
   selector: 'app-scoreboard',
   templateUrl: './scoreboard.component.html',
   styleUrl: './scoreboard.component.less',
-  imports: [RouterLink, PrettyDateComponent, NgxEchartsDirective, SlicePipe, NgbTooltipModule, NgbPaginationModule],
+  imports: [RouterLink, PrettyDateComponent, NgxEchartsDirective, SlicePipe, NgbTooltipModule, NgbPaginationModule, NgbHighlight],
 })
 export class ScoreboardComponent implements OnInit, OnDestroy {
 

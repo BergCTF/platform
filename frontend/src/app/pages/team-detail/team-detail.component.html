@@ -28,66 +28,68 @@
             </div>
 
             <h3>Members</h3>
-            @if (teamDetail.players.length > 0) {
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th scope="col">Player</th>
-                  </tr>
-                </thead>
-                @for (player of teamDetail.players; track player) {
-                  <tbody>
+            <div>
+              @if (teamDetail.players.length > 0) {
+                <table class="table table-hover">
+                  <thead>
                     <tr>
-                      <td>
-                        <a class="hover-underline cursor-pointer" [routerLink]="['/players', player.id]">
-                          {{ player.name }}
-                        </a>
-                      </td>
+                      <th scope="col">Player</th>
                     </tr>
-                  </tbody>
-                }
-              </table>
-            } @else {
-              <p class="text-muted">No members.</p>
-            }
-            <h3>Solves</h3>
-            @if (teamDetail.solves.length > 0) {
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th scope="col">Challenge</th>
-                    <th scope="col">Solved by</th>
-                    <th scope="col">Solved at (UTC)</th>
-                  </tr>
-                </thead>
-                @for (solve of teamDetail.solves; track solve) {
-                  <tbody>
-                    <tr>
-                      <td>
-                        <a class="hover-underline cursor-pointer" [routerLink]="['/challenges', solve.challengeName]">
-                          {{ solve.challengeDisplayName }}
-                        </a>
-                      </td>
-                      <td>
-                        @for (player of solve.players; track player) {
+                  </thead>
+                  @for (player of teamDetail.players; track player) {
+                    <tbody>
+                      <tr>
+                        <td>
                           <a [routerLink]="['/players', player.id]">{{ player.name }}</a>
-                          @if(!$last) {
-                            <span>,&nbsp;</span>
-                          }
-                        }
-                      </td>
-                      <td class="text-wrap">
-                        <app-pretty-date [date]="solve.solvedAt" />
-                        <wbr />
-                        <span class="text-muted text-nowrap">({{ helper.relativeTime(solve.solvedAt) }})</span>
-                      </td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  }
+                </table>
+              } @else {
+                <p class="text-muted">No members.</p>
+              }
+            </div>
+            <h3 class="mt-4">Solves</h3>
+            <div>
+              @if (teamDetail.solves.length > 0) {
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th scope="col">Challenge</th>
+                      <th scope="col">Solved by</th>
+                      <th scope="col">Solved at (UTC)</th>
                     </tr>
-                  </tbody>
-                }
-              </table>
-            } @else {
-              <p class="text-muted">No solves yet.</p>
-            }
+                  </thead>
+                  @for (solve of teamDetail.solves; track solve) {
+                    <tbody>
+                      <tr>
+                        <td>
+                          <a [routerLink]="['/challenges', solve.challengeName]">
+                            {{ solve.challengeDisplayName }}
+                          </a>
+                        </td>
+                        <td>
+                          @for (player of solve.players; track player) {
+                            <a [routerLink]="['/players', player.id]">{{ player.name }}</a>
+                            @if(!$last) {
+                              <span>,&nbsp;</span>
+                            }
+                          }
+                        </td>
+                        <td class="text-wrap">
+                          <app-pretty-date [date]="solve.solvedAt" />
+                          <wbr />
+                          <span class="text-muted text-nowrap">({{ helper.relativeTime(solve.solvedAt) }})</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  }
+                </table>
+              } @else {
+                <p class="text-muted">No solves yet.</p>
+              }
+            </div>
           </div>
         </div>
       </div>

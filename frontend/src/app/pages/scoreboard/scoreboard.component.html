@@ -28,7 +28,7 @@
   </div>
   <div class="row">
     <div class="col overflow-x-auto">
-      <table class="table table-striped table-hover">
+      <table class="table table-hover">
         <thead>
           <tr>
             <th scope="col">#</th>
@@ -56,7 +56,7 @@
             <tr>
               <th scope="row">{{ ranking.rank }}</th>
               <td>
-                <a [routerLink]="[areTeamsEnabled ? '/teams' : '/players', ranking.id]">{{ ranking.name }}</a>
+                <a [routerLink]="[areTeamsEnabled ? '/teams' : '/players', ranking.id]"><ngb-highlight [result]="ranking.name" [term]="searchText.value" /></a>
               </td>
               <td>{{ ranking.score }}</td>
               <td class="text-nowrap">
