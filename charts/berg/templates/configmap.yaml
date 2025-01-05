@@ -26,6 +26,9 @@ data:
         "playerIdNamespace": {{ .Values.berg.playerIdNamespace | quote }},
         "redirectUris": {{ .Values.berg.redirectUris | toJson }},
         "pullSecretName": {{ .Values.berg.pullSecretName | quote }},
+        {{ if .Values.handout.enabled }}
+        "handoutServiceUrl": "http://{{ include "berg.fullname" . }}-handout",
+        {{ end }}
         "openTelemetryGrpcTracingEndpoint": {{ .Values.berg.openTelemetry.grpc.tracingEndpoint | toJson }},
         "openTelemetryGrpcMetricsEndpoint": {{ .Values.berg.openTelemetry.grpc.metricsEndpoint | toJson }},
         "openTelemetryGrpcLoggingEndpoint": {{ .Values.berg.openTelemetry.grpc.loggingEndpoint | toJson }}

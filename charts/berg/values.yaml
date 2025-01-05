@@ -10,8 +10,17 @@ gateway:
   tlsPort: 31337
 
 frontend:
+  pullSecretName: ""
   image:
     repository: "ghcr.io/norelect/berg/frontend"
+    imagePullPolicy: IfNotPresent
+    tag: ""
+
+handout:
+  enabled: false
+  pullSecretName: ""
+  image:
+    repository: "ghcr.io/norelect/berg/handouts"
     imagePullPolicy: IfNotPresent
     tag: ""
 
