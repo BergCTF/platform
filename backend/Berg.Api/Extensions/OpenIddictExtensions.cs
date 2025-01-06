@@ -135,7 +135,8 @@ public static class OpenIddictBuilder
         builder.Services.AddAuthorization(options => {
             options.AddPolicy(Constants.Policies.Anonymous, policy =>
                 policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
-                    .RequireAssertion(ctx => true));
+                    .RequireAssertion(ctx => true)
+                    .AddRequirements());
             options.AddPolicy(Constants.Policies.Player, policy =>
                 policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
                     .RequireAuthenticatedUser()
@@ -148,6 +149,12 @@ public static class OpenIddictBuilder
                 policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
                     .RequireAuthenticatedUser()
                     .RequireClaim(Claims.Role, [Constants.Roles.Admin]));
+            // Ensure that if no policy is specified, the endpoint is not usable at all,
+            // instead of open to the public.
+            options.AddPolicy("deny-all", policy => policy
+                    .RequireAuthenticatedUser()
+                    .RequireAssertion(ctx => false));
+            options.DefaultPolicy = options.GetPolicy("deny-all")!;
         });
         builder.Services.AddOpenIddict()
             .AddCore(options =>

@@ -36,6 +36,7 @@ public class ChallengeController(
 
     [HttpGet]
     [Route("/api/v2/challenges/{name}")]
+    [Authorize(Policy = Constants.Policies.Anonymous)]
     [ProducesResponseType(typeof(Challenge), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -56,6 +57,7 @@ public class ChallengeController(
 
     [HttpGet]
     [Route("/api/v2/challenges/{name}/handout/{index}")]
+    [Authorize(Policy = Constants.Policies.Anonymous)]
     [Produces("application/octet-stream")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

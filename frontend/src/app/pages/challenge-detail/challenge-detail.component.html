@@ -43,10 +43,17 @@
           }
           <div class="flex gap-2">
             @for (attachment of challengeDetail.challenge.attachments; track attachment) {
-              <a class="btn btn-secondary mb-2" href="{{ attachment.downloadUrl }}" target="_blank" download="{{ attachment.fileName }}">
-              <i class="bi bi-download"></i>
-              {{ attachment.fileName }}
-              </a>
+              @if (attachment.downloadUrl.startsWith('/api')) {
+                <button class="btn btn-secondary mb-2" (click)="dataService.downloadFile(attachment.downloadUrl, attachment.fileName)">
+                  <i class="bi bi-download"></i>
+                  {{ attachment.fileName }}
+                </button>
+              } @else {
+                <a class="btn btn-secondary mb-2" href="{{ attachment.downloadUrl }}" target="_blank" download="{{ attachment.fileName }}">
+                  <i class="bi bi-download"></i>
+                  {{ attachment.fileName }}
+                </a>
+              }
             }
           </div>
           @if (challengeDetail.challenge.hasRemote) {
