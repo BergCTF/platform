@@ -10,6 +10,7 @@ gateway:
   tlsPort: 31337
 
 frontend:
+  enabled: true
   pullSecretName: ""
   image:
     repository: "ghcr.io/norelect/berg/frontend"

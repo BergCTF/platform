@@ -13,6 +13,7 @@ spec:
   selector:
     {{- include "berg.selectorLabels" . | nindent 4 }}
     component: api
+{{ if .Values.frontend.enabled }}
 ---
 apiVersion: v1
 kind: Service
@@ -28,6 +29,7 @@ spec:
   selector:
     {{- include "berg.selectorLabels" . | nindent 4 }}
     component: frontend
+{{ end }}
 {{ if .Values.handout.enabled }}
 ---
 apiVersion: v1
