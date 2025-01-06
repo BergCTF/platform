@@ -50,6 +50,7 @@ spec:
         - name: appsettings
           configMap:
             name: {{ include "berg.fullname" . }}-appsettings
+{{ if .Values.frontend.enabled }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -84,6 +85,7 @@ spec:
             - containerPort: 80
           resources:
             {{- toYaml .Values.berg.resources | nindent 12 }}
+{{ end }}
 {{ if .Values.handout.enabled }}
 ---
 apiVersion: apps/v1
