@@ -135,8 +135,7 @@ public static class OpenIddictBuilder
         builder.Services.AddAuthorization(options => {
             options.AddPolicy(Constants.Policies.Anonymous, policy =>
                 policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
-                    .RequireAssertion(ctx => true)
-                    .AddRequirements());
+                    .RequireAssertion(ctx => true));
             options.AddPolicy(Constants.Policies.Player, policy =>
                 policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
                     .RequireAuthenticatedUser()
