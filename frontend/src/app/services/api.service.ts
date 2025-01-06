@@ -136,4 +136,8 @@ export class ApiService {
     };
     return this.http.post<CurrentTeam>(this.baseUrl+'/api/v2/teams/join', data, this.httpOptions);
   }
+
+  downloadFile(relativeUrl: string): Observable<Blob> {
+    return this.http.get(this.baseUrl + relativeUrl, { responseType: 'blob' });
+  }
 }

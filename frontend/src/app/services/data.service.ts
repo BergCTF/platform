@@ -293,6 +293,17 @@ export class DataService {
     return this.apiService.leaveCurrentTeam();
   }
 
+  downloadFile(relativeUrl: string, filename: string) {
+    this.apiService.downloadFile(relativeUrl).subscribe((blob) => {
+      const a = document.createElement('a');
+      const objectUrl = URL.createObjectURL(blob);
+      a.href = objectUrl;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(objectUrl);
+    });
+  }
+
   hasCTFStarted(): Observable<boolean> {
     return combineLatest([this._secondTimer, this.metadata]).pipe(map(params => {
       const [_, metadata] = params;

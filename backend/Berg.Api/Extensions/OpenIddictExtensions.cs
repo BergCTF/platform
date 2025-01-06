@@ -3,6 +3,7 @@ using Berg.Api.Db;
 using Berg.Api.Services;
 using k8s;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using OpenIddict.Abstractions;
@@ -85,6 +86,46 @@ public sealed class PatchWebSocketTokenValidationParameters : IOpenIddictValidat
     }
 }
 
+public class DynamicAuthenticatedPlayerRequirement : IAuthorizationRequirement
+{
+}
+
+public class DynamicAuthenticatedUserAuthorizationHandler(
+    ILogger<DynamicAuthenticatedUserAuthorizationHandler> logger,
+    CtfConfig ctfConfig
+) : AuthorizationHandler<DynamicAuthenticatedPlayerRequirement>
+{
+    protected override Task HandleRequirementAsync(
+        AuthorizationHandlerContext context, DynamicAuthenticatedPlayerRequirement requirement)
+    {
+        if (ctfConfig.AllowAnonymousAccess) {
+            context.Succeed(requirement);
+        }
+        else
+        {
+            if(!(context.User.Identity?.IsAuthenticated ?? false))
+            {
+                context.Fail(new AuthorizationFailureReason(this, "Anonymous access is disabled, but user is not logged in."));
+                logger.LogDebug("Anonymous access is disabled, but user is not logged in.");
+                return Task.CompletedTask;
+            }
+
+            var roleClaims = context.User.GetClaims(Claims.Role);
+            if (roleClaims.Contains(Constants.Roles.Player) ||
+                roleClaims.Contains(Constants.Roles.Author) ||
+                roleClaims.Contains(Constants.Roles.Admin)) {
+                context.Succeed(requirement);
+            }
+            else
+            {
+                context.Fail(new AuthorizationFailureReason(this, "Anonymous access is disabled and the user is logged in but doesn't have at least the player role."));
+                logger.LogDebug("Anonymous access is disabled and the user is logged in but doesn't have at least the player role. The user has the following roles: {Roles}", string.Join(",", roleClaims));
+            }
+        }
+        return Task.CompletedTask;
+    }
+}
+
 public static class OpenIddictBuilder
 {
     public static void AddOpenIddict(this WebApplicationBuilder builder, Kubernetes kubernetes, DiscordConfig discordConfig, GenericOpenIdConfig genericOpenIdConfig)
@@ -132,10 +173,11 @@ public static class OpenIddictBuilder
                     }
                 };
             });
+        builder.Services.AddSingleton<IAuthorizationHandler, DynamicAuthenticatedUserAuthorizationHandler>();
         builder.Services.AddAuthorization(options => {
-            options.AddPolicy(Constants.Policies.Anonymous, policy =>
+            options.AddPolicy(Constants.Policies.AnonymousIfAllowedOrPlayer, policy =>
                 policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
-                    .RequireAssertion(ctx => true));
+                    .AddRequirements(new DynamicAuthenticatedPlayerRequirement()));
             options.AddPolicy(Constants.Policies.Player, policy =>
                 policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
                     .RequireAuthenticatedUser()
@@ -148,6 +190,12 @@ public static class OpenIddictBuilder
                 policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
                     .RequireAuthenticatedUser()
                     .RequireClaim(Claims.Role, [Constants.Roles.Admin]));
+            // Ensure that if no policy is specified, the endpoint is not usable at all,
+            // instead of open to the public.
+            options.AddPolicy("deny-all", policy => policy
+                    .RequireAuthenticatedUser()
+                    .RequireAssertion(ctx => false));
+            options.DefaultPolicy = options.GetPolicy("deny-all")!;
         });
         builder.Services.AddOpenIddict()
             .AddCore(options =>

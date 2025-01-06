@@ -1,4 +1,3 @@
-using Berg.Api.Configuration;
 using Berg.Api.Models.V2;
 using Berg.Api.CustomResources;
 using Berg.Api.CustomResources.Berg;
@@ -10,22 +9,17 @@ namespace Berg.Api.Controllers.V2;
 
 [ApiController]
 [ApiExplorerSettings(GroupName = "v2")]
-public class PageController(Kubernetes kubernetes, CtfConfig ctfConfig) : ControllerBase
+public class PageController(Kubernetes kubernetes) : ControllerBase
 {
     private readonly GenericClient pageClient = CustomResource.CreateGenericClient<V1Page>(kubernetes, false);
 
     [HttpGet]
     [Route("/api/v2/pages")]
-    [Authorize(Policy = Constants.Policies.Anonymous)]
+    [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(List<Page>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<Page>>> ListPages(CancellationToken cancellationToken)
     {
-        if (!ctfConfig.AllowAnonymousAccess &&
-            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
-        {
-            return Unauthorized();
-        }
         var bergNamespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
         var pages = await pageClient.ListNamespacedAsync<CustomResourceList<V1Page>>(bergNamespace, cancellationToken);
         return pages.Items

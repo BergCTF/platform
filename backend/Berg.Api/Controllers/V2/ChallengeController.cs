@@ -19,16 +19,11 @@ public class ChallengeController(
 {
     [HttpGet]
     [Route("/api/v2/challenges")]
-    [Authorize(Policy = Constants.Policies.Anonymous)]
+    [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(List<Challenge>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public ActionResult<List<Challenge>> ListChallenges()
     {
-        if (!ctfConfig.AllowAnonymousAccess &&
-            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
-        {
-            return Unauthorized();
-        }
         return challengeService.GetChallenges()
             .Select(ToChallenge)
             .ToList();
@@ -36,16 +31,12 @@ public class ChallengeController(
 
     [HttpGet]
     [Route("/api/v2/challenges/{name}")]
+    [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(Challenge), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<Challenge> GetChallenge([FromRoute] string name)
     {
-        if (!ctfConfig.AllowAnonymousAccess &&
-            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
-        {
-            return Unauthorized();
-        }
         var challenge = challengeService
             .GetChallenges()
             .FirstOrDefault(c => c.Name() == name);
@@ -56,6 +47,7 @@ public class ChallengeController(
 
     [HttpGet]
     [Route("/api/v2/challenges/{name}/handout/{index}")]
+    [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [Produces("application/octet-stream")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -63,12 +55,6 @@ public class ChallengeController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetChallengeHandout([FromRoute] string name, [FromRoute] int index, CancellationToken cancellationToken)
     {
-        if (!ctfConfig.AllowAnonymousAccess &&
-            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
-        {
-            return Unauthorized();
-        }
-
         var utcNow = DateTime.UtcNow;
         if (utcNow < ctfConfig.Start)
         {

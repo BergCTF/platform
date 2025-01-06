@@ -15,7 +15,7 @@ public class EventsController(
 {
     [HttpGet]
     [Route("/api/v2/events")]
-    [Authorize(Policy = Constants.Policies.Anonymous)]
+    [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(StatusCodes.Status101SwitchingProtocols)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -28,12 +28,6 @@ public class EventsController(
                 Title = "Bad request",
                 Detail = "The received request is not a web socket request"
             });
-        }
-
-        if (!ctfConfig.AllowAnonymousAccess &&
-            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
-        {
-            return Unauthorized();
         }
 
         using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();

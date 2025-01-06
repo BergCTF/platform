@@ -12,7 +12,7 @@ public class MetadataController(CtfConfig ctfConfig) : ControllerBase
 
     [HttpGet]
     [Route("/api/v2/metadata")]
-    [Authorize(Policy = Constants.Policies.Anonymous)]
+    [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     public Metadata GetMetadata()
     {
         return new Metadata

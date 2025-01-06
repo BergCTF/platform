@@ -33,9 +33,10 @@ public static class Constants
     public static class Policies
     {
         /// <summary>
-        /// The name of the anonymous policy
+        /// The name of the anonymous (if allowed) policy that
+        /// requires the player role if anonymous authentication is disabled.
         /// </summary>
-        public const string Anonymous = "anonymous";
+        public const string AnonymousIfAllowedOrPlayer = "anonymous-if-allowed-or-player";
 
         /// <summary>
         /// The name of the player policy

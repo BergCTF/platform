@@ -27,16 +27,11 @@ public class SolveController(
 
     [HttpGet]
     [Route("/api/v2/solves")]
-    [Authorize(Policy = Constants.Policies.Anonymous)]
+    [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(List<Solve>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public ActionResult<List<Solve>> ListSolves()
     {
-        if (!ctfConfig.AllowAnonymousAccess &&
-            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
-        {
-            return Unauthorized();
-        }
         var utcNow = DateTime.UtcNow;
         var freezeStart = ctfConfig.Scoring.FreezeStart;
         var freezeEnd = ctfConfig.Scoring.FreezeStart;
