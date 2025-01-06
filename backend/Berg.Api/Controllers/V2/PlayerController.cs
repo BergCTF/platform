@@ -6,7 +6,6 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using OpenIddict.Abstractions;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -22,16 +21,11 @@ public class PlayerController(CtfConfig ctfConfig,
 {
     [HttpGet]
     [Route("/api/v2/players")]
-    [Authorize(Policy = Constants.Policies.Anonymous)]
+    [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(List<Player>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<Player>>> ListPlayers(CancellationToken cancel)
     {
-        if (!ctfConfig.AllowAnonymousAccess &&
-            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
-        {
-            return Unauthorized();
-        }
         var publicCustomAttributes = GetPublicCustomAttributeNames(ctfConfig);
         var players = await dbContext.Players
             .Include(p => p.Attributes)
@@ -41,17 +35,12 @@ public class PlayerController(CtfConfig ctfConfig,
 
     [HttpGet]
     [Route("/api/v2/players/{id:guid}")]
-    [Authorize(Policy = Constants.Policies.Anonymous)]
+    [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(Player), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Player>> GetPlayer([FromRoute] Guid id, CancellationToken cancel)
     {
-        if (!ctfConfig.AllowAnonymousAccess &&
-            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
-        {
-            return Unauthorized();
-        }
         var publicCustomAttributes = GetPublicCustomAttributeNames(ctfConfig);
         var player = await dbContext.Players
             .Include(p => p.Attributes)

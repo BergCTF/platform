@@ -26,16 +26,11 @@ public partial class TeamController(
 
     [HttpGet]
     [Route("/api/v2/teams")]
-    [Authorize(Policy = Constants.Policies.Anonymous)]
+    [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(List<Team>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<Team>>> ListTeams(CancellationToken cancel)
     {
-        if (!ctfConfig.AllowAnonymousAccess &&
-            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
-        {
-            return Unauthorized();
-        }
         return Ok(await dbContext.Teams.Select(t => new Team
         {
             Id = t.Id,
@@ -46,16 +41,11 @@ public partial class TeamController(
 
     [HttpGet]
     [Route("/api/v2/teams/{id:guid}")]
-    [Authorize(Policy = Constants.Policies.Anonymous)]
+    [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(List<Team>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<Team>>> GetTeam([FromRoute] Guid id, CancellationToken cancel)
     {
-        if (!ctfConfig.AllowAnonymousAccess &&
-            !(HttpContext.User.Identity?.IsAuthenticated ?? false))
-        {
-            return Unauthorized();
-        }
         var team = await dbContext.Teams.Select(t => new Team
         {
             Id = t.Id,
