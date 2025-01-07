@@ -177,13 +177,15 @@ public class WebSocketService(
 
     private async Task CloseConnection(WebSocketConnection connection)
     {
-        _connections.Remove(connection);
+        if(_connections.Remove(connection))
+        {
+            logger.LogDebug("WebSocket connection {} closed", connection.Id);
+        }
         connection.CancellationTokenSource.Cancel();
         try
         {
             await connection.WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection closed", CancellationToken.None);
         } catch {}
-        logger.LogDebug("WebSocket connection {} closed", connection.Id);
     }
 
     private static byte[] SerializeMessage<T>(string type, T message)
