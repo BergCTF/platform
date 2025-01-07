@@ -2,31 +2,32 @@
   <h3 class="mb-3">Challenges</h3>
 </div>
 @if (!hasCTFStarted && ctfStart) {
-  <div class="card">
-    <div class="card-body">
-      <p class="countdown-label">CTF starts in:</p>
-      <h1 class="countdown">{{ helper.getCountdownText(ctfStart, null) }}</h1>
-    </div>
-  </div>
-  <br />
-  <div class="card">
-    <div class="card-body">
-      <p>The CTF has not started yet. It will start at <app-pretty-date [date]="ctfStart" /> (UTC)</p>
+  <div class="mb-3">
+    <div class="card">
+      <div class="card-body">
+        <p class="countdown-label">CTF starts in:</p>
+        <h1 class="countdown" [ngbTooltip]="startDetails">{{ helper.getCountdownText(ctfStart, null) }}</h1>
+        <ng-template #startDetails>
+          <app-pretty-date [date]="ctfStart" /> UTC
+        </ng-template>
+      </div>
     </div>
   </div>
 }
 
 @if (hasCTFEnded) {
-  <div class="card">
-    <div class="card-body">
-      <h1>The CTF has ended. Thank you for playing!</h1>
-      <p>You can no longer submit flags, but still play the challenges.</p>
+  <div class="mb-3">
+    <div class="card">
+      <div class="card-body">
+        <h1>The CTF has ended. Thank you for playing!</h1>
+        <span>You can no longer submit flags, but still play the challenges.</span>
+      </div>
     </div>
   </div>
 }
 
 @if (instance && instance.status !== 0) {
-  <div class="row mb-3 mt-3">
+  <div class="row mb-3">
     <div class="col">
       <div class="card">
         <div class="card-header">Private instance</div>
@@ -38,36 +39,39 @@
     </div>
   </div>
 }
-@if (dataService.isAuthenticated && hasCTFStarted) {
-  <div class="row">
-    <div class="col">
-      <div class="form-check">
-        <input class="form-check-input" type="checkbox" [checked]="hideSolvedValue" (change)="hideSolvedChange($event)" />
-        <label class="form-check-label" for="hideSolved">Hide solved</label>
+@if (primaryChallengeCategories.length != 0 || challengeDifficulties.length != 0) {
+  @if (dataService.isAuthenticated) {
+    <div class="row">
+      <div class="col">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" [checked]="hideSolvedValue" (change)="hideSolvedChange($event)" />
+          <label class="form-check-label" for="hideSolved">Hide solved</label>
+        </div>
+      </div>
+    </div>
+  }
+  <div class="row mb-3">
+    <div class="col mt-2 mb-3">
+      <div class="input-group">
+        <span class="input-group-text">Category</span>
+        <select class="form-select" (change)="filterCategoryChange(filterCategorySelect.value)" #filterCategorySelect>
+          <option value="">Select...</option>
+          @for (category of primaryChallengeCategories; track category) {
+            <option value="{{ category }}">{{ category }}</option>
+          }
+        </select>
+        <span class="input-group-text">Difficulty</span>
+        <select class="form-select" (change)="filterDifficultyChange(filterDifficultySelect.value)" #filterDifficultySelect>
+          <option value="">Select...</option>
+          @for (difficulty of challengeDifficulties; track difficulty) {
+            <option value="{{ difficulty }}">{{ difficulty }}</option>
+          }
+        </select>
       </div>
     </div>
   </div>
 }
-<div class="row">
-  <div class="col mt-2 mb-3">
-    <div class="input-group">
-      <span class="input-group-text">Category</span>
-      <select class="form-select" (change)="filterCategoryChange(filterCategorySelect.value)" #filterCategorySelect>
-        <option value="">Select...</option>
-        @for (category of primaryChallengeCategories; track category) {
-          <option value="{{ category }}">{{ category }}</option>
-        }
-      </select>
-      <span class="input-group-text">Difficulty</span>
-      <select class="form-select" (change)="filterDifficultyChange(filterDifficultySelect.value)" #filterDifficultySelect>
-        <option value="">Select...</option>
-        @for (difficulty of challengeDifficulties; track difficulty) {
-          <option value="{{ difficulty }}">{{ difficulty }}</option>
-        }
-      </select>
-    </div>
-  </div>
-</div>
+
 @for (categoryDetail of challengeDetailCategories; track categoryDetail) {
   @if (categoryDetail.challenges.length > 0) {
     <div class="mb-3 mt-3 justify-content-center">
@@ -82,13 +86,15 @@
           <div class="col">
             <div class="d-grid gap-2">
               @let hasSolved = challengeDetail.solvedByPlayer || (areTeamsEnabled && challengeDetail.solvedByTeam);
+              @let numSolves = areTeamsEnabled ? challengeDetail.teamSolves.length : challengeDetail.playerSolves.length;
               <a
                 class="btn btn-secondary"
                 tabindex="0"
                 placement="top"
                 [class.bg-success]="hasSolved"
                 [class.border-success]="hasSolved"
-                [routerLink]="['/challenges', challengeDetail.challenge.name]" >
+                [routerLink]="['/challenges', challengeDetail.challenge.name]"
+                ngbTooltip="{{ numSolves }} solve{{ numSolves === 1 ? '' : 's' }}">
                 @if (hasSolved) {
                   <i class="bi bi-check"></i>
                 }

@@ -44,7 +44,7 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy {
     this.instanceSubscription = this.dataService.instance.subscribe(instance => {
       this.instance = instance;
     });
-    this.hasCTFEndedSubscription = this.dataService.hasCTFEnded().subscribe(hasCTFEnded => {
+    this.hasCTFEndedSubscription = this.dataService.hasCTFEnded.subscribe(hasCTFEnded => {
       this.hasCTFEnded = hasCTFEnded;
     });
     this.areTeamsEnabledSubscription = this.dataService.areTeamsEnabled().subscribe(areTeamsEnabled => {

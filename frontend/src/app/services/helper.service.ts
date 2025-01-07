@@ -35,15 +35,17 @@ export class HelperService {
     if (now == null)
       now = new Date();
     const diff = target.getTime() - now.getTime();
-    const seconds = Math.floor(Math.abs(diff / 1000));
+    let seconds = Math.floor(Math.abs(diff / 1000));
     let minutes = Math.floor(seconds / 60);
     let hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
     hours = hours % 24;
     minutes = minutes % 60;
+    seconds = seconds % 60;
     let countdown = days.toString().padStart(2, '0') + 'd ';
     countdown += hours.toString().padStart(2, '0') + 'h ';
-    countdown += minutes.toString().padStart(2, '0') + 'm';
+    countdown += minutes.toString().padStart(2, '0') + 'm ';
+    countdown += seconds.toString().padStart(2, '0') + 's';
     return countdown;
   }
 

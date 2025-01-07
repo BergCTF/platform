@@ -7,12 +7,13 @@ import { BehaviorSubject, combineLatest, map, Subscription } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { ChallengeDetailCategory } from 'src/app/model';
 import { Instance } from 'src/app/api-model';
+import { NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
     selector: 'app-challenges',
     templateUrl: './challenges.component.html',
     styleUrls: ['./challenges.component.less'],
-    imports: [RouterLink, PrettyDateComponent, ChallengeStatusComponent]
+    imports: [RouterLink, PrettyDateComponent, ChallengeStatusComponent, NgbTooltip]
 })
 export class ChallengesComponent implements OnInit, OnDestroy {
 
@@ -50,10 +51,10 @@ export class ChallengesComponent implements OnInit, OnDestroy {
     this.ctfStartSubscription = this.dataService.getCTFStart().subscribe(ctfStart => {
       this.ctfStart = ctfStart;
     });
-    this.hasCTFStartedSubscription = this.dataService.hasCTFStarted().subscribe(hasCTFStarted => {
+    this.hasCTFStartedSubscription = this.dataService.hasCTFStarted.subscribe(hasCTFStarted => {
       this.hasCTFStarted = hasCTFStarted;
     });
-    this.hasCTFEndedSubscription = this.dataService.hasCTFEnded().subscribe(hasCTFEnded => {
+    this.hasCTFEndedSubscription = this.dataService.hasCTFEnded.subscribe(hasCTFEnded => {
       this.hasCTFEnded = hasCTFEnded;
     });
     this.areTeamsEnabledSubscription = this.dataService.areTeamsEnabled().subscribe(areTeamsEnabled => {

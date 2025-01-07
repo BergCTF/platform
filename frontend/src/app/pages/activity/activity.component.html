@@ -22,14 +22,14 @@
         }
         @for (activity of activityEntries | slice: (pageIndex-1) * pageSize : pageIndex * pageSize; track activity) {
           <tr>
-            <th scope="row">
+            <td>
               <span placement="top" [ngbTooltip]="dateDetails">
                 <ng-template #dateDetails>
                   {{ helper.relativeTime(activity.solve.solvedAt) }}
                 </ng-template>
                 <app-pretty-date [date]="activity.solve.solvedAt" />
               </span>
-            </th>
+            </td>
             @if (areTeamsEnabled) {
               <td>
                 @if (activity.solve.teamId) {

@@ -13,4 +13,5 @@ public record SolveNotification : INotification
     public DateTime SolvedAt { get; set; }
     public string Challenge { get; set; } = "";
     public bool IsFrozen { get; set; } = false;
+    public bool IsAdmin { get; set; } = false;
 }

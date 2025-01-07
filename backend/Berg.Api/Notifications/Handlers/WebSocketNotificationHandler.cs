@@ -35,6 +35,14 @@ public class WebSocketNotificationHandler(
             ChallengeName = solve.Challenge,
             SolvedAt = solve.SolvedAt
         };
+        var adminIds = dbContext.Players.Where(p => p.Roles != null && p.Roles.Contains(Constants.Roles.Admin)).Select(p => p.Id).ToHashSet();
+        if(solve.IsAdmin)
+        {
+            logger.LogDebug("Messaging only admins about the admin solve.");
+            await webSocketService.PushEvent("solve", dtoSolve, adminIds.Contains);
+            return;
+        }
+
         if (!solve.IsFrozen)
         {
             logger.LogDebug("Messaging all players about this solve.");
@@ -42,14 +50,14 @@ public class WebSocketNotificationHandler(
         }
         else if (ctfConfig.Teams)
         {
-            logger.LogDebug("Only messaging specific team players due to freeze.");
+            logger.LogDebug("Only messaging specific team players and admins due to freeze.");
             var teamPlayerIds = dbContext.Players.Where(p => p.TeamId == solve.TeamId).Select(p => p.Id).ToHashSet();
-            await webSocketService.PushEvent("solve", dtoSolve, teamPlayerIds.Contains);
+            await webSocketService.PushEvent("solve", dtoSolve, p => teamPlayerIds.Contains(p) || adminIds.Contains(p));
         }
         else
         {
-            logger.LogDebug("Only messaging specific player due to freeze.");
-            await webSocketService.PushEvent("solve", dtoSolve, p => solve.PlayerId == p);
+            logger.LogDebug("Only messaging specific player and admins due to freeze.");
+            await webSocketService.PushEvent("solve", dtoSolve, p => solve.PlayerId == p || adminIds.Contains(p));
         }
     }
 

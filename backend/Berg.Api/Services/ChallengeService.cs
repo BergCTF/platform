@@ -23,7 +23,7 @@ public interface IChallengeService
     Task CheckNewlyUnhiddenChallenges(TimeSpan window, CancellationToken cancel);
     Task<Instance> GetChallengeInstance(Guid playerId, CancellationToken cancel);
     Task<List<Instance>> GetChallengeInstances(CancellationToken cancel);
-    Task<Instance> StartChallengeInstance(Guid playerId, string challenge, CancellationToken cancel);
+    Task<Instance> StartChallengeInstance(Guid playerId, V1Challenge challenge, CancellationToken cancel);
     Task<Instance> StopChallengeInstance(Guid playerId, CancellationToken cancel);
 }
 
@@ -73,7 +73,6 @@ public class ChallengeService(
     {
         var now = DateTime.UtcNow;
         return challengeCache.Values
-            .Where(c => c.Spec.HideUntil == null || c.Spec.HideUntil <= now)
             .FirstOrDefault(c => c.Name() == challengeName);
     }
 
@@ -129,9 +128,6 @@ public class ChallengeService(
     public async Task<Instance> GetChallengeInstance(Guid playerId, CancellationToken cancel)
     {
         using var activity = Constants.BergActivitySource.StartActivity();
-        var now = DateTime.UtcNow;
-        if (ctfConfig.Start > now)
-            return new Instance();
 
         var labelSelector = new Dictionary<string, string>(ChallengeNamespaceLabelSelector)
         {
@@ -219,13 +215,9 @@ public class ChallengeService(
         };
     }
 
-    public async Task<Instance> StartChallengeInstance(Guid playerId, string challenge,
-        CancellationToken cancel)
+    public async Task<Instance> StartChallengeInstance(Guid playerId, V1Challenge challenge, CancellationToken cancel)
     {
-        var now = DateTime.UtcNow;
-        if (ctfConfig.Start > now)
-            return new Instance();
-
+        var challengeName = challenge.Metadata.Name;
         var labelSelector = new Dictionary<string, string>(ChallengeNamespaceLabelSelector)
         {
             { PlayerIdLabel, playerId.ToString() }
@@ -233,15 +225,13 @@ public class ChallengeService(
         var nsList = await kubernetes.ListNamespaceAsync(labelSelector: ToLabelSelector(labelSelector),
             cancellationToken: cancel);
         if (nsList.Items.Any())
-            throw new ArgumentException("A challenge is already running!");
+        {
+            var instance = await GetChallengeInstance(playerId, cancel);
+            logger.LogWarning("Player {PlayerId} tried to start challenge {NewChallenge}, but already had an instance of challenge {OldChallenge} running!", playerId, challengeName, instance.Name);
+            return instance;
+        };
 
-        var challengeConfig = await _challengeClient.ReadNamespacedAsync<V1Challenge>(_bergNamespace, challenge, cancel);
-        if (challengeConfig == null)
-            throw new ArgumentException("Invalid challenge!");
-        if(challengeConfig.Spec.HideUntil != null && DateTime.UtcNow < challengeConfig.Spec.HideUntil)
-            throw new ArgumentException("Invalid challenge!");
-
-        if ((challengeConfig.Spec.Containers?.Count ?? 0) == 0)
+        if ((challenge.Spec.Containers?.Count ?? 0) == 0)
             throw new ArgumentException("Challenge can't be instantiated");
 
         var ns = await kubernetes.CreateNamespaceAsync(new V1Namespace
@@ -251,7 +241,7 @@ public class ChallengeService(
                 Name = $"challenge-{playerId}",
                 Labels = new Dictionary<string, string>(ChallengeNamespaceLabelSelector)
                 {
-                    { ChallengeLabel, challenge },
+                    { ChallengeLabel, challengeName },
                     { PlayerIdLabel, playerId.ToString() },
                 }
             }
@@ -312,7 +302,7 @@ public class ChallengeService(
                                           Port = "53"
                                       }
                                   ],
-                                  Rules = challengeConfig.Spec.AllowOutboundTraffic ? null : new V2CiliumL7Rule
+                                  Rules = challenge.Spec.AllowOutboundTraffic ? null : new V2CiliumL7Rule
                                   {
                                       Dns =
                                       [
@@ -364,7 +354,7 @@ public class ChallengeService(
             }
         };
 
-        if (challengeConfig.Spec.AllowOutboundTraffic)
+        if (challenge.Spec.AllowOutboundTraffic)
         {
             networkPolicy.Spec.Egress.Add(new V2CiliumEgressRule
             {
@@ -388,7 +378,7 @@ public class ChallengeService(
 
         var serviceEndpoints = new Dictionary<string, string>();
 
-        foreach (var container in challengeConfig.Spec.Containers ?? [])
+        foreach (var container in challenge.Spec.Containers ?? [])
         {
             var allPorts = container.Ports ?? [];
             if (allPorts.Any())
@@ -615,7 +605,7 @@ public class ChallengeService(
             }
         }
 
-        foreach (var container in challengeConfig.Spec.Containers ?? [])
+        foreach (var container in challenge.Spec.Containers ?? [])
         {
             var env = (container.Environment ?? [])
                 .Select(e => new V1EnvVar(e.Key, e.Value.ToString()))
@@ -668,7 +658,7 @@ public class ChallengeService(
             };
             var labels = new Dictionary<string, string>(ChallengePodLabelSelector)
             {
-                { ChallengeLabel, challenge },
+                { ChallengeLabel, challengeName },
                 { PlayerIdLabel, playerId.ToString() },
                 { ContainerLabel, container.Hostname }
             };
@@ -708,8 +698,8 @@ public class ChallengeService(
             }
         }
 
-        logger.LogInformation("Created instance of challenge: {}", challenge);
-        return new Instance { Name = challenge, InstanceState = InstanceState.Starting };
+        logger.LogInformation("Created instance of challenge: {}", challengeName);
+        return new Instance { Name = challengeName, InstanceState = InstanceState.Starting };
     }
 
     public async Task<Instance> StopChallengeInstance(Guid playerId, CancellationToken cancel)

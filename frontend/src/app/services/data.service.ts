@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
-import { BehaviorSubject, Observable, combineLatest, distinctUntilChanged, filter, map, mergeMap, retry, share, tap, timer } from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest, distinctUntilChanged, filter, map, mergeMap, retry, share, take, tap, timer } from 'rxjs';
 import { Challenge, CurrentPlayer, Instance, Metadata, Page, Player, Solve, Team, WebSocketMessage } from '../api-model';
 import { LoginResponse, OidcSecurityService } from 'angular-auth-oidc-client';
 import { ChallengeDetail, ChallengeDetailCategory, PlayerDetail, ScoreboardChallengeByCategory as ScoreboardChallengesByCategory, ScoreboardChallengeEntry, ScoreboardRanking, SolveDetail, TeamDetail, TeamSolveDetail, ActivityEntry } from '../model';
@@ -23,6 +23,10 @@ export class DataService {
   private _pages = new BehaviorSubject<readonly Page[]>(Object.freeze([]));
   private _metadata= new BehaviorSubject<Metadata>(new Metadata());
   private _instance = new BehaviorSubject<Instance>(new Instance());
+  private _hasCTFStarted = new BehaviorSubject<boolean>(false);
+  private _hasCTFEnded = new BehaviorSubject<boolean>(false);
+  private _hasFreezeStarted = new BehaviorSubject<boolean>(false);
+  private _hasFreezeEnded = new BehaviorSubject<boolean>(false);
   private _pingSent = false;
   private _lastCounterSent = 0;
   private _lastCounterReceived = 0;
@@ -38,6 +42,10 @@ export class DataService {
   public readonly solves: Observable<readonly Solve[]> = this._solves.asObservable();
   public readonly instance: Observable<Instance> = this._instance.asObservable();
   public readonly metadata: Observable<Metadata> = this._metadata.asObservable();
+  public readonly hasCTFStarted: Observable<boolean> = this._hasCTFStarted.asObservable();
+  public readonly hasCTFEnded: Observable<boolean> = this._hasCTFEnded.asObservable();
+  public readonly hasFreezeStarted: Observable<boolean> = this._hasFreezeStarted.asObservable();
+  public readonly hasFreezeEnded: Observable<boolean> = this._hasFreezeEnded.asObservable();
   public readonly loginEvents: Observable<LoginResponse>;
   public isDisconnected = false;
   public isAuthenticated = false;
@@ -84,6 +92,61 @@ export class DataService {
       } else {
         this._currentTeamJoinToken.next(null);
       }
+    });
+
+    combineLatest([this._secondTimer, this.metadata]).pipe(map(params => {
+      const [_, metadata] = params;
+      let now = new Date();
+      let start = new Date(metadata.start);
+      return start <= now;
+    }), distinctUntilChanged()).subscribe(started => {
+      this._hasCTFStarted.next(started);
+      if (started) {
+        // Poll challenges until they are available after ctf start.
+        // This is needed since local (client) time might be slightly ahead of the remote server time.
+        let challengePollTimerSubscription = timer(0, 1000).pipe(take(60*3)).subscribe(_ => {
+          this.apiService.getChallenges().subscribe(challenges => {
+            if (challenges.length != 0) {
+              // Stop polling as soon as we get a result that has challenge entries.
+              challengePollTimerSubscription.unsubscribe();
+              this._challenges.next(Object.freeze(challenges));
+            }
+          });
+        });
+      }
+    });
+
+    combineLatest([this._secondTimer, this.metadata]).pipe(map(params => {
+      const [_, metadata] = params;
+      let now = new Date();
+      let end = new Date(metadata.end);
+      return end <= now;
+    }), distinctUntilChanged()).subscribe(ended => {
+      this._hasCTFEnded.next(ended);
+    });
+
+    combineLatest([this._secondTimer, this.metadata]).pipe(map(params => {
+      const [_, metadata] = params;
+      let now = new Date();
+      if (metadata.freezeStart) {
+        let freezeStart = new Date(metadata.freezeStart);
+        return freezeStart <= now;
+      }
+      return false;
+    }), distinctUntilChanged()).subscribe(freezeStarted => {
+      this._hasFreezeStarted.next(freezeStarted);
+    });
+
+    combineLatest([this._secondTimer, this.metadata]).pipe(map(params => {
+      const [_, metadata] = params;
+      let now = new Date();
+      if (metadata.freezeEnd) {
+        let freezeEnd = new Date(metadata.freezeEnd);
+        return freezeEnd <= now;
+      }
+      return false;
+    }), distinctUntilChanged()).subscribe(freezeEnded => {
+      this._hasFreezeEnded.next(freezeEnded);
     });
   }
 
@@ -230,6 +293,12 @@ export class DataService {
     }));
   }
 
+  refreshChallenges(): Observable<Challenge[]> {
+    return this.apiService.getChallenges().pipe(tap(challenges => {
+      this._challenges.next(Object.freeze(challenges));
+    }));
+  }
+
   refreshPages(): Observable<Page[]> {
     return this.apiService.getPages().pipe(tap(pages => {
       this._pages.next(Object.freeze(pages.sort((a,b) => a.index - b.index)));
@@ -302,48 +371,6 @@ export class DataService {
       a.click();
       URL.revokeObjectURL(objectUrl);
     });
-  }
-
-  hasCTFStarted(): Observable<boolean> {
-    return combineLatest([this._secondTimer, this.metadata]).pipe(map(params => {
-      const [_, metadata] = params;
-      let now = new Date();
-      let start = new Date(metadata.start);
-      return start <= now;
-    }), distinctUntilChanged());
-  }
-
-  hasCTFEnded(): Observable<boolean> {
-    return combineLatest([this._secondTimer, this.metadata]).pipe(map(params => {
-      const [_, metadata] = params;
-      let now = new Date();
-      let end = new Date(metadata.end);
-      return end <= now;
-    }), distinctUntilChanged());
-  }
-
-  hasFreezeStarted(): Observable<boolean> {
-    return combineLatest([this._secondTimer, this.metadata]).pipe(map(params => {
-      const [_, metadata] = params;
-      let now = new Date();
-      if (metadata.freezeStart) {
-        let freezeStart = new Date(metadata.freezeStart);
-        return freezeStart <= now;
-      }
-      return false;
-    }), distinctUntilChanged());
-  }
-
-  hasFreezeEnded(): Observable<boolean> {
-    return combineLatest([this._secondTimer, this.metadata]).pipe(map(params => {
-      const [_, metadata] = params;
-      let now = new Date();
-      if (metadata.freezeEnd) {
-        let freezeEnd = new Date(metadata.freezeEnd);
-        return freezeEnd <= now;
-      }
-      return false;
-    }), distinctUntilChanged());
   }
 
   getCTFStart(): Observable<Date> {

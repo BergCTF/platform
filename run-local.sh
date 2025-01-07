@@ -67,6 +67,8 @@ berg:
     grpc:
       tracingEndpoint: http://jaeger-operator-jaeger-collector.jaeger.svc.cluster.local:4317
   ctf:
+    start: "$(date --date 'now + 1 minute' -Iseconds)"
+    end: "$(date --date 'now + 10 minutes' -Iseconds)"
     teams: true
     allowAnonymousAccess: true
     scoring:

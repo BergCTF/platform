@@ -22,6 +22,12 @@ public class DiscordSolveNotificationHandler(
             return;
         }
 
+        if (solve.IsAdmin)
+        {
+            logger.LogDebug("Skipping discord solve notification due to an admin solve.");
+            return;
+        }
+
         var client = new DiscordRestClient();
         await client.LoginAsync(TokenType.Bot, discordConfig.BotToken);
 

@@ -1,7 +1,7 @@
 <h3 class="mb-3">Scoreboard</h3>
 <div class="row">
   <div class="col d-flex">
-    <button class="btn btn-outline-secondary ms-auto" (click)="chart.requestFullscreen()"><span class="bi bi-fullscreen"></span></button>
+    <button class="btn btn-outline-secondary ms-auto" ngbTooltip="Fullscreen" (click)="chart.requestFullscreen()"><span class="bi bi-fullscreen"></span></button>
   </div>
 </div>
 
@@ -20,10 +20,10 @@
       <input #searchText type="text" class="form-control md-w-25 w-100" placeholder="Search {{ entryType }}" (change)="searchTextChanged(searchText.value)" (keyup)="searchTextChanged(searchText.value)" />
     </div>
     <div class="col d-flex mb-4">
-      <button class="btn btn-outline-secondary ms-auto" (click)="toggleAdvancedView()" #btn>
+      <button class="btn btn-outline-secondary ms-auto" ngbTooltip="Toggle view" (click)="toggleAdvancedView()" #btn>
         <span class="bi" [class.bi-three-dots-vertical]="!advancedView" [class.bi-123]="advancedView"></span>
       </button>
-      <button class="btn btn-outline-secondary ms-2" (click)="table.requestFullscreen()"><span class="bi bi-fullscreen"></span></button>
+      <button class="btn btn-outline-secondary ms-2" ngbTooltip="Fullscreen" (click)="table.requestFullscreen()"><span class="bi bi-fullscreen"></span></button>
     </div>
   </div>
   <div class="row">
