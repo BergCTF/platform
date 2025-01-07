@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using Berg.Api.Configuration;
 using Berg.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,9 +8,7 @@ namespace Berg.Api.Controllers.V2;
 
 [ApiController]
 [ApiExplorerSettings(GroupName = "v2")]
-public class EventsController(
-    IWebSocketService webSocketService,
-    CtfConfig ctfConfig) : ControllerBase
+public class EventsController(IWebSocketService webSocketService) : ControllerBase
 {
     [HttpGet]
     [Route("/api/v2/events")]
@@ -30,9 +27,9 @@ public class EventsController(
             });
         }
 
-        using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
         Guid? player = (User.Identity?.IsAuthenticated ?? false) ? Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!) : null;
-        await webSocketService.WebSocketHandler(webSocket, player, cancellationToken);
+        using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+        await webSocketService.HandleWebSocketConnection(webSocket, player, cancellationToken);
         return new EmptyResult();
     }
 }

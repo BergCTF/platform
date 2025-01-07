@@ -4,6 +4,7 @@ using Berg.Api.Db;
 using Berg.Api.Extensions;
 using Berg.Api.Services;
 using k8s;
+using Microsoft.AspNetCore.WebSockets;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +30,9 @@ var kubernetes = new Kubernetes(KubernetesClientConfiguration.BuildDefaultConfig
 builder.Services.AddSingleton(kubernetes);
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
+builder.Services.AddWebSockets(options => {
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+});
 builder.Services.AddSingleton<IWebSocketService, WebSocketService>();
 builder.Services.AddSingleton<IChallengeService, ChallengeService>();
 builder.Services.AddHostedService<WatchService>();
