@@ -6,6 +6,7 @@ using Challenge = Berg.Api.Models.V2.Challenge;
 using Attachment = Berg.Api.Models.V2.Attachment;
 using Berg.Api.Configuration;
 using Microsoft.AspNetCore.Authorization;
+using OpenIddict.Abstractions;
 
 namespace Berg.Api.Controllers.V2;
 
@@ -24,7 +25,16 @@ public class ChallengeController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public ActionResult<List<Challenge>> ListChallenges()
     {
+        var utcNow = DateTime.UtcNow;
+        var isAdmin = User.HasClaim(OpenIddictConstants.Claims.Role, Constants.Roles.Admin);
+
+        if (utcNow < ctfConfig.Start && !isAdmin)
+        {
+            return Ok(new List<Challenge>());
+        }
+
         return challengeService.GetChallenges()
+            .Where(c => c.Spec.HideUntil == null || (c.Spec.HideUntil <= utcNow && !isAdmin))
             .Select(ToChallenge)
             .ToList();
     }
@@ -37,8 +47,21 @@ public class ChallengeController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<Challenge> GetChallenge([FromRoute] string name)
     {
+        var utcNow = DateTime.UtcNow;
+        var isAdmin = User.HasClaim(OpenIddictConstants.Claims.Role, Constants.Roles.Admin);
+
+        if (utcNow < ctfConfig.Start && !isAdmin)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Bad Request",
+                Detail = "The ctf has not started yet.",
+            });
+        }
+
         var challenge = challengeService
             .GetChallenges()
+            .Where(c => c.Spec.HideUntil == null || (c.Spec.HideUntil <= utcNow && !isAdmin))
             .FirstOrDefault(c => c.Name() == name);
         if (challenge == null)
             return NotFound();
@@ -56,7 +79,8 @@ public class ChallengeController(
     public async Task<IActionResult> GetChallengeHandout([FromRoute] string name, [FromRoute] int index, CancellationToken cancellationToken)
     {
         var utcNow = DateTime.UtcNow;
-        if (utcNow < ctfConfig.Start)
+        var isAdmin = User.HasClaim(OpenIddictConstants.Claims.Role, Constants.Roles.Admin);
+        if (utcNow < ctfConfig.Start && !isAdmin)
         {
             return BadRequest(new ProblemDetails
             {
@@ -78,7 +102,8 @@ public class ChallengeController(
             .FirstOrDefault(c => c.Name() == name);
         if (challenge == null)
             return NotFound();
-        if (utcNow < challenge.Spec.HideUntil)
+        var hideUntil = challenge.Spec.HideUntil;
+        if (hideUntil.HasValue && !isAdmin && utcNow < hideUntil)
             return NotFound();
         var attachment = challenge.Spec.Attachments?.ElementAtOrDefault(index);
         if (attachment == null)

@@ -1,3 +1,4 @@
+using Berg.Api.Configuration;
 using Berg.Api.Models.V2;
 using Berg.Api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -10,10 +11,8 @@ namespace Berg.Api.Controllers.V2;
 
 [ApiController]
 [ApiExplorerSettings(GroupName = "v2")]
-public class InstanceController(IChallengeService challengeService) : ControllerBase
+public class InstanceController(IChallengeService challengeService, CtfConfig ctfConfig) : ControllerBase
 {
-    private readonly IChallengeService _challengeService = challengeService;
-
     public class InstanceStartRequest
     {
         [JsonPropertyName("challenge")]
@@ -26,7 +25,7 @@ public class InstanceController(IChallengeService challengeService) : Controller
     [ProducesResponseType(typeof(List<Instance>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<Instance>>> GetAllChallengeInstances(CancellationToken cancel)
     {
-        return await _challengeService.GetChallengeInstances(cancel);
+        return await challengeService.GetChallengeInstances(cancel);
     }
 
     [HttpGet]
@@ -36,7 +35,7 @@ public class InstanceController(IChallengeService challengeService) : Controller
     public async Task<ActionResult<Instance>> GetChallengeInstance(CancellationToken cancel)
     {
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-        return await _challengeService.GetChallengeInstance(playerId, cancel);
+        return await challengeService.GetChallengeInstance(playerId, cancel);
     }
 
     [HttpPost]
@@ -54,8 +53,30 @@ public class InstanceController(IChallengeService challengeService) : Controller
                 Detail = "Challenge can't be null"
             });
         }
+
+        var utcNow = DateTime.UtcNow;
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-        return await _challengeService.StartChallengeInstance(playerId, startRequest.Challenge, cancel);
+        var isAdmin = User.HasClaim(OpenIddictConstants.Claims.Role, Constants.Roles.Admin);
+
+        if (utcNow < ctfConfig.Start && !isAdmin)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Bad Request",
+                Detail = "Instances can only be started after the start of the ctf.",
+            });
+        }
+        var challenge = challengeService.GetChallenges().FirstOrDefault(c => c.Metadata.Name == startRequest.Challenge);
+        if (challenge == null || (challenge.Spec.HideUntil != null && utcNow < challenge.Spec.HideUntil && !isAdmin))
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Bad Request",
+                Detail = "Challenge not found",
+            });
+        }
+
+        return await challengeService.StartChallengeInstance(playerId, challenge, cancel);
     }
 
     [HttpDelete]
@@ -65,6 +86,6 @@ public class InstanceController(IChallengeService challengeService) : Controller
     public async Task<ActionResult<Instance>> StopChallengeInstance(CancellationToken cancel)
     {
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-        return await _challengeService.StopChallengeInstance(playerId, cancel);
+        return await challengeService.StopChallengeInstance(playerId, cancel);
     }
 }

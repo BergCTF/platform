@@ -25,6 +25,14 @@ public class SolveController(
 {
     private readonly object _submitFlagLock = new();
 
+    private static IQueryable<Db.Solve> FilterAdminSolves(IQueryable<Db.Solve> solves, bool isAdmin)
+    {
+        if (isAdmin) {
+            return solves;
+        }
+        return solves.Where(s => s.Player.Roles == null || !s.Player.Roles.Contains(Constants.Roles.Admin));
+    }
+
     [HttpGet]
     [Route("/api/v2/solves")]
     [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
@@ -37,27 +45,26 @@ public class SolveController(
         var freezeEnd = ctfConfig.Scoring.FreezeStart;
         var isCurrentlyFrozen = freezeStart < utcNow && utcNow < freezeEnd;
         var isUserLoggedIn = User.Identity?.IsAuthenticated ?? false;
+        var isAdmin = User.HasClaim(OpenIddictConstants.Claims.Role, Constants.Roles.Admin);
 
         if (!isCurrentlyFrozen)
         {
             // If we are not in a freeze, we can show every solve
-            return ToModelSolves(dbContext.Solves);
+            return ToModelSolves(FilterAdminSolves(dbContext.Solves, isAdmin));
         }
 
         if (!isUserLoggedIn)
         {
             // We are in a freeze, but not logged in, so we can only show
             // solves that were made before the freeze
-            return ToModelSolves(dbContext.Solves.Where(s => s.SolvedAt < freezeStart));
+            return ToModelSolves(FilterAdminSolves(dbContext.Solves.Where(s => s.SolvedAt < freezeStart), isAdmin));
         }
-
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
         var teamId = dbContext.Players.Single(p => p.Id == playerId).TeamId;
 
         // We are in a freeze, and the player wants to see all own and team solves
-        // if the player has joined a team
-        return ToModelSolves(dbContext.Solves
-            .Where(s => s.SolvedAt < freezeStart || s.PlayerId == playerId || (teamId != null && s.Player.TeamId == teamId))
+        return ToModelSolves(FilterAdminSolves(dbContext.Solves
+            .Where(s => s.SolvedAt < freezeStart || s.PlayerId == playerId || (teamId != null && s.Player.TeamId == teamId) || isAdmin), isAdmin)
         );
     }
 
@@ -89,7 +96,9 @@ public class SolveController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public ActionResult<Solve> AddSolve([FromBody] AddSolveRequest addSolveRequest)
     {
+        var utcNow = DateTime.UtcNow;
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
+        var isAdmin = User.HasClaim(OpenIddictConstants.Claims.Role, Constants.Roles.Admin);
         var challengeName = addSolveRequest.Challenge;
         if (string.IsNullOrEmpty(challengeName))
         {
@@ -109,7 +118,15 @@ public class SolveController(
                 Detail = "Challenge does not exist.",
             });
         }
-
+        if (challengeConfig.Spec.HideUntil != null && utcNow < challengeConfig.Spec.HideUntil && !isAdmin)
+        {
+            logger.LogWarning("Player {PlayerId} wanted to submit a flag for a hidden challenge: {ChallengeName}", playerId, challengeName);
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Bad Request",
+                Detail = "Challenge does not exist.",
+            });
+        }
         if (string.IsNullOrEmpty(addSolveRequest.Flag))
         {
             return BadRequest(new ProblemDetails
@@ -126,9 +143,7 @@ public class SolveController(
                 Detail = "Submitted flag can't be longer than 1024 chars.",
             });
         }
-
-        var utcNow = DateTime.UtcNow;
-        if (ctfConfig.Start > utcNow)
+        if (utcNow < ctfConfig.Start && !isAdmin)
         {
             return BadRequest(new ProblemDetails
             {
@@ -255,7 +270,8 @@ public class SolveController(
                 TeamName = player.Team?.Name,
                 SolvedAt = dbSolve.SolvedAt,
                 Challenge = challengeName,
-                IsFrozen = isCurrentlyFrozen
+                IsFrozen = isCurrentlyFrozen,
+                IsAdmin = isAdmin,
             });
 
             return Ok(new Solve

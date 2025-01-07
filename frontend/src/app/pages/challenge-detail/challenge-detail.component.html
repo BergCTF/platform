@@ -89,11 +89,15 @@
             @if (flagErrorText) {
               <div class="alert alert-warning mb-3" role="alert">{{ flagErrorText }}</div>
             }
-            @if (!challengeDetail.solvedByPlayer && !hasCTFEnded) {
-              <div class="input-group mb-3">
-                <input [disabled]="isFlagSubmitting" type="text" class="form-control" placeholder="{{ challengeDetail.challenge.flagFormat }}" (keyup.enter)="submitFlag(challengeDetail.challenge.name, flagInput.value)" #flagInput aria-describedby="button-submit" />
-                <button [disabled]="isFlagSubmitting" class="btn btn-primary" type="button" id="button-submit" (click)="submitFlag(challengeDetail.challenge.name, flagInput.value)"><i class="bi bi-flag"></i> Submit Flag</button>
-              </div>
+            @if (!challengeDetail.solvedByPlayer) {
+              @if (hasCTFEnded) {
+                <div class="alert alert-info mb-3" role="alert">You can no longer submit any flags!</div>
+              } @else {
+                <div class="input-group mb-3">
+                  <input [disabled]="isFlagSubmitting" type="text" class="form-control" placeholder="{{ challengeDetail.challenge.flagFormat }}" (keyup.enter)="submitFlag(challengeDetail.challenge.name, flagInput.value)" #flagInput aria-describedby="button-submit" />
+                  <button [disabled]="isFlagSubmitting" class="btn btn-primary" type="button" id="button-submit" (click)="submitFlag(challengeDetail.challenge.name, flagInput.value)"><i class="bi bi-flag"></i> Submit Flag</button>
+                </div>
+              }
             }
             @if (challengeDetail.solvedByPlayer) {
               <div class="alert alert-success mb-3" role="alert"><i class="bi bi-flag"></i> You have solved this challenge!</div>
