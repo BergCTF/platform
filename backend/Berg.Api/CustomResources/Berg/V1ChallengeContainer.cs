@@ -10,6 +10,9 @@ public class V1ChallengeContainer
     [JsonPropertyName("image")]
     public string Image { get; set; } = null!;
 
+    [JsonPropertyName("dynamicFlag")]
+    public V1DynamicFlag? DynamicFlag { get; set; } = null;
+
     [JsonPropertyName("environment")]
     public Dictionary<string, object>? Environment { get; set; }
 

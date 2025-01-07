@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Security.Cryptography;
 using System.Text;
 using Berg.Api.Configuration;
 using Berg.Api.CustomResources;
@@ -23,14 +24,14 @@ public interface IChallengeService
     Task CheckNewlyUnhiddenChallenges(TimeSpan window, CancellationToken cancel);
     Task<Instance> GetChallengeInstance(Guid playerId, CancellationToken cancel);
     Task<List<Instance>> GetChallengeInstances(CancellationToken cancel);
-    Task<Instance> StartChallengeInstance(Guid playerId, V1Challenge challenge, CancellationToken cancel);
+    Task<(Instance Instance, string? DynamicFlag)> StartChallengeInstance(Guid playerId, V1Challenge challenge, CancellationToken cancel);
     Task<Instance> StopChallengeInstance(Guid playerId, CancellationToken cancel);
 }
 
 public class ChallengeService(
     ILogger<ChallengeService> logger,
+    IDynamicFlagExecutableService dynamicFlagExecutableService,
     Kubernetes kubernetes,
-    CtfConfig ctfConfig,
     InfraConfig infraConfig,
     IMediator mediator) :
     IChallengeService
@@ -215,7 +216,7 @@ public class ChallengeService(
         };
     }
 
-    public async Task<Instance> StartChallengeInstance(Guid playerId, V1Challenge challenge, CancellationToken cancel)
+    public async Task<(Instance Instance, string? DynamicFlag)> StartChallengeInstance(Guid playerId, V1Challenge challenge, CancellationToken cancel)
     {
         var challengeName = challenge.Metadata.Name;
         var labelSelector = new Dictionary<string, string>(ChallengeNamespaceLabelSelector)
@@ -228,11 +229,22 @@ public class ChallengeService(
         {
             var instance = await GetChallengeInstance(playerId, cancel);
             logger.LogWarning("Player {PlayerId} tried to start challenge {NewChallenge}, but already had an instance of challenge {OldChallenge} running!", playerId, challengeName, instance.Name);
-            return instance;
+            return (instance, null);
         };
 
         if ((challenge.Spec.Containers?.Count ?? 0) == 0)
             throw new ArgumentException("Challenge can't be instantiated");
+
+        string? dynamicFlag;
+        if (challenge.Spec.SupportsDynamicFlags)
+        {
+            var entropy = RandomNumberGenerator.GetHexString(12, true);
+            dynamicFlag = challenge.Spec.Flag.TrimEnd('}') + '_' + entropy + '}';
+        }
+        else
+        {
+            dynamicFlag = null;
+        }
 
         var ns = await kubernetes.CreateNamespaceAsync(new V1Namespace
         {
@@ -603,6 +615,68 @@ public class ChallengeService(
                     logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(tlsRoute));
                 }
             }
+
+            if (container.DynamicFlag?.Content != null)
+            {
+                var dynamicContent = container.DynamicFlag.Content;
+                var dynamicFlagContent = new V1ConfigMap
+                {
+                    Metadata = new V1ObjectMeta
+                    {
+                        Name = "flag-content",
+                        NamespaceProperty = ns.Name(),
+                        Labels = new Dictionary<string, string>
+                        {
+                            { ManagedByLabel, "berg" },
+                            { ComponentLabel, "flag-content" },
+                        }
+                    },
+                    BinaryData = new Dictionary<string, byte[]>() {
+                        { "content", Encoding.UTF8.GetBytes((dynamicFlag ?? "invalid{content-flag-error}") + '\n') }
+                    }
+                };
+                try
+                {
+                    await kubernetes.CreateNamespacedConfigMapAsync(dynamicFlagContent, ns.Name(), cancellationToken: cancel);
+                }
+                catch (HttpOperationException ex)
+                {
+                    logger.LogError("Got exception while creating ConfigMap: {}", ex);
+                    logger.LogError("Response.Content: {}", ex.Response.Content);
+                    logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(dynamicFlagContent));
+                }
+            }
+
+            if (container.DynamicFlag?.Executable != null)
+            {
+                var executableContent = container.DynamicFlag.Executable;
+                var dynamicFlagExecutable = new V1ConfigMap
+                {
+                    Metadata = new V1ObjectMeta
+                    {
+                        Name = "flag-executable",
+                        NamespaceProperty = ns.Name(),
+                        Labels = new Dictionary<string, string>
+                        {
+                            { ManagedByLabel, "berg" },
+                            { ComponentLabel, "flag-executable" },
+                        }
+                    },
+                    BinaryData = new Dictionary<string, byte[]>() {
+                        { "executable", dynamicFlagExecutableService.GenerateExecutable(dynamicFlag ?? "invalid{executable-flag-error}") }
+                    },
+                };
+                try
+                {
+                    await kubernetes.CreateNamespacedConfigMapAsync(dynamicFlagExecutable, ns.Name(), cancellationToken: cancel);
+                }
+                catch (HttpOperationException ex)
+                {
+                    logger.LogError("Got exception while creating ConfigMap: {}", ex);
+                    logger.LogError("Response.Content: {}", ex.Response.Content);
+                    logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(dynamicFlagExecutable));
+                }
+            }
         }
 
         foreach (var container in challenge.Spec.Containers ?? [])
@@ -612,6 +686,11 @@ public class ChallengeService(
                 .Concat(serviceEndpoints.Select(e => new V1EnvVar($"{e.Key.ToUpperInvariant()}_ENDPOINT", e.Value)))
                 .ToList();
             env.Add(new V1EnvVar("CHALLENGE_NAMESPACE", ns.Name()));
+            if (container.DynamicFlag?.Env != null)
+            {
+                var dynEnv = container.DynamicFlag.Env;
+                env.Add(new V1EnvVar(dynEnv.Name, dynamicFlag ?? "invalid{env-flag-error}"));
+            }
             var podSpec = new V1PodSpec
             {
                 RestartPolicy = "Always",
@@ -656,6 +735,71 @@ public class ChallengeService(
                     }
                 ],
             };
+
+            if (container.DynamicFlag?.Content != null)
+            {
+                var dynContent = container.DynamicFlag.Content;
+                podSpec.Containers[0].VolumeMounts = [
+                    new V1VolumeMount
+                    {
+                        Name = "content",
+                        MountPath = dynContent.Path,
+                        SubPath = Path.GetFileName(dynContent.Path),
+                        ReadOnlyProperty = true,
+                    }
+                ];
+                podSpec.Volumes = [
+                    new V1Volume
+                    {
+                        Name = "content",
+                        ConfigMap = new V1ConfigMapVolumeSource
+                        {
+                            Name = "flag-content",
+                            Items = [
+                                new V1KeyToPath
+                                {
+                                    Key = "content",
+                                    Mode = dynContent.Mode,
+                                    Path = Path.GetFileName(dynContent.Path)
+                                }
+                            ],
+                        }
+                    }
+                ];
+            }
+
+            if (container.DynamicFlag?.Executable != null)
+            {
+                var dynExecutable = container.DynamicFlag.Executable;
+                podSpec.Containers[0].VolumeMounts = [
+                    new V1VolumeMount
+                    {
+                        Name = "executable",
+                        MountPath = dynExecutable.Path,
+                        SubPath = Path.GetFileName(dynExecutable.Path),
+                        ReadOnlyProperty = true,
+                    }
+                ];
+                podSpec.Volumes = [
+                    new V1Volume
+                    {
+                        Name = "executable",
+                        ConfigMap = new V1ConfigMapVolumeSource
+                        {
+                            Name = "flag-executable",
+                            Items = [
+                                new V1KeyToPath
+                                {
+                                    Key = "executable",
+                                    Mode = dynExecutable.Mode,
+                                    Path = Path.GetFileName(dynExecutable.Path)
+                                }
+                            ],
+                        }
+                    }
+                ];
+            }
+
             var labels = new Dictionary<string, string>(ChallengePodLabelSelector)
             {
                 { ChallengeLabel, challengeName },
@@ -699,7 +843,7 @@ public class ChallengeService(
         }
 
         logger.LogInformation("Created instance of challenge: {}", challengeName);
-        return new Instance { Name = challengeName, InstanceState = InstanceState.Starting };
+        return (new Instance { Name = challengeName, InstanceState = InstanceState.Starting }, null);
     }
 
     public async Task<Instance> StopChallengeInstance(Guid playerId, CancellationToken cancel)

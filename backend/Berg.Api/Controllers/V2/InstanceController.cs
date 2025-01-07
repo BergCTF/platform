@@ -76,7 +76,9 @@ public class InstanceController(IChallengeService challengeService, CtfConfig ct
             });
         }
 
-        return await challengeService.StartChallengeInstance(playerId, challenge, cancel);
+        var (instance, dynamicFlag) = await challengeService.StartChallengeInstance(playerId, challenge, cancel);
+        // TODO: Save dynamicFlag into db for solve check
+        return instance;
     }
 
     [HttpDelete]

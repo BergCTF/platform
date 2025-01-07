@@ -35,6 +35,7 @@ builder.Services.AddWebSockets(options => {
 });
 builder.Services.AddSingleton<IWebSocketService, WebSocketService>();
 builder.Services.AddSingleton<IChallengeService, ChallengeService>();
+builder.Services.AddSingleton<IDynamicFlagExecutableService, DynamicFlagExecutableService>();
 builder.Services.AddHostedService<WatchService>();
 builder.Services.AddHostedService<RefreshService>();
 builder.Services.AddDbContext<BergDbContext>(options => {
