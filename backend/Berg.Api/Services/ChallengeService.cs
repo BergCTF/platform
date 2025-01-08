@@ -711,7 +711,15 @@ public class ChallengeService(
                             // vulnerability to the cluster as written in the docs:
                             // - https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
                             // - https://www.kernel.org/doc/Documentation/prctl/no_new_privs.txt
-                            AllowPrivilegeEscalation = true
+                            AllowPrivilegeEscalation = true,
+                            Capabilities = new V1Capabilities
+                            {
+                                Drop = [
+                                    // Prevent root users from reading files that do not have the respective
+                                    // file permissions.
+                                    "DAC_OVERRIDE",
+                                ]
+                            }
                         },
                         Name = container.Hostname,
                         Image = container.Image,

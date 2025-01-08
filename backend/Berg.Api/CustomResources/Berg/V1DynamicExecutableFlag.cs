@@ -8,6 +8,6 @@ public class V1DynamicExecutableFlag
     public required string Path { get; set; }
 
     [JsonPropertyName("mode")]
-    public int Mode { get; set; } = 365; // octal 555, r-xr-xr-x
+    public int Mode { get; set; } = 73; // octal 111, --x--x--x
 
 }

@@ -165,11 +165,6 @@ spec:
   containers:
     - hostname: nginx
       image: nginx:latest
-      environment:
-        WHATEVER: Value
-      resourceLimits:
-        cpu: "1"
-        memory: "100Mi"
       ports:
         - port: 80
           protocol: tcp
@@ -199,14 +194,9 @@ spec:
   event: development
   containers:
     - hostname: nginx
-      image: nginx:latest
-      environment:
-        WHATEVER: Value
-      resourceLimits:
-        cpu: "1"
-        memory: "100Mi"
+      image: nginxinc/nginx-unprivileged:latest
       ports:
-        - port: 80
+        - port: 8080
           protocol: tcp
           appProtocol: http
           type: publicHttpRoute
@@ -234,6 +224,17 @@ spec:
     - nginx
     - http
   event: development
+  containers:
+    - hostname: nginx
+      image: nginx:latest
+      ports:
+        - port: 80
+          protocol: tcp
+          appProtocol: http
+          type: publicHttpRoute
+      dynamicFlag:
+        executable:
+          path: /runme
 ---
 apiVersion: berg.norelect.ch/v1
 kind: Challenge
