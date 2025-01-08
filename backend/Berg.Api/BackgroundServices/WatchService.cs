@@ -10,8 +10,8 @@ namespace Berg.Api.BackgroundServices;
 
 public class WatchService(
     ILogger<RefreshService> logger,
+    IServiceScopeFactory serviceScopeFactory,
     Kubernetes kubernetes,
-    IChallengeService challengeService,
     IMediator mediator) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -88,6 +88,8 @@ public class WatchService(
 
     private async Task WatchInstanceNamespaces(CancellationToken cancellationToken) {
         logger.LogInformation("WatchInstanceNamespaces started");
+        using var scope = serviceScopeFactory.CreateScope();
+        var challengeService = scope.ServiceProvider.GetRequiredService<IChallengeService>();
         using var nsListResponse = kubernetes.CoreV1.ListNamespaceWithHttpMessagesAsync(watch: true, labelSelector: ChallengeService.ToLabelSelector(ChallengeService.ChallengeNamespaceLabelSelector), cancellationToken: cancellationToken);
         await foreach (var (type, item) in nsListResponse.WatchAsync<V1Namespace, V1NamespaceList>(cancellationToken: cancellationToken))
         {
@@ -105,6 +107,8 @@ public class WatchService(
 
     private async Task WatchInstancePods(CancellationToken cancellationToken) {
         logger.LogInformation("WatchInstances started");
+        using var scope = serviceScopeFactory.CreateScope();
+        var challengeService = scope.ServiceProvider.GetRequiredService<IChallengeService>();
         var labelSelector = ChallengeService.ChallengePodLabelSelector;
         using var podListResponse = kubernetes.CoreV1.ListPodForAllNamespacesWithHttpMessagesAsync(watch: true, labelSelector: ChallengeService.ToLabelSelector(labelSelector), cancellationToken: cancellationToken);
         await foreach (var (type, item) in podListResponse.WatchAsync<V1Pod, V1PodList>(cancellationToken: cancellationToken))

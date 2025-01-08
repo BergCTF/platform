@@ -22,7 +22,7 @@ namespace Berg.Api.Controllers;
 [ApiExplorerSettings(IgnoreApi = true)]
 public class OAuthController(
     ILogger<OAuthController> logger,
-    BergDbContext bergDbContext,
+    BergDbContext dbContext,
     InfraConfig infraConfig,
     DiscordConfig discordConfig,
     GenericOpenIdConfig genericOpenIdConfig,
@@ -59,7 +59,7 @@ public class OAuthController(
             }
             var apiKeyHash = Helpers.GetApiKeyHash(request.Password ?? "", userId);
 
-            var player = bergDbContext.Players.SingleOrDefault(u => u.Id == userId && u.ApiKeyHash == apiKeyHash);
+            var player = dbContext.Players.SingleOrDefault(u => u.Id == userId && u.ApiKeyHash == apiKeyHash);
             if (player == null)
             {
                 var properties = new AuthenticationProperties(new Dictionary<string, string?>
@@ -85,7 +85,7 @@ public class OAuthController(
             var playerId = Guid.Parse(result.Principal?.FindFirstValue(OpenIddictConstants.Claims.Subject)
                                     ?? Guid.Empty.ToString());
 
-            var player = bergDbContext.Players.SingleOrDefault(u => u.Id == playerId);
+            var player = dbContext.Players.SingleOrDefault(u => u.Id == playerId);
             if (player == null)
             {
                 var properties = new AuthenticationProperties(new Dictionary<string, string?>
@@ -160,7 +160,7 @@ public class OAuthController(
         }
 
         var playerId = Guid.Parse(principal.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-        var player = await bergDbContext.Players.SingleOrDefaultAsync(u => u.Id == playerId, cancellationToken);
+        var player = await dbContext.Players.SingleOrDefaultAsync(u => u.Id == playerId, cancellationToken);
 
         if (player == null)
         {
@@ -365,8 +365,8 @@ public class OAuthController(
         string federatedEmail, List<string> roles)
     {
         using var activity = Constants.BergActivitySource.StartActivity();
-        bergDbContext.Database.BeginTransaction();
-        var player = bergDbContext.Players.SingleOrDefault(u => u.FederatedId == federatedId);
+        dbContext.Database.BeginTransaction();
+        var player = dbContext.Players.SingleOrDefault(u => u.FederatedId == federatedId);
 
         if (player == null)
         {
@@ -380,7 +380,7 @@ public class OAuthController(
                 CreatedAt = DateTime.UtcNow,
                 Attributes = [],
             };
-            bergDbContext.Players.Add(player);
+            dbContext.Players.Add(player);
             var _ = mediator.Publish(new PlayerCreateNotification
             {
                 DbPlayer = player,
@@ -393,8 +393,8 @@ public class OAuthController(
             player.Email = federatedEmail;
             player.Roles = roles;
         }
-        bergDbContext.SaveChanges();
-        bergDbContext.Database.CommitTransaction();
+        dbContext.SaveChanges();
+        dbContext.Database.CommitTransaction();
         return player;
     }
 

@@ -128,9 +128,9 @@ public class DynamicAuthenticatedUserAuthorizationHandler(
 
 public static class OpenIddictBuilder
 {
-    public static void AddOpenIddict(this WebApplicationBuilder builder, Kubernetes kubernetes, DiscordConfig discordConfig, GenericOpenIdConfig genericOpenIdConfig)
+    public static void AddOpenIddict(this WebApplicationBuilder builder, Kubernetes kubernetes, InfraConfig infraConfig, DiscordConfig discordConfig, GenericOpenIdConfig genericOpenIdConfig)
     {
-        var keyProvider = new KubernetesSecretKeyProvider(kubernetes);
+        var keyProvider = infraConfig.UseKubernetesSecretKeyProvider ? new KubernetesSecretKeyProvider(kubernetes) : null;
 
         if ((discordConfig.GuildIdRequirement != 0 ||
             (discordConfig.AuthorGuildId != 0 && discordConfig.AuthorRoleId != 0) ||
@@ -141,10 +141,13 @@ public static class OpenIddictBuilder
 
         builder.Services.AddDataProtection()
             .SetApplicationName("Berg");
-        builder.Services.Configure<KeyManagementOptions>(options =>
+        if (keyProvider != null)
         {
-            options.XmlRepository = keyProvider;
-        });
+            builder.Services.Configure<KeyManagementOptions>(options =>
+            {
+                options.XmlRepository = keyProvider;
+            });
+        }
         builder.Services.AddQuartz(options =>
         {
             options.UseSimpleTypeLoader();
@@ -209,8 +212,16 @@ public static class OpenIddictBuilder
                 options.AllowAuthorizationCodeFlow()
                     .AllowRefreshTokenFlow();
 
-                options.AddEncryptionKey(keyProvider.ClientEncryptionKey);
-                options.AddSigningKey(keyProvider.ClientSigningKey);
+                if (keyProvider != null)
+                {
+                    options.AddEncryptionKey(keyProvider.ClientEncryptionKey);
+                    options.AddSigningKey(keyProvider.ClientSigningKey);
+                }
+                else
+                {
+                    options.AddDevelopmentEncryptionCertificate();
+                    options.AddDevelopmentSigningCertificate();
+                }
 
                 options.UseAspNetCore()
                     .EnableRedirectionEndpointPassthrough();
@@ -294,8 +305,16 @@ public static class OpenIddictBuilder
                 options.AllowRefreshTokenFlow();
                 options.AllowAuthorizationCodeFlow();
 
-                options.AddEncryptionKey(keyProvider.ServerEncryptionKey);
-                options.AddSigningKey(keyProvider.ServerSigningKey);
+                if (keyProvider != null)
+                {
+                    options.AddEncryptionKey(keyProvider.ServerEncryptionKey);
+                    options.AddSigningKey(keyProvider.ServerSigningKey);
+                }
+                else
+                {
+                    options.AddDevelopmentEncryptionCertificate();
+                    options.AddDevelopmentSigningCertificate();
+                }
 
                 options.UseAspNetCore()
                     .EnableAuthorizationEndpointPassthrough()
