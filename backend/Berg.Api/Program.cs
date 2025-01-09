@@ -33,8 +33,9 @@ builder.Services.AddHealthChecks();
 builder.Services.AddWebSockets(options => {
     options.KeepAliveInterval = TimeSpan.FromSeconds(15);
 });
+builder.Services.AddScoped<IChallengeService, ChallengeService>();
 builder.Services.AddSingleton<IWebSocketService, WebSocketService>();
-builder.Services.AddSingleton<IChallengeService, ChallengeService>();
+builder.Services.AddSingleton<IDynamicFlagExecutableService, DynamicFlagExecutableService>();
 builder.Services.AddHostedService<WatchService>();
 builder.Services.AddHostedService<RefreshService>();
 builder.Services.AddDbContext<BergDbContext>(options => {
@@ -43,7 +44,7 @@ builder.Services.AddDbContext<BergDbContext>(options => {
 });
 
 builder.AddSwagger(infraConfig);
-builder.AddOpenIddict(kubernetes, discordConfig, genericOpenIdConfig);
+builder.AddOpenIddict(kubernetes, infraConfig, discordConfig, genericOpenIdConfig);
 builder.AddOpenTelemetryExporters(infraConfig);
 builder.AddMediatR();
 

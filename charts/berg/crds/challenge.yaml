@@ -95,6 +95,37 @@ spec:
                                 - publicPort
                                 - publicHttpRoute
                                 - publicTlsRoute
+                      dynamicFlag:
+                        type: object
+                        oneOf:
+                          - required: ["env"]
+                          - required: ["content"]
+                          - required: ["executable"]
+                        properties:
+                          env:
+                            type: object
+                            nullable: true
+                            properties:
+                              name:
+                                type: string
+                          content:
+                            type: object
+                            nullable: true
+                            properties:
+                              path:
+                                type: string
+                              mode:
+                                type: integer
+                                nullable: true
+                          executable:
+                            type: object
+                            nullable: true
+                            properties:
+                              path:
+                                type: string
+                              mode:
+                                type: integer
+                                nullable: true
                 attachments:
                   type: array
                   items:

@@ -108,7 +108,7 @@ public class SolveController(
                 Detail = "Challenge can't be empty.",
             });
         }
-        var challengeConfig = challengeService.GetChallengeConfig(challengeName);
+        var challengeConfig = challengeService.GetChallenge(challengeName, CancellationToken.None).Result;
         if (challengeConfig == null)
         {
             logger.LogWarning("Player {PlayerId} wanted to submit a flag for an invalid challenge: {ChallengeName}", playerId, challengeName);
@@ -225,7 +225,30 @@ public class SolveController(
             var dbChallenge = dbContext.Challenges.Single(c => c.Name == challengeName);
 
             var trimmedFlag = addSolveRequest.Flag.Trim();
-            if (challengeConfig.Spec.Flag != trimmedFlag)
+
+            var flagValid = false;
+            if (challengeConfig.Spec.SupportsDynamicFlags)
+            {
+                if (ctfConfig.Teams)
+                {
+                    // Allow team members to submit a dynamic flag of their teammates
+                    flagValid = dbContext.Instances.Any(i => i.Player.TeamId == player.TeamId &&
+                        i.ChallengeName == challengeName &&
+                        i.DynamicFlag == trimmedFlag);
+                }
+                else
+                {
+                    flagValid = dbContext.Instances.Any(i => i.PlayerId == playerId &&
+                        i.ChallengeName == challengeName &&
+                        i.DynamicFlag == trimmedFlag);
+                }
+            }
+            else
+            {
+                flagValid = challengeConfig.Spec.Flag == trimmedFlag;
+            }
+
+            if (!flagValid)
             {
                 dbContext.Submissions.Add(new Submission
                 {
@@ -260,7 +283,7 @@ public class SolveController(
             var isCurrentlyFrozen = freezeStart < utcNow && utcNow < freezeEnd;
 
             // Asynchronously let other components react to this solve
-            mediator.Publish(new SolveNotification
+            var _ = mediator.Publish(new SolveNotification
             {
                 Id = dbSolve.Id,
                 PlayerId = player.Id,

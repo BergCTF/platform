@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Berg.Api.Notifications.Handlers;
 
-public class ChallengeNotificationHandler(BergDbContext bergDbContext) :
+public class ChallengeNotificationHandler(BergDbContext dbContext) :
     INotificationHandler<ChallengeCreateNotification>,
     INotificationHandler<ChallengeUpdateNotification>
 {
@@ -24,10 +24,10 @@ public class ChallengeNotificationHandler(BergDbContext bergDbContext) :
         using var activity = Constants.BergActivitySource.StartActivity();
 
         var challengeName = challenge.Name();
-        var chall = bergDbContext.Challenges.SingleOrDefault(c => c.Name == challengeName);
+        var chall = dbContext.Challenges.SingleOrDefault(c => c.Name == challengeName);
         if(chall == null) {
-            bergDbContext.Challenges.Add(new Challenge { Name = challengeName });
-            bergDbContext.SaveChanges();
+            dbContext.Challenges.Add(new Challenge { Name = challengeName });
+            dbContext.SaveChanges();
         }
         return Task.CompletedTask;
     }

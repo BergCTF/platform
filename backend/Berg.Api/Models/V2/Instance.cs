@@ -4,8 +4,11 @@ namespace Berg.Api.Models.V2;
 
 public class Instance
 {
+    [JsonPropertyName("id")]
+    public required Guid? Id { get; set; }
+
     [JsonPropertyName("name")]
-    public string Name { get; set; } = "";
+    public required string ChallengeName { get; set; } = "";
 
     [JsonPropertyName("status")]
     public InstanceState InstanceState { get; set; } = InstanceState.None;

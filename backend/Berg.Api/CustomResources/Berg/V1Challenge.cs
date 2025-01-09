@@ -56,4 +56,7 @@ public class V1ChallengeSpec
 
     [JsonPropertyName("attachments")]
     public List<V1ChallengeAttachment>? Attachments { get; set; }
+
+    [JsonIgnore]
+    public bool SupportsDynamicFlags => Containers?.Any(c => c.DynamicFlag != null) ?? false;
 }

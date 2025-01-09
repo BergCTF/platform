@@ -31,7 +31,8 @@ data:
         {{ end }}
         "openTelemetryGrpcTracingEndpoint": {{ .Values.berg.openTelemetry.grpc.tracingEndpoint | toJson }},
         "openTelemetryGrpcMetricsEndpoint": {{ .Values.berg.openTelemetry.grpc.metricsEndpoint | toJson }},
-        "openTelemetryGrpcLoggingEndpoint": {{ .Values.berg.openTelemetry.grpc.loggingEndpoint | toJson }}
+        "openTelemetryGrpcLoggingEndpoint": {{ .Values.berg.openTelemetry.grpc.loggingEndpoint | toJson }},
+        "useKubernetesSecretKeyProvider": true,
       },
       "discord": {{ .Values.berg.discord | toJson }},
       "genericOpenId": {{ .Values.berg.genericOpenId | toJson }},

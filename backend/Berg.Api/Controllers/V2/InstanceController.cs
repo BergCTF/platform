@@ -11,7 +11,9 @@ namespace Berg.Api.Controllers.V2;
 
 [ApiController]
 [ApiExplorerSettings(GroupName = "v2")]
-public class InstanceController(IChallengeService challengeService, CtfConfig ctfConfig) : ControllerBase
+public class InstanceController(
+    IChallengeService challengeService,
+    CtfConfig ctfConfig) : ControllerBase
 {
     public class InstanceStartRequest
     {
@@ -66,7 +68,7 @@ public class InstanceController(IChallengeService challengeService, CtfConfig ct
                 Detail = "Instances can only be started after the start of the ctf.",
             });
         }
-        var challenge = challengeService.GetChallenges().FirstOrDefault(c => c.Metadata.Name == startRequest.Challenge);
+        var challenge = await challengeService.GetChallenge(startRequest.Challenge, cancel);
         if (challenge == null || (challenge.Spec.HideUntil != null && utcNow < challenge.Spec.HideUntil && !isAdmin))
         {
             return BadRequest(new ProblemDetails

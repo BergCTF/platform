@@ -23,7 +23,7 @@ public class ChallengeController(
     [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(List<Challenge>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public ActionResult<List<Challenge>> ListChallenges()
+    public async Task<ActionResult<List<Challenge>>> ListChallenges(CancellationToken cancellationToken)
     {
         var utcNow = DateTime.UtcNow;
         var isAdmin = User.HasClaim(OpenIddictConstants.Claims.Role, Constants.Roles.Admin);
@@ -33,7 +33,8 @@ public class ChallengeController(
             return Ok(new List<Challenge>());
         }
 
-        return challengeService.GetChallenges()
+        var challenges = await challengeService.GetChallenges(cancellationToken);
+        return challenges
             .Where(c => c.Spec.HideUntil == null || (c.Spec.HideUntil <= utcNow && !isAdmin))
             .Select(ToChallenge)
             .ToList();
@@ -45,7 +46,7 @@ public class ChallengeController(
     [ProducesResponseType(typeof(Challenge), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public ActionResult<Challenge> GetChallenge([FromRoute] string name)
+    public async Task<ActionResult<Challenge>> GetChallenge([FromRoute] string name, CancellationToken cancellationToken)
     {
         var utcNow = DateTime.UtcNow;
         var isAdmin = User.HasClaim(OpenIddictConstants.Claims.Role, Constants.Roles.Admin);
@@ -59,11 +60,8 @@ public class ChallengeController(
             });
         }
 
-        var challenge = challengeService
-            .GetChallenges()
-            .Where(c => c.Spec.HideUntil == null || (c.Spec.HideUntil <= utcNow && !isAdmin))
-            .FirstOrDefault(c => c.Name() == name);
-        if (challenge == null)
+        var challenge = await challengeService.GetChallenge(name, cancellationToken);
+        if (challenge == null || challenge.Spec.HideUntil == null || (challenge.Spec.HideUntil <= utcNow && !isAdmin))
             return NotFound();
         return Ok(ToChallenge(challenge));
     }
@@ -97,9 +95,7 @@ public class ChallengeController(
             });
         }
 
-        var challenge = challengeService
-            .GetChallenges()
-            .FirstOrDefault(c => c.Name() == name);
+        var challenge = await challengeService.GetChallenge(name, cancellationToken);
         if (challenge == null)
             return NotFound();
         var hideUntil = challenge.Spec.HideUntil;

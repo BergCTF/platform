@@ -4,7 +4,7 @@ namespace Berg.Api.BackgroundServices;
 
 public class RefreshService(
     ILogger<RefreshService> logger,
-    IChallengeService challengeService,
+    IServiceScopeFactory serviceScopeFactory,
     IWebSocketService webSocketService) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -15,6 +15,8 @@ public class RefreshService(
         while (!stoppingToken.IsCancellationRequested)
         {
             using var activity = Constants.BergActivitySource.StartActivity("Refresh");
+            using var scope = serviceScopeFactory.CreateScope();
+            var challengeService = scope.ServiceProvider.GetRequiredService<IChallengeService>();
             await challengeService.CheckChallengeInstanceTimeout(stoppingToken);
             await challengeService.CheckNewlyUnhiddenChallenges(window, stoppingToken);
             await webSocketService.DowngradeExpiredConnections(stoppingToken);
