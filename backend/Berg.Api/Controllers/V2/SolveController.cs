@@ -229,9 +229,19 @@ public class SolveController(
             var flagValid = false;
             if (challengeConfig.Spec.SupportsDynamicFlags)
             {
-                flagValid = dbContext.Instances.Any(i => i.PlayerId == playerId &&
-                    i.ChallengeName == challengeName &&
-                    i.DynamicFlag == trimmedFlag);
+                if (ctfConfig.Teams)
+                {
+                    // Allow team members to submit a dynamic flag of their teammates
+                    flagValid = dbContext.Instances.Any(i => i.Player.TeamId == player.TeamId &&
+                        i.ChallengeName == challengeName &&
+                        i.DynamicFlag == trimmedFlag);
+                }
+                else
+                {
+                    flagValid = dbContext.Instances.Any(i => i.PlayerId == playerId &&
+                        i.ChallengeName == challengeName &&
+                        i.DynamicFlag == trimmedFlag);
+                }
             }
             else
             {
