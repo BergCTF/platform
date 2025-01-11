@@ -1,0 +1,11 @@
+{{- range $name, $config := .Values.pages }}
+{{- if $config }}
+apiVersion: berg.norelect.ch/v1
+kind: Page
+metadata:
+  name: {{ $name }}
+spec:
+  {{- toYaml $config | nindent 2 }}
+---
+{{- end -}}
+{{- end -}}
