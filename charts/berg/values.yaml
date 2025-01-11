@@ -26,6 +26,10 @@ handout:
     tag: ""
 
 berg:
+  # additional env vars to add to the berg api server instance
+  extraEnv: []
+  # additional env vars from secrets or configmaps
+  extraEnvFrom: []
   domain: ""
   tlsSecretName: ""
   image:
