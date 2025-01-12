@@ -4,6 +4,15 @@ namespace Berg.Api.Models.V2;
 
 public class Metadata
 {
+    [JsonPropertyName("version")]
+    public required string Version { get; set; }
+
+    [JsonPropertyName("eventName")]
+    public required string EventName { get; set; }
+
+    [JsonPropertyName("eventOrganiser")]
+    public required string EventOrganiser { get; set; }
+
     [JsonPropertyName("start")]
     public DateTime Start { get; set; }
 

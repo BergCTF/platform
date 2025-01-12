@@ -596,6 +596,7 @@ export class DataService {
     playerDetail.name = player.name;
     playerDetail.team = teams.find(t => t.players.includes(player.id)) || null;
     playerDetail.solves = solves.filter(s => s.playerId == player.id).map(s => this.toSolveDetail(s, challenges.find(c => c.challenge.name == s.challengeName)?.challenge || null, players, teams));
+    playerDetail.solves.sort((a, b) => b.solvedAt.getTime() - a.solvedAt.getTime());
     let solvedChallengeNames = playerDetail.solves.map(s => s.challengeName);
     playerDetail.score = challenges.filter(c => solvedChallengeNames.includes(c.challenge.name)).map(c => c.value).reduce((a,b) => a + b, 0);
     let plainChallenges = challenges.map(c => c.challenge);
@@ -614,6 +615,7 @@ export class DataService {
       let solvedChallengeNames = solves.filter(s => team!.players.includes(s.playerId)).map(s => s.challengeName);
       let solvedChallengeDetails = challenges.filter(c => solvedChallengeNames.includes(c.challenge.name));
       teamDetail.solves = solvedChallengeDetails.flatMap(c => c.teamSolves).filter(s => s.teamId == team.id);
+      teamDetail.solves.sort((a, b) => b.solvedAt.getTime() - a.solvedAt.getTime());
       teamDetail.score = solvedChallengeDetails.map(c => c.value).reduce((a,b) => a + b, 0);
       let plainChallenges = challenges.map(c => c.challenge);
       let categories = this.getPrimaryCategories(plainChallenges);
@@ -627,10 +629,11 @@ export class DataService {
     var challDetail = new ChallengeDetail();
     challDetail.challenge = challenge;
     challDetail.playerSolves = solves.filter(s => s.challengeName == challenge.name).map(s => this.toSolveDetail(s, challenge, players, teams));
+    challDetail.playerSolves.sort((a, b) => b.solvedAt.getTime() - a.solvedAt.getTime());
     var solvedPlayerIds = challDetail.playerSolves.map(s => s.playerId);
     var teamsWithSolves = teams.filter(t => t.players.some(p => solvedPlayerIds.includes(p)));
     challDetail.teamSolves = teamsWithSolves.map(t => this.toTeamSolveDetail(t, challenge, solves, players));
-    challDetail.teamSolves.sort((a, b) => a.solvedAt.getTime() - b.solvedAt.getTime());
+    challDetail.teamSolves.sort((a, b) => b.solvedAt.getTime() - a.solvedAt.getTime());
 
     let max = metadata.challengeMaximumValue;
     let min = metadata.challengeMinimumValue;

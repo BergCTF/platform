@@ -2,35 +2,39 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DataService } from './services/data.service';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { Page, Player } from './api-model';
-import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
+import { Metadata, Page, Player } from './api-model';
+import { NgbDropdownModule, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.less'],
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, NgbDropdownModule]
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, NgbDropdownModule, NgbTooltip]
 })
 export class AppComponent implements OnInit, OnDestroy {
 
-  title = 'Berg Frontend';
+  year = new Date().getFullYear();
   theme: string | null = null;
   currentPlayer: Player | null = null;
+  metadata: Metadata | null = null;
   areTeamsEnabled = false;
   pages: readonly Page[] = [];
 
+  private metadataSubscription: Subscription | null = null;
   private pagesSubscription: Subscription | null = null;
   private loggedInPlayerSubscription: Subscription | null = null;
   private areTeamsEnabledSubscription: Subscription | null = null;
 
   constructor(
-    public dataService: DataService,
+    public dataService: DataService
   ) {}
 
   ngOnInit() {
     this.theme = localStorage.getItem('theme');
     this.setTheme(this.getPreferredTheme());
-
+    this.metadataSubscription = this.dataService.metadata.subscribe(metadata => {
+      this.metadata = metadata;
+    });
     this.pagesSubscription = this.dataService.pages.subscribe(pages => {
       this.pages = pages;
     });
@@ -43,6 +47,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.metadataSubscription?.unsubscribe();
     this.pagesSubscription?.unsubscribe();
     this.loggedInPlayerSubscription?.unsubscribe();
     this.areTeamsEnabledSubscription?.unsubscribe();

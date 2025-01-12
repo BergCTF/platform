@@ -17,6 +17,9 @@ public class MetadataController(CtfConfig ctfConfig) : ControllerBase
     {
         return new Metadata
         {
+            Version = Environment.GetEnvironmentVariable("BERG_VERSION"),
+            EventName = ctfConfig.EventName,
+            EventOrganiser = ctfConfig.EventOrganiser,
             Start = ctfConfig.Start,
             End = ctfConfig.End,
             FreezeStart = ctfConfig.Scoring.FreezeStart,

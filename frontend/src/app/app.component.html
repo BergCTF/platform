@@ -71,10 +71,10 @@
 <div class="container">
   <footer class="d-flex flex-wrap justify-content-between py-3 my-4 border-top">
     <div class="align-items-start">
-      <span class="mb-12 mb-md-0 text-muted">© Swiss Hacking Challenge</span>
+      <span class="mb-12 mb-md-0 text-muted">© {{ year }} {{ metadata?.eventOrganiser }}</span>
     </div>
     <div class="align-items-end">
-      <span class="mb-12 mb-md-0 text-muted">Berg CTF Platform</span>
+      <span class="mb-12 mb-md-0 text-muted" [ngbTooltip]="'Version ' + (metadata?.version ?? 'loading')">Berg CTF Platform</span>
     </div>
   </footer>
 </div>

@@ -11,17 +11,17 @@ import { ScoreboardComponent } from './pages/scoreboard/scoreboard.component';
 import { ActivityComponent } from './pages/activity/activity.component';
 
 const routes: Routes = [
-  { path: 'challenges', component: ChallengesComponent },
-  { path: 'challenges/:name', component: ChallengeDetailComponent },
-  { path: 'profile-settings', component: ProfileSettingsComponent },
-  { path: 'players/:uuid', component: PlayerDetailComponent },
-  { path: 'player/:uuid', component: PlayerDetailComponent },
-  { path: 'teams/:uuid', component: TeamDetailComponent },
-  { path: 'team/:uuid', component: TeamDetailComponent },
-  { path: 'team', component: TeamComponent },
-  { path: 'activity', component: ActivityComponent },
-  { path: 'scoreboard', component: ScoreboardComponent },
-  { path: '**', component: DynamicPageComponent },
+  { path: 'challenges', component: ChallengesComponent, title: 'Challenges' },
+  { path: 'challenges/:name', component: ChallengeDetailComponent, title: 'Challenge Detail' },
+  { path: 'profile-settings', component: ProfileSettingsComponent, title: 'Profile Settings' },
+  { path: 'players/:uuid', component: PlayerDetailComponent, title: 'Player Detail' },
+  { path: 'player/:uuid', component: PlayerDetailComponent, title: 'Player Detail' },
+  { path: 'teams/:uuid', component: TeamDetailComponent, title: 'Team Detail' },
+  { path: 'team/:uuid', component: TeamDetailComponent, title: 'Team Detail' },
+  { path: 'team', component: TeamComponent, title: 'Own Team' },
+  { path: 'activity', component: ActivityComponent, title: 'Activity' },
+  { path: 'scoreboard', component: ScoreboardComponent, title: 'Scoreboard' },
+  { path: '**', component: DynamicPageComponent, title: 'Berg' },
 ];
 
 @NgModule({

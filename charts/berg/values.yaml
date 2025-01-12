@@ -88,6 +88,8 @@ berg:
   redirectUris: []
   # - "https://frontend.example.com/callback"
   ctf:
+    eventName: "Berg CTF"
+    eventOrganiser: "Berg Contributors"
     start: "1970-01-01T00:00:00+00:00"
     end: "2099-01-01T00:00:00+00:00"
     allowAnonymousAccess: true
