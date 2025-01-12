@@ -636,7 +636,7 @@ export class DataService {
     let min = metadata.challengeMinimumValue;
     let decay = metadata.challengeSolvesBeforeMinimum;
     let numSolves = metadata.teams ? challDetail.teamSolves.length : challDetail.playerSolves.length;
-    challDetail.value = Math.ceil((((min - max) / (decay * decay)) * (numSolves * numSolves)) + max);
+    challDetail.value = Math.min(min, Math.ceil((((min - max) / (decay * decay)) * (numSolves * numSolves)) + max));
 
     if (currentPlayerId) {
       challDetail.solvedByPlayer = solves.find(s => s.challengeName == challenge.name && s.playerId == currentPlayerId) != undefined;
