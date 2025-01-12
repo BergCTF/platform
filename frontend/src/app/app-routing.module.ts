@@ -21,7 +21,6 @@ const routes: Routes = [
   { path: 'team', component: TeamComponent },
   { path: 'activity', component: ActivityComponent },
   { path: 'scoreboard', component: ScoreboardComponent },
-  { path: '', pathMatch: 'full', redirectTo: '/challenges' },
   { path: '**', component: DynamicPageComponent },
 ];
 

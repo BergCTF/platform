@@ -45,9 +45,14 @@ export class DynamicPageComponent implements OnInit, OnDestroy {
   private handleUpdate() {
     let currentPath = this.router.url;
     if (currentPath.startsWith('/')) {
-      currentPath = currentPath.substring(1)
+      currentPath = currentPath.substring(1);
     }
-    let page = this._pages.find(p => p.path == currentPath);
+    let page = this._pages.map(p => {
+      if (p.path.startsWith('/')){
+        p.path = p.path.substring(1);
+      }
+      return p;
+    }).find(p => p.path == currentPath);
     if (page != undefined) {
       this.page = page;
     }

@@ -74,6 +74,14 @@ berg:
     scoring:
       numSolvesBeforeMinimum: 10
 
+pages:
+  extra:
+    path: /extra
+    title: Extra
+    index: 1
+    content: |
+      Extra Page Content
+
 postgresql:
   enabled: false
 EOF
@@ -81,33 +89,6 @@ EOF
 echo "Upgrading CRD's"
 kubectl --context kind-berg-dev-cluster apply -f crds/challenge.yaml
 kubectl --context kind-berg-dev-cluster apply -f crds/page.yaml
-
-echo "Deploying example pages"
-cat <<EOF | kubectl --context kind-berg-dev-cluster apply -f -
-apiVersion: berg.norelect.ch/v1
-kind: Page
-metadata:
-  name: home
-  namespace: berg
-spec:
-  path: home
-  title: Home
-  index: 0
-  content: |
-    Home Page Content
----
-apiVersion: berg.norelect.ch/v1
-kind: Page
-metadata:
-  name: extra
-  namespace: berg
-spec:
-  path: extra
-  title: Extra
-  index: 1
-  content: |
-    Extra Page Content
-EOF
 
 echo "Deploying example challenges"
 cat <<EOF | kubectl --context kind-berg-dev-cluster apply -f -

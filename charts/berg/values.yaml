@@ -105,6 +105,14 @@ berg:
       freezeEnd: "2099-01-01T00:00:00+00:00"
       numSolvesBeforeMinimum: 50
 
+pages:
+  home:
+    path: /
+    title: Home
+    index: 0
+    content: |
+      Welcome to your berg installation!
+
 postgresql:
   enabled: true
   auth:
