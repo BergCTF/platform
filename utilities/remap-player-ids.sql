@@ -72,8 +72,8 @@ SELECT add_foreign_key(constraint_name, table_name, column_name) as remap_result
 
 DROP TABLE foreign_player_id_keys;
 
-DROP FUNCTION get_namespace_uuid;
 DROP FUNCTION get_remapped_player_id;
+DROP FUNCTION get_namespace_uuid;
 DROP FUNCTION remap_player_id_without_recreating_constraint;
 DROP FUNCTION add_foreign_key;
 
