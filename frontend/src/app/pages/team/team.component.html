@@ -57,7 +57,7 @@
             }
             <div class="mb-3">
                 <label for="join-token" class="form-label">Team join token</label>
-                <input id="join-token" type="text" class="form-control" [(ngModel)]="joinToken" aria-describedby="button-join" />
+                <input id="join-token" type="text" class="form-control" [(ngModel)]="joinToken" aria-describedby="button-join" (keyup.enter)="joinTeam()" />
             </div>
             <button class="btn btn-primary" type="button" id="button-join" (click)="joinTeam()"><i class="bi bi-box-arrow-in-right"></i> Join team</button>
             <h5 class="mt-5">Create new team</h5>
@@ -68,7 +68,7 @@
             }
             <div class="mb-3">
                 <label for="team-name" class="form-label">Team name</label>
-                <input id="team-name" type="text" class="form-control" [(ngModel)]="teamName" aria-describedby="button-create" />
+                <input id="team-name" type="text" class="form-control" [(ngModel)]="teamName" aria-describedby="button-create" (keyup.enter)="createTeam()" />
             </div>
             <button class="btn btn-primary" type="button" id="button-create" (click)="createTeam()"><i class="bi bi-plus-circle"></i> Create team</button>
         }

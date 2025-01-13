@@ -430,6 +430,99 @@ export class DataService {
     }));
   }
 
+  getChallengeDetailsByCategory(): Observable<readonly ChallengeDetailCategory[]> {
+    return combineLatest([this.metadata, this.getChallengeDetails()]).pipe(map((params) => {
+      const [metadata, challengeDetails] = params;
+      let challenges = challengeDetails.map(c => c.challenge);
+      let categories = this.getPrimaryCategories(challenges);
+      let result: ChallengeDetailCategory[] = [];
+      for (let category of categories) {
+        let challs = challengeDetails.filter(c => this.getPrimaryCategory(c.challenge) == category);
+        challs.sort((a, b) => this.compareChallengeDetails(a, b));
+        let challengeDetailCategory = new ChallengeDetailCategory();
+        challengeDetailCategory.category = category;
+        challengeDetailCategory.challenges = challs;
+        challengeDetailCategory.numTotal = challs.length;
+        challengeDetailCategory.numSolved = challs.filter(c => c.solvedByPlayer || (metadata.teams && c.solvedByTeam)).length;
+        result.push(challengeDetailCategory);
+      }
+      return Object.freeze(result);
+    }));
+  }
+
+  private _getChallengeDetails = combineLatest([this.currentPlayerId, this.metadata, this.solves, this.players, this.teams, this.challenges]).pipe(map((params) => {
+    const [ currentPlayerId, metadata, solves, players, teams, challenges ] = params;
+    return Object.freeze(challenges.map(c => this.toChallengeDetail(metadata, c, currentPlayerId, solves, players, teams)));
+  }), shareReplay(1));
+  getChallengeDetails(): Observable<readonly ChallengeDetail[]> {
+    return this._getChallengeDetails;
+  }
+
+  getChallengeDetail(name: Observable<string | null>): Observable<ChallengeDetail | null> {
+    return combineLatest([name, this.getChallengeDetails()]).pipe(map((params) => {
+      const [ name, challenges ] = params;
+      if (name == null)
+        return null;
+      var challenge = challenges.find(c => c.challenge.name == name) || null;
+      if (challenge == null)
+        return null;
+      return challenge;
+    }));
+  }
+
+  getCurrentTeamDetail(): Observable<TeamDetail | null> {
+    let currentTeamId = combineLatest([this.currentPlayerId, this.teams]).pipe(map((params) => {
+      const [ currentPlayerId, teams ] = params;
+      if (currentPlayerId == null)
+        return null;
+      var team = teams.find(t => t.players.includes(currentPlayerId)) || null;
+      if (team == null)
+        return null;
+      return team.id;
+    }));
+    return this.getTeamDetail(currentTeamId);
+  }
+
+  private _getTeamDetails = combineLatest([this.teams, this.players, this.solves, this.getChallengeDetails()]).pipe(map((params) => {
+    const [ teams, players, solves, challenges ] = params;
+    return Object.freeze(teams.map(t => this.toTeamDetail(t, players, solves, challenges)));
+  }), shareReplay(1));
+  getTeamDetails(): Observable<readonly TeamDetail[]> {
+    return this._getTeamDetails;
+  }
+
+  getTeamDetail(teamId: Observable<string | null>): Observable<TeamDetail | null> {
+    return combineLatest([teamId, this.getTeamDetails()]).pipe(map((params) => {
+      const [ teamId, teams ] = params;
+      if (teamId == null)
+        return null;
+      var team = teams.find(t => t.id == teamId) || null;
+      if (team == null)
+        return null;
+      return team;
+    }));
+  }
+
+  private _getPlayerDetails = combineLatest([this.teams, this.players, this.solves, this.getChallengeDetails()]).pipe(map((params) => {
+    const [ teams, players, solves, challenges ] = params;
+    return players.map(p => this.toPlayerDetail(p, players, teams, solves, challenges));
+  }), shareReplay(1));
+  getPlayerDetails(): Observable<readonly PlayerDetail[]> {
+    return this._getPlayerDetails;
+  }
+
+  getPlayerDetail(playerId: Observable<string | null>): Observable<PlayerDetail | null> {
+    return combineLatest([playerId, this.getPlayerDetails()]).pipe(map((params) => {
+      const [ playerId, players] = params;
+      if (playerId == null)
+        return null;
+      var player = players.find(t => t.id == playerId) || null;
+      if (player == null)
+        return null;
+      return player;
+    }));
+  }
+
   private _getScoreboard = combineLatest([this.metadata, this.getPlayerDetails(), this.getTeamDetails(), this.getChallengeDetails()]).pipe(map((params) => {
     const [ metadata, players, teams, challengesDetails ] = params;
     var scoreboard: ScoreboardRanking[] = [];
@@ -497,101 +590,9 @@ export class DataService {
       i += 1;
     }
     return Object.freeze(scoreboard);
-  }), shareReplay());
+  }), shareReplay(1));
   getScoreboard(): Observable<readonly ScoreboardRanking[]> {
     return this._getScoreboard;
-  }
-
-  getChallengeDetailsByCategory(): Observable<readonly ChallengeDetailCategory[]> {
-    return combineLatest([this.currentPlayerId, this.metadata, this.players, this.teams, this.solves, this.challenges]).pipe(map((params) => {
-      const [ currentPlayerId, metadata, players, teams, solves, challenges ] = params;
-      let categories = this.getPrimaryCategories(challenges);
-      let result: ChallengeDetailCategory[] = [];
-      for (let category of categories) {
-        let challs = challenges.filter(c => this.getPrimaryCategory(c) == category).map(c => this.toChallengeDetail(metadata, c, currentPlayerId, solves, players, teams));
-        challs.sort((a, b) => this.compareChallengeDetails(a, b));
-        let challengeDetailCategory = new ChallengeDetailCategory();
-        challengeDetailCategory.category = category;
-        challengeDetailCategory.challenges = challs;
-        challengeDetailCategory.numTotal = challs.length;
-        challengeDetailCategory.numSolved = challs.filter(c => c.solvedByPlayer || (metadata.teams && c.solvedByTeam)).length;
-        result.push(challengeDetailCategory);
-      }
-      return Object.freeze(result);
-    }));
-  }
-
-  private _getChallengeDetails = combineLatest([this.currentPlayerId, this.metadata, this.solves, this.players, this.teams, this.challenges]).pipe(map((params) => {
-    const [ currentPlayerId, metadata, solves, players, teams, challenges ] = params;
-    return Object.freeze(challenges.map(c => this.toChallengeDetail(metadata, c, currentPlayerId, solves, players, teams)));
-  }), shareReplay());
-  getChallengeDetails(): Observable<readonly ChallengeDetail[]> {
-    return this._getChallengeDetails;
-  }
-
-  getChallengeDetail(name: Observable<string | null>): Observable<ChallengeDetail | null> {
-    return combineLatest([name, this.getChallengeDetails()]).pipe(map((params) => {
-      const [ name, challenges ] = params;
-      if (name == null)
-        return null;
-      var challenge = challenges.find(c => c.challenge.name == name) || null;
-      if (challenge == null)
-        return null;
-      return challenge;
-    }));
-  }
-
-  getCurrentTeamDetail(): Observable<TeamDetail | null> {
-    let currentTeamId = combineLatest([this.currentPlayerId, this.teams]).pipe(map((params) => {
-      const [ currentPlayerId, teams ] = params;
-      if (currentPlayerId == null)
-        return null;
-      var team = teams.find(t => t.players.includes(currentPlayerId)) || null;
-      if (team == null)
-        return null;
-      return team.id;
-    }));
-    return this.getTeamDetail(currentTeamId);
-  }
-
-  private _getTeamDetails = combineLatest([this.teams, this.players, this.solves, this.getChallengeDetails()]).pipe(map((params) => {
-    const [ teams, players, solves, challenges ] = params;
-    return Object.freeze(teams.map(t => this.toTeamDetail(t, players, solves, challenges)));
-  }), shareReplay());
-  getTeamDetails(): Observable<readonly TeamDetail[]> {
-    return this._getTeamDetails;
-  }
-
-  getTeamDetail(teamId: Observable<string | null>): Observable<TeamDetail | null> {
-    return combineLatest([teamId, this.getTeamDetails()]).pipe(map((params) => {
-      const [ teamId, teams ] = params;
-      if (teamId == null)
-        return null;
-      var team = teams.find(t => t.id == teamId) || null;
-      if (team == null)
-        return null;
-      return team;
-    }));
-  }
-
-  private _getPlayerDetails = combineLatest([this.teams, this.players, this.solves, this.getChallengeDetails()]).pipe(map((params) => {
-    const [ teams, players, solves, challenges ] = params;
-    return players.map(p => this.toPlayerDetail(p, players, teams, solves, challenges));
-  }), shareReplay());
-  getPlayerDetails(): Observable<readonly PlayerDetail[]> {
-    return this._getPlayerDetails;
-  }
-
-  getPlayerDetail(playerId: Observable<string | null>): Observable<PlayerDetail | null> {
-    return combineLatest([playerId, this.getPlayerDetails()]).pipe(map((params) => {
-      const [ playerId, players] = params;
-      if (playerId == null)
-        return null;
-      var player = players.find(t => t.id == playerId) || null;
-      if (player == null)
-        return null;
-      return player;
-    }));
   }
 
   private toPlayerDetail(player: Player, players: readonly Player[], teams: readonly Team[], solves: readonly Solve[], challenges: readonly ChallengeDetail[]): PlayerDetail {
