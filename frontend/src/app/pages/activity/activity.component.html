@@ -22,13 +22,10 @@
         }
         @for (activity of activityEntries | slice: (pageIndex-1) * pageSize : pageIndex * pageSize; track activity) {
           <tr>
-            <td>
-              <span placement="top" [ngbTooltip]="dateDetails">
-                <ng-template #dateDetails>
-                  {{ helper.relativeTime(activity.solve.solvedAt) }}
-                </ng-template>
-                <app-pretty-date [date]="activity.solve.solvedAt" />
-              </span>
+            <td class="text-wrap">
+              <app-pretty-date [date]="activity.solve.solvedAt" />
+              <wbr />
+              <span class="text-muted text-nowrap">({{ helper.relativeTime(activity.solve.solvedAt) }})</span>
             </td>
             @if (areTeamsEnabled) {
               <td>

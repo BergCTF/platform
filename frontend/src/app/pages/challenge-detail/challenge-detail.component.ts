@@ -9,6 +9,7 @@ import { PrettyDateComponent } from 'src/app/widgets/pretty-date/pretty-date.com
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChallengeDetail } from 'src/app/model';
 import { NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
+import { HelperService } from 'src/app/services/helper.service';
 
 @Component({
   selector: 'app-challenge-detail',
@@ -33,6 +34,7 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy {
   constructor(
     public dataService: DataService,
     public location: Location,
+    public helper: HelperService,
     private route: ActivatedRoute
   ) {}
 
