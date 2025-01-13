@@ -1,7 +1,7 @@
 <h3 class="mb-3">Scoreboard</h3>
 <div class="row">
   <div class="col d-flex">
-    <button class="btn btn-outline-secondary ms-auto" ngbTooltip="Fullscreen" (click)="chart.requestFullscreen()"><span class="bi bi-fullscreen"></span></button>
+    <button class="btn btn-outline-secondary ms-auto" ngbTooltip="Fullscreen" (click)="toggleFullscreen(chart)"><span class="bi bi-fullscreen"></span></button>
   </div>
 </div>
 
@@ -23,7 +23,7 @@
       <button class="btn btn-outline-secondary ms-auto" ngbTooltip="Toggle view" (click)="toggleAdvancedView()" #btn>
         <span class="bi" [class.bi-three-dots-vertical]="!advancedView" [class.bi-123]="advancedView"></span>
       </button>
-      <button class="btn btn-outline-secondary ms-2" ngbTooltip="Fullscreen" (click)="table.requestFullscreen()"><span class="bi bi-fullscreen"></span></button>
+      <button class="btn btn-outline-secondary ms-2" ngbTooltip="Fullscreen" (click)="toggleFullscreen(table)"><span class="bi bi-fullscreen"></span></button>
     </div>
   </div>
   <div class="row">
@@ -59,12 +59,12 @@
                 <a [routerLink]="[areTeamsEnabled ? '/teams' : '/players', ranking.id]"><ngb-highlight [result]="ranking.name" [term]="searchText.value" /></a>
               </td>
               <td>{{ ranking.score }}</td>
-              <td class="text-nowrap">
-                <span placement="top">
-                  @if (ranking.lastSolveAt) {
-                    <app-pretty-date [date]="ranking.lastSolveAt" />
-                  }
-                </span>
+              <td class="text-wrap">
+                @if (ranking.lastSolveAt) {
+                  <app-pretty-date [date]="ranking.lastSolveAt" />
+                  <wbr />
+                  <span class="text-muted text-nowrap">({{ helper.relativeTime(ranking.lastSolveAt) }})</span>
+                }
               </td>
               @for (challengeByCategory of ranking.challengesByCategory; track challengeByCategory) {
                 @if (advancedView) {
@@ -92,15 +92,15 @@
       </table>
     </div>
   </div>
-</div>
-<div class="row">
-  <div class="d-flex flex-column flex-sm-row justify-content-between">
-    <ngb-pagination [maxSize]="5" [collectionSize]="scoreboardRanking.length" [(page)]="pageIndex" [pageSize]="pageSize"></ngb-pagination>
-    <select #pageSizeSelect class="form-select form-control pagination-select auto-width" name="pageSize" (change)="pageSizeChanged(pageSizeSelect.value)">
-      <option value="20">20 {{ entryType }} per page</option>
-      <option value="30">30 {{ entryType }} per page</option>
-      <option value="50">50 {{ entryType }} per page</option>
-      <option value="100">100 {{ entryType }} per page</option>
-    </select>
+  <div class="row">
+    <div class="d-flex flex-column flex-sm-row justify-content-between">
+      <ngb-pagination [maxSize]="5" [collectionSize]="scoreboardRanking.length" [(page)]="pageIndex" [pageSize]="pageSize"></ngb-pagination>
+      <select #pageSizeSelect class="form-select form-control pagination-select auto-width" name="pageSize" (change)="pageSizeChanged(pageSizeSelect.value)">
+        <option value="20">20 {{ entryType }} per page</option>
+        <option value="30">30 {{ entryType }} per page</option>
+        <option value="50">50 {{ entryType }} per page</option>
+        <option value="100">100 {{ entryType }} per page</option>
+      </select>
+    </div>
   </div>
 </div>

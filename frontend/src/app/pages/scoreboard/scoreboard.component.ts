@@ -115,6 +115,14 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  toggleFullscreen(element: HTMLElement) {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      element.requestFullscreen();
+    }
+  }
+
   updateChart(metadata: Metadata, challenges: readonly ChallengeDetail[], players: readonly PlayerDetail[], teams: readonly TeamDetail[]) {
     const challengePoints: { [key: string]: number } = {};
     challenges.forEach(c => {
