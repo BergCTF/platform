@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
-import { BehaviorSubject, Observable, combineLatest, distinctUntilChanged, filter, map, mergeMap, retry, share, shareReplay, take, tap, timer } from 'rxjs';
+import { BehaviorSubject, Observable, ReplaySubject, Subject, combineLatest, distinctUntilChanged, filter, map, mergeMap, retry, share, shareReplay, take, tap, timer } from 'rxjs';
 import { Challenge, CurrentPlayer, Instance, Metadata, Page, Player, Solve, Team, WebSocketMessage } from '../api-model';
 import { LoginResponse, OidcSecurityService } from 'angular-auth-oidc-client';
 import { ChallengeDetail, ChallengeDetailCategory, PlayerDetail, ScoreboardChallengeByCategory as ScoreboardChallengesByCategory, ScoreboardChallengeEntry, ScoreboardRanking, SolveDetail, TeamDetail, TeamSolveDetail, ActivityEntry } from '../model';
 import { HelperService } from './helper.service';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
@@ -13,33 +14,38 @@ import { HelperService } from './helper.service';
 export class DataService {
 
   private _webSocket: WebSocketSubject<WebSocketMessage<any>> | null = null;
-  private _challenges = new BehaviorSubject<readonly Challenge[]>(Object.freeze([]));
-  private _players = new BehaviorSubject<readonly Player[]>(Object.freeze([]));
   private _currentPlayer = new BehaviorSubject<CurrentPlayer | null>(null);
   private _currentTeamJoinToken = new BehaviorSubject<string | null>(null);
   private _currentPlayerId = new BehaviorSubject<string | null>(null);
-  private _teams = new BehaviorSubject<readonly Team[]>(Object.freeze([]));
-  private _solves = new BehaviorSubject<readonly Solve[]>(Object.freeze([]));
-  private _pages = new BehaviorSubject<readonly Page[]>(Object.freeze([]));
-  private _metadata= new BehaviorSubject<Metadata>(new Metadata());
+  private _players = new ReplaySubject<readonly Player[]>(1);
+  private _challenges = new ReplaySubject<readonly Challenge[]>(1);
+  private _teams = new ReplaySubject<readonly Team[]>(1);
+  private _solves = new ReplaySubject<readonly Solve[]>(1);
+  private _pages = new ReplaySubject<readonly Page[]>(1);
+  private _metadata= new ReplaySubject<Metadata>(1);
   private _instance = new BehaviorSubject<Instance>(new Instance());
   private _hasCTFStarted = new BehaviorSubject<boolean>(false);
   private _hasCTFEnded = new BehaviorSubject<boolean>(false);
   private _hasFreezeStarted = new BehaviorSubject<boolean>(false);
   private _hasFreezeEnded = new BehaviorSubject<boolean>(false);
+  private _lastPlayers: readonly Player[] = [];
+  private _lastChallenges: readonly Challenge[] = [];
+  private _lastTeams: readonly Team[] = [];
+  private _lastSolves: readonly Solve[] = [];
+  private _lastPages: readonly Page[] = [];
   private _pingSent = false;
   private _lastCounterSent = 0;
   private _lastCounterReceived = 0;
   private _secondTimer = timer(0, 1000).pipe(share());
 
-  public readonly challenges: Observable<readonly Challenge[]> = this._challenges.asObservable();
-  public readonly players: Observable<readonly Player[]> = this._players.asObservable();
-  public readonly pages: Observable<readonly Page[]> = this._pages.asObservable();
+  public readonly challenges: Observable<readonly Challenge[]> = this._challenges.asObservable().pipe(tap(c => this._lastChallenges = c));
+  public readonly players: Observable<readonly Player[]> = this._players.asObservable().pipe(tap(p => this._lastPlayers = p));
+  public readonly pages: Observable<readonly Page[]> = this._pages.asObservable().pipe(tap(p => this._lastPages = p));
+  public readonly teams: Observable<readonly Team[]> = this._teams.asObservable().pipe(tap(t => this._lastTeams = t));
+  public readonly solves: Observable<readonly Solve[]> = this._solves.asObservable().pipe(tap(s => this._lastSolves = s));
   public readonly currentPlayer: Observable<CurrentPlayer | null> = this._currentPlayer.asObservable();
   public readonly currentPlayerId: Observable<string | null> = this._currentPlayerId.asObservable();
   public readonly currentTeamJoinToken: Observable<string | null> = this._currentTeamJoinToken.asObservable().pipe(distinctUntilChanged());
-  public readonly teams: Observable<readonly Team[]> = this._teams.asObservable();
-  public readonly solves: Observable<readonly Solve[]> = this._solves.asObservable();
   public readonly instance: Observable<Instance> = this._instance.asObservable();
   public readonly metadata: Observable<Metadata> = this._metadata.asObservable();
   public readonly hasCTFStarted: Observable<boolean> = this._hasCTFStarted.asObservable();
@@ -53,6 +59,7 @@ export class DataService {
   constructor(
     private apiService: ApiService,
     private helper: HelperService,
+    private router: Router,
     private oidcSecurityService: OidcSecurityService) {
     this.loginEvents = this.oidcSecurityService.checkAuth().pipe(share());
     this.loginEvents.subscribe((loginResponse: LoginResponse) => {
@@ -67,6 +74,16 @@ export class DataService {
         }
 
         this.isAuthenticated = isAuthenticated;
+
+        let redirectUrl = localStorage.getItem("urlBeforeAuthChange");
+        localStorage.setItem("urlBeforeAuthChange", "");
+
+        if (redirectUrl != null && redirectUrl != "") {
+          this.router.navigateByUrl(redirectUrl, {
+            onSameUrlNavigation: 'reload',
+            skipLocationChange: false,
+          });
+        }
     });
 
     timer(10, 5000).subscribe(counter => {
@@ -198,8 +215,7 @@ export class DataService {
         case "solve":
           {
             let solve = message.message as Solve;
-            let solves = this._solves.getValue();
-            let modifiedSolves = solves.filter(_ => true);
+            let modifiedSolves = this._lastSolves.filter(_ => true);
             modifiedSolves.push(solve);
             this._solves.next(Object.freeze(modifiedSolves));
           }
@@ -207,8 +223,7 @@ export class DataService {
         case "team":
           {
             let team = message.message as Team;
-            let teams = this._teams.getValue();
-            let modifiedTeams = teams.filter(t => t.id != team.id);
+            let modifiedTeams = this._lastTeams.filter(t => t.id != team.id);
             modifiedTeams.push(team);
             this._teams.next(Object.freeze(modifiedTeams));
           }
@@ -216,16 +231,14 @@ export class DataService {
         case "team-delete":
           {
             let teamId = message.message as string;
-            let teams = this._teams.getValue();
-            let modifiedTeams = teams.filter(t => t.id != teamId);
+            let modifiedTeams = this._lastTeams.filter(t => t.id != teamId);
             this._teams.next(Object.freeze(modifiedTeams));
           }
           break;
         case "player":
           {
             let player = message.message as Player;
-            let players = this._players.getValue();
-            let modifiedPlayers = players.filter(t => t.id != player.id);
+            let modifiedPlayers = this._lastPlayers.filter(t => t.id != player.id);
             modifiedPlayers.push(player);
             this._players.next(Object.freeze(modifiedPlayers));
           }
@@ -233,16 +246,14 @@ export class DataService {
         case "player-delete":
           {
             let playerId = message.message as string;
-            let players = this._players.getValue();
-            let modifiedPlayers = players.filter(t => t.id != playerId);
+            let modifiedPlayers = this._lastPlayers.filter(t => t.id != playerId);
             this._players.next(Object.freeze(modifiedPlayers));
           }
           break;
         case "challenge":
           {
             let challenge = message.message as Challenge;
-            let challenges = this._challenges.getValue();
-            let modifiedChallenges = challenges.filter(t => t.name != challenge.name);
+            let modifiedChallenges = this._lastChallenges.filter(t => t.name != challenge.name);
             modifiedChallenges.push(challenge);
             this._challenges.next(Object.freeze(modifiedChallenges));
           }
@@ -250,8 +261,7 @@ export class DataService {
         case "page":
           {
             let page = message.message as Page;
-            let pages = this._pages.getValue();
-            let modifiedPages = pages.filter(p => p.path != page.path);
+            let modifiedPages = this._lastPages.filter(p => p.path != page.path);
             modifiedPages.push(page);
             modifiedPages.sort((a,b) => a.index - b.index);
             this._pages.next(Object.freeze(modifiedPages));
@@ -318,6 +328,7 @@ export class DataService {
   }
 
   login() {
+    localStorage.setItem("urlBeforeAuthChange", this.router.url);
     this.oidcSecurityService.authorize();
   }
 
@@ -325,6 +336,7 @@ export class DataService {
     if (local) {
       this.oidcSecurityService.logoffLocal();
     } else {
+      localStorage.setItem("urlBeforeAuthChange", this.router.url);
       this.oidcSecurityService.logoff().subscribe((_) => {});
     }
     this._currentPlayer.next(null);

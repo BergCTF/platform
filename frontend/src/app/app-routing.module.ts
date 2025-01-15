@@ -90,17 +90,17 @@ function prefixedTitleResolver(title: string): ResolveFn<string> {
 }
 
 const routes: Routes = [
-  { path: 'challenges', component: ChallengesComponent, title: prefixedTitleResolver('Challenges') },
-  { path: 'challenges/:name', component: ChallengeDetailComponent, title: challengeTitleResolver },
-  { path: 'profile-settings', component: ProfileSettingsComponent, title: prefixedTitleResolver('Profile Settings') },
-  { path: 'players/:uuid', component: PlayerDetailComponent, title: playerTitleResolver },
-  { path: 'player/:uuid', component: PlayerDetailComponent, title: playerTitleResolver },
-  { path: 'teams/:uuid', component: TeamDetailComponent, title: teamTitleResolver },
-  { path: 'team/:uuid', component: TeamDetailComponent, title: teamTitleResolver },
-  { path: 'team', component: TeamComponent, title: prefixedTitleResolver('Team Settings') },
-  { path: 'activity', component: ActivityComponent, title: prefixedTitleResolver('Activity') },
-  { path: 'scoreboard', component: ScoreboardComponent, title: prefixedTitleResolver('Scoreboard') },
-  { path: '**', component: DynamicPageComponent, title: dynamicPageTitleResolver },
+  { path: 'challenges', component: ChallengesComponent, title: prefixedTitleResolver('Challenges'), runGuardsAndResolvers: "always" },
+  { path: 'challenges/:name', component: ChallengeDetailComponent, title: challengeTitleResolver, runGuardsAndResolvers: "always" },
+  { path: 'profile-settings', component: ProfileSettingsComponent, title: prefixedTitleResolver('Profile Settings'), runGuardsAndResolvers: "always" },
+  { path: 'players/:uuid', component: PlayerDetailComponent, title: playerTitleResolver, runGuardsAndResolvers: "always" },
+  { path: 'player/:uuid', component: PlayerDetailComponent, title: playerTitleResolver, runGuardsAndResolvers: "always" },
+  { path: 'teams/:uuid', component: TeamDetailComponent, title: teamTitleResolver, runGuardsAndResolvers: "always" },
+  { path: 'team/:uuid', component: TeamDetailComponent, title: teamTitleResolver, runGuardsAndResolvers: "always" },
+  { path: 'team', component: TeamComponent, title: prefixedTitleResolver('Team Settings'), runGuardsAndResolvers: "always" },
+  { path: 'activity', component: ActivityComponent, title: prefixedTitleResolver('Activity'), runGuardsAndResolvers: "always" },
+  { path: 'scoreboard', component: ScoreboardComponent, title: prefixedTitleResolver('Scoreboard'), runGuardsAndResolvers: "always" },
+  { path: '**', component: DynamicPageComponent, title: dynamicPageTitleResolver, runGuardsAndResolvers: "always" },
 ];
 
 @NgModule({
