@@ -2,21 +2,21 @@
 
 set -e
 
-echo "Copy docker pull creds"
-kubectl --context kind-berg-dev-cluster delete secret berg-pull-secret -n berg || true
-kubectl --context kind-berg-dev-cluster create secret generic berg-pull-secret \
-    --from-file=.dockerconfigjson=/home/$USER/.docker/config.json \
-    --type=kubernetes.io/dockerconfigjson -n berg
-
 echo "Build images"
 docker build -t kind.localhost/berg/api:local -f backend/Berg.Api/Dockerfile backend
 docker build -t kind.localhost/berg/frontend:local -f frontend/Dockerfile frontend
-docker build -t kind.localhost/berg/handout:local -f handout/Dockerfile handout
-
-echo "Transfer images"
+echo "Transfer berg images"
 kind load docker-image --name=berg-dev-cluster kind.localhost/berg/api:local
 kind load docker-image --name=berg-dev-cluster kind.localhost/berg/frontend:local
-kind load docker-image --name=berg-dev-cluster kind.localhost/berg/handout:local
+
+echo "Building handouts and challenge images"
+docker build -t kind.localhost/challenges/handouts:local -f challenges/Dockerfile challenges
+docker build -t kind.localhost/challenges/example-web-lfi:local -f challenges/example-web-lfi/challenge-src/Dockerfile challenges/example-web-lfi/challenge-src
+docker build -t kind.localhost/challenges/example-web-rce:local -f challenges/example-web-rce/challenge-src/Dockerfile challenges/example-web-rce/challenge-src
+echo "Transfer handouts and challenge images"
+kind load docker-image --name=berg-dev-cluster kind.localhost/challenges/handouts:local
+kind load docker-image --name=berg-dev-cluster kind.localhost/challenges/example-web-lfi:local
+kind load docker-image --name=berg-dev-cluster kind.localhost/challenges/example-web-rce:local
 
 cd charts/berg
 echo "Uninstalling berg"
@@ -34,7 +34,7 @@ frontend:
 handout:
   enabled: true
   image:
-    repository: "kind.localhost/berg/handout"
+    repository: "kind.localhost/challenges/handouts"
     tag: local
 berg:
   image:
@@ -91,174 +91,7 @@ kubectl --context kind-berg-dev-cluster apply -f crds/challenge.yaml
 kubectl --context kind-berg-dev-cluster apply -f crds/page.yaml
 
 echo "Deploying example challenges"
-cat <<EOF | kubectl --context kind-berg-dev-cluster apply -f -
-apiVersion: berg.norelect.ch/v1
-kind: Challenge
-metadata:
-  name: nginx
-  namespace: berg
-spec:
-  author: NoRelect
-  flag: flag{test_flag}
-  description: nginx
-  difficulty: baby
-  categories:
-    - web
-    - misc
-  tags:
-    - nginx
-    - http
-  event: development
-  containers:
-    - hostname: nginx
-      image: nginx:latest
-      environment:
-        WHATEVER: Value
-      resourceLimits:
-        cpu: "1"
-        memory: "100Mi"
-      ports:
-        - port: 80
-          protocol: tcp
-          appProtocol: http
-          type: publicHttpRoute
-      dynamicFlag:
-        env:
-          name: FLAG
----
-apiVersion: berg.norelect.ch/v1
-kind: Challenge
-metadata:
-  name: another-nginx
-  namespace: berg
-spec:
-  author: NoRelect
-  flag: flag{test_flag}
-  description: another-nginx
-  difficulty: easy
-  categories:
-    - web
-    - misc
-  tags:
-    - nginx
-    - http
-  event: development
-  containers:
-    - hostname: nginx
-      image: nginx:latest
-      ports:
-        - port: 80
-          protocol: tcp
-          appProtocol: http
-          type: publicHttpRoute
-      dynamicFlag:
-        content:
-          path: /folder/flag.txt
----
-apiVersion: berg.norelect.ch/v1
-kind: Challenge
-metadata:
-  name: yet-another-nginx
-  namespace: berg
-spec:
-  displayName: yet another nginx!
-  author: NoRelect
-  flag: flag{test_flag}
-  description: yet-another-nginx
-  difficulty: medium
-  categories:
-    - web
-    - misc
-  tags:
-    - nginx
-    - http
-  event: development
-  containers:
-    - hostname: nginx
-      image: nginxinc/nginx-unprivileged:latest
-      ports:
-        - port: 8080
-          protocol: tcp
-          appProtocol: http
-          type: publicHttpRoute
-      dynamicFlag:
-        executable:
-          path: /folder/runme
-  attachments:
-    - downloadUrl: /handouts/yet-another-nginx.tar.gz
-      fileName: yet-another-nginx.tar.gz
----
-apiVersion: berg.norelect.ch/v1
-kind: Challenge
-metadata:
-  name: hard1-nginx
-  namespace: berg
-spec:
-  author: NoRelect
-  flag: flag{test_flag}
-  description: hard-nginx
-  difficulty: hard
-  categories:
-    - web
-    - misc
-  tags:
-    - nginx
-    - http
-  event: development
-  containers:
-    - hostname: nginx
-      image: nginx:latest
-      ports:
-        - port: 80
-          protocol: tcp
-          appProtocol: http
-          type: publicHttpRoute
-      dynamicFlag:
-        executable:
-          path: /runme
----
-apiVersion: berg.norelect.ch/v1
-kind: Challenge
-metadata:
-  name: hard2-nginx
-  namespace: berg
-spec:
-  author: NoRelect
-  flag: flag{test_flag}
-  description: hard-nginx
-  difficulty: hard
-  categories:
-    - web
-    - misc
-  tags:
-    - nginx
-    - http
-  event: development
----
-apiVersion: berg.norelect.ch/v1
-kind: Challenge
-metadata:
-  name: hidden-nginx
-  namespace: berg
-spec:
-  author: NoRelect
-  flag: flag{test_flag_hidden}
-  description: nginx
-  difficulty: baby
-  hideUntil: "2099-01-01T00:00:00+00:00"
-  categories:
-    - web
-    - misc
-  tags:
-    - nginx
-    - http
-  event: development
-  containers:
-    - hostname: nginx
-      image: nginx:latest
-      ports:
-        - port: 80
-          protocol: tcp
-          appProtocol: http
-          type: publicHttpRoute
-EOF
+
+cd ../../challenges
+./create-challenges-yaml.py
+kubectl --context kind-berg-dev-cluster apply -f all-challenges.yaml

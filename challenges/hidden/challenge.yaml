@@ -1,0 +1,18 @@
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: hidden
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: bergctf{you-should-never-see-me!}
+  description: You should never see me!
+  difficulty: impossible
+  hideUntil: "2099-01-01T00:00:00+00:00"
+  categories:
+    - misc
+  tags:
+    - hidden
+    - sourceless
+  event: Berg CTF
+  containers: []

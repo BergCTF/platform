@@ -1,0 +1,30 @@
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: example-web-rce
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: bergctf{4n_3x4mpl3_rc3_ch4ll3ng3!}
+  description: An example challenge demonstrating an RCE web challenge.
+  difficulty: baby
+  categories:
+    - web
+  tags:
+    - rce
+    - python
+  event: Berg CTF
+  containers:
+    - hostname: example-web-rce
+      image: kind.localhost/challenges/example-web-rce:local
+      ports:
+        - port: 5000
+          protocol: tcp
+          appProtocol: http
+          type: publicHttpRoute
+      dynamicFlag:
+        executable:
+          path: /printflag
+  attachments:
+    - fileName: example-web-rce.tar.gz
+      downloadUrl: /handouts/example-web-rce.tar.gz

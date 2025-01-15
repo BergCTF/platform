@@ -1,0 +1,159 @@
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: sort-order-baby-1
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: bergctf{sort_order_baby_1}
+  description: Sort Order Test
+  difficulty: baby
+  categories:
+    - sort-order
+  tags:
+    - test
+  event: Berg CTF
+---
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: sort-order-baby-2
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: bergctf{sort_order_baby_2}
+  description: Sort Order Test
+  difficulty: baby
+  categories:
+    - sort-order
+  tags:
+    - test
+  event: Berg CTF
+---
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: sort-order-easy-1
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: bergctf{sort_order_easy_1}
+  description: Sort Order Test
+  difficulty: easy
+  categories:
+    - sort-order
+  tags:
+    - test
+  event: Berg CTF
+---
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: sort-order-easy-2
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: bergctf{sort_order_easy_2}
+  description: Sort Order Test
+  difficulty: easy
+  categories:
+    - sort-order
+  tags:
+    - test
+  event: Berg CTF
+---
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: sort-order-medium-1
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: bergctf{sort_order_medium_1}
+  description: Sort Order Test
+  difficulty: medium
+  categories:
+    - sort-order
+  tags:
+    - test
+  event: Berg CTF
+---
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: sort-order-medium-2
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: bergctf{sort_order_medium_2}
+  description: Sort Order Test
+  difficulty: medium
+  categories:
+    - sort-order
+  tags:
+    - test
+  event: Berg CTF
+---
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: sort-order-hard-1
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: bergctf{sort_order_hard_1}
+  description: Sort Order Test
+  difficulty: hard
+  categories:
+    - sort-order
+  tags:
+    - test
+  event: Berg CTF
+---
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: sort-order-hard-2
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: bergctf{sort_order_hard_2}
+  description: Sort Order Test
+  difficulty: hard
+  categories:
+    - sort-order
+  tags:
+    - test
+  event: Berg CTF
+---
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: sort-order-leet-1
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: bergctf{sort_order_leet_1}
+  description: Sort Order Test
+  difficulty: leet
+  categories:
+    - sort-order
+  tags:
+    - test
+  event: Berg CTF
+---
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: sort-order-leet-2
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: bergctf{sort_order_leet_2}
+  description: Sort Order Test
+  difficulty: leet
+  categories:
+    - sort-order
+  tags:
+    - test
+  event: Berg CTF

@@ -1,0 +1,30 @@
+apiVersion: berg.norelect.ch/v1
+kind: Challenge
+metadata:
+  name: example-web-lfi
+  namespace: berg
+spec:
+  author: NoRelect
+  flag: bergctf{4n_3x4mpl3_lf1_ch4ll3ng3!}
+  description: An example challenge demonstrating an LFI web challenge.
+  difficulty: baby
+  categories:
+    - web
+  tags:
+    - lfi
+    - python
+  event: Berg CTF
+  containers:
+    - hostname: example-web-lfi
+      image: kind.localhost/challenges/example-web-lfi:local
+      ports:
+        - port: 5000
+          protocol: tcp
+          appProtocol: http
+          type: publicHttpRoute
+      dynamicFlag:
+        content:
+          path: /flag.txt
+  attachments:
+    - fileName: example-web-lfi.tar.gz
+      downloadUrl: /handouts/example-web-lfi.tar.gz
