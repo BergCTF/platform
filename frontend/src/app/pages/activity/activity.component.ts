@@ -20,7 +20,7 @@ export class ActivityComponent implements OnInit, OnDestroy {
   private activityEntriesSubscription: Subscription | null = null;
   public areTeamsEnabled = false;
   public pageIndex = 1;
-  public pageSize = 30;
+  public pageSize = 20;
   public activityEntries: readonly ActivityEntry[] = [];
 
   constructor(

@@ -28,7 +28,7 @@ export class ScoreboardComponent implements OnInit, OnDestroy {
   public advancedView = false;
   public hoveredChallenge = '';
   public pageIndex = 1;
-  public pageSize = 30;
+  public pageSize = 20;
 
   private scoreboardSubscription: Subscription | null = null;
   private searchTextSubscription: Subscription | null = null;
