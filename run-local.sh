@@ -43,6 +43,7 @@ berg:
   domain: berg.localhost
   tlsSecretName: "berg-gateway-tls"
   pullSecretName: "berg-pull-secret"
+  challengeImagePullPolicy: "IfNotPresent"
   logLevel:
     Berg.Api: Debug
   postgresql:

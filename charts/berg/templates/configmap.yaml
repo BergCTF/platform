@@ -26,6 +26,7 @@ data:
         "playerIdNamespace": {{ .Values.berg.playerIdNamespace | quote }},
         "redirectUris": {{ .Values.berg.redirectUris | toJson }},
         "pullSecretName": {{ .Values.berg.pullSecretName | quote }},
+        "challengeImagePullPolicy": {{ .Values.berg.challengeImagePullPolicy | quote }},
         {{ if .Values.handout.enabled }}
         "handoutServiceUrl": "http://{{ include "berg.fullname" . }}-handout",
         {{ end }}

@@ -313,24 +313,26 @@ public class ChallengeService(
             }
         }, cancellationToken: cancellationToken);
 
-        try
-        {
-            var imagePullSecret =
-                await kubernetes.ReadNamespacedSecretAsync(infraConfig.PullSecretName, _bergNamespace, cancellationToken: cancellationToken);
-            await kubernetes.CreateNamespacedSecretAsync(new V1Secret
+        if (!string.IsNullOrEmpty(infraConfig.PullSecretName)) {
+            try
             {
-                Metadata = new V1ObjectMeta
+                var imagePullSecret =
+                    await kubernetes.ReadNamespacedSecretAsync(infraConfig.PullSecretName, _bergNamespace, cancellationToken: cancellationToken);
+                await kubernetes.CreateNamespacedSecretAsync(new V1Secret
                 {
-                    Name = infraConfig.PullSecretName,
-                },
-                Type = "kubernetes.io/dockerconfigjson",
-                Data = imagePullSecret.Data
-            }, ns.Name(), cancellationToken: cancellationToken);
-        }
-        catch (HttpOperationException ex)
-        {
-            logger.LogWarning("Image pull secret '{}' not found in namespace '{}'", infraConfig.PullSecretName, _bergNamespace);
-            logger.LogWarning("Detailed exception for pull secret copy operations: {}", ex);
+                    Metadata = new V1ObjectMeta
+                    {
+                        Name = infraConfig.PullSecretName,
+                    },
+                    Type = "kubernetes.io/dockerconfigjson",
+                    Data = imagePullSecret.Data
+                }, ns.Name(), cancellationToken: cancellationToken);
+            }
+            catch (HttpOperationException ex)
+            {
+                logger.LogWarning("Image pull secret '{}' not found in namespace '{}'", infraConfig.PullSecretName, _bergNamespace);
+                logger.LogWarning("Detailed exception for pull secret copy operations: {}", ex);
+            }
         }
 
         var networkPolicy = new V2CiliumNetworkPolicy()
@@ -777,7 +779,7 @@ public class ChallengeService(
                         },
                         Name = container.Hostname,
                         Image = container.Image,
-                        ImagePullPolicy = "Always",
+                        ImagePullPolicy = infraConfig.ChallengeImagePullPolicy,
                         Resources = container.ResourceLimits != null
                             ? new V1ResourceRequirements
                             {

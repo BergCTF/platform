@@ -37,6 +37,7 @@ berg:
     imagePullPolicy: IfNotPresent
     tag: ""
   pullSecretName: ""
+  challengeImagePullPolicy: "Always"
   logLevel:
     Default: Information
     Microsoft.AspNetCore: Warning
