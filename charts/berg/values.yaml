@@ -38,6 +38,8 @@ berg:
     tag: ""
   pullSecretName: ""
   challengeImagePullPolicy: "Always"
+  # By default, all challenges will be terminated after 2h
+  challengeInstanceTimeout: "0.02:00:00"
   logLevel:
     Default: Information
     Microsoft.AspNetCore: Warning

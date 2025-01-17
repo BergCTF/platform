@@ -44,6 +44,7 @@ berg:
   tlsSecretName: "berg-gateway-tls"
   pullSecretName: "berg-pull-secret"
   challengeImagePullPolicy: "IfNotPresent"
+  challengeInstanceTimeout: "0.00:01:00"
   logLevel:
     Berg.Api: Debug
   postgresql:

@@ -27,6 +27,7 @@ data:
         "redirectUris": {{ .Values.berg.redirectUris | toJson }},
         "pullSecretName": {{ .Values.berg.pullSecretName | quote }},
         "challengeImagePullPolicy": {{ .Values.berg.challengeImagePullPolicy | quote }},
+        "challengeInstanceTimeout": {{ .Values.berg.challengeInstanceTimeout | quote }},
         {{ if .Values.handout.enabled }}
         "handoutServiceUrl": "http://{{ include "berg.fullname" . }}-handout",
         {{ end }}
