@@ -97,7 +97,7 @@ public class WebSocketService(
         foreach (var conn in _connections.ToList())
         {
             // Skip unauthenticated connections
-            if (!conn.PlayerId.HasValue)
+            if (conn == null || !conn.PlayerId.HasValue)
                 continue;
 
             // Only look at expired connections
