@@ -33,6 +33,7 @@ public static class OpenTelemetryExtensions
                 .AddMeter("Berg.Api")
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
+                .AddNpgsqlInstrumentation()
                 .AddOtlpExporter("metrics", metrics => {
                     metrics.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
                     metrics.Endpoint = new Uri(infraConfig.OpenTelemetryGrpcMetricsEndpoint);
