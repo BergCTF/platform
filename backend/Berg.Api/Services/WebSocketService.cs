@@ -62,11 +62,20 @@ public class WebSocketService(
         var buffer = new byte[1024 * 4];
         while (!connection.CancellationTokenSource.IsCancellationRequested)
         {
-            var webSocketMessage = await ReceiveMessage<int>(connection, buffer);
-            if (webSocketMessage != null && webSocketMessage.Type == "ping" &&
-                !connection.CancellationTokenSource.IsCancellationRequested) {
-                var messageBytes = SerializeMessage("pong", webSocketMessage.Message);
-                await SendMessage(connection, messageBytes);
+            var webSocketMessage = await ReceiveMessage<dynamic>(connection, buffer);
+            if (webSocketMessage != null)
+            {
+                if (webSocketMessage.Type == "ping" &&
+                    !connection.CancellationTokenSource.IsCancellationRequested)
+                {
+                    var messageBytes = SerializeMessage("pong", webSocketMessage.Message);
+                    await SendMessage(connection, messageBytes);
+                }
+                else
+                {
+                    var messageBytes = SerializeMessage("error", "Invalid message type");
+                    await SendMessage(connection, messageBytes);
+                }
             }
         }
         await CloseConnection(connection);
