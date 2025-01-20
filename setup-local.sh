@@ -25,6 +25,7 @@ helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
 helm repo add cilium https://helm.cilium.io/
 helm repo add traefik https://traefik.github.io/charts
+helm repo add uptrace https://charts.uptrace.dev
 helm repo update
 
 echo "Recreating kind cluster"
@@ -59,11 +60,11 @@ EOL
 kubectl --context kind-berg-dev-cluster cluster-info
 
 echo "Pre-loading cilium image"
-docker pull quay.io/cilium/cilium:v1.16.1
-kind load docker-image --name=berg-dev-cluster quay.io/cilium/cilium:v1.16.1
+docker pull quay.io/cilium/cilium:v1.16.5
+kind load docker-image --name=berg-dev-cluster quay.io/cilium/cilium:v1.16.5
 
 echo "Installing cilium"
-cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait cilium cilium/cilium -n cilium --create-namespace -f -
+cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait cilium cilium/cilium -n cilium --version 1.16.5 --create-namespace -f -
 ipam:
   mode: kubernetes
 image:
@@ -131,13 +132,6 @@ tlsOptions:
     sniStrict: false
     alpnProtocols:
       - http/1.1
-tracing:
-  otlp:
-    enabled: true
-    grpc:
-      enabled: true
-      endpoint: jaeger-operator-jaeger-collector.jaeger.svc.cluster.local:4317
-      insecure: true
 EOF
 
 echo "Installing Gateway API CRDs"
@@ -185,25 +179,6 @@ spec:
   issuerRef:
     name: mkcert
     kind: ClusterIssuer
-EOF
-
-echo "Installing jaeger"
-cat <<EOF | helm --kube-context kind-berg-dev-cluster install jaeger-operator jaegertracing/jaeger-operator -n jaeger --create-namespace -f -
-rbac:
-  clusterRole: true
-jaeger:
-  create: true
-  spec:
-    ingress:
-      annotations:
-        cert-manager.io/cluster-issuer: mkcert
-      enabled: true
-      hosts:
-        - jaeger.localhost
-      tls:
-        - hosts:
-            - jaeger.localhost
-          secretName: jaeger-tls
 EOF
 
 echo "Installing mock idp"
@@ -263,6 +238,48 @@ readReplicas:
     requests:
       cpu: "0.1"
       memory: "300Mi"
+EOF
+
+echo "Installing uptrace"
+
+kubectl --context kind-berg-dev-cluster apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
+cat <<EOF | helm --kube-context kind-berg-dev-cluster install -n uptrace --create-namespace uptrace uptrace/uptrace -f -
+ingress:
+  enabled: true
+  annotations:
+    cert-manager.io/cluster-issuer: mkcert
+  hosts:
+    - host: uptrace.localhost
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - hosts:
+        - uptrace.localhost
+      secretName: uptrace-tls
+otelcol:
+  enabled: false
+uptrace:
+  config:
+    site:
+      addr: 'https://uptrace.localhost'
+    projects:
+      - id: 1
+        name: Uptrace
+        token: uptrace_token
+        pinned_attrs:
+          - service_name
+          - host_name
+          - deployment_environment
+        group_by_env: false
+        group_funcs_by_service: false
+        prom_compat: true
+      - id: 2
+        name: Berg
+        token: berg_uptrace_token
+        pinned_attrs:
+          - service_name
+          - host_name
 EOF
 
 echo "Fetching helm dependencies"

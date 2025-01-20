@@ -30,6 +30,7 @@ public static class OpenTelemetryExtensions
         {
             openTelemetry.WithMetrics(builder => builder
                 .SetResourceBuilder(resourceBuilder)
+                .AddMeter("Berg.Api")
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddOtlpExporter("metrics", metrics => {

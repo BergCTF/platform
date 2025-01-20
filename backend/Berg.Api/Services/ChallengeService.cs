@@ -31,6 +31,7 @@ public interface IChallengeService
 public class ChallengeService(
     ILogger<ChallengeService> logger,
     IDynamicFlagExecutableService dynamicFlagExecutableService,
+    BergMetrics metrics,
     Db.BergDbContext dbContext,
     Kubernetes kubernetes,
     InfraConfig infraConfig,
@@ -105,7 +106,7 @@ public class ChallengeService(
             cancellationToken: cancellationToken);
 
         var maxAge = DateTime.UtcNow.Subtract(infraConfig.ChallengeInstanceTimeout);
-        foreach (var ns in nsList.Items.Where(n => n.Metadata.CreationTimestamp < maxAge))
+        foreach (var ns in nsList.Items.Where(n => n.Metadata.CreationTimestamp < maxAge && n.Status.Phase != "Terminating"))
         {
             var playerId = Guid.Parse(ns.GetLabel(PlayerIdLabel));
             var challengeName = ns.GetLabel(ChallengeLabel);
@@ -135,6 +136,7 @@ public class ChallengeService(
             {
                 logger.LogError("Instance {InstanceId} was terminated due to timeout but did not have a corresponding database instance entry.", instanceId);
             }
+            metrics.InstanceStopped();
         }
     }
 
@@ -274,6 +276,8 @@ public class ChallengeService(
 
         if ((challenge.Spec.Containers?.Count ?? 0) == 0)
             throw new ArgumentException("Challenge can't be instantiated");
+
+        metrics.InstanceStarted(challengeName);
 
         var instanceId = UUIDNext.Uuid.NewSequential();
         string? dynamicFlag;
@@ -939,6 +943,16 @@ public class ChallengeService(
 
         var instanceId = Guid.Parse(ns.GetLabel(InstanceIdLabel));
         var challengeName = ns.GetLabel(ChallengeLabel);
+        if (ns.Status.Phase == "Terminating")
+        {
+            return new Instance
+            {
+                Id = instanceId,
+                ChallengeName = challengeName,
+                InstanceState = InstanceState.Terminating
+            };
+        }
+
         await kubernetes.DeleteNamespaceAsync(ns.Name(), gracePeriodSeconds: 0, cancellationToken: cancellationToken);
         logger.LogInformation("Terminated instance {InstanceId}", instanceId);
 
@@ -953,6 +967,7 @@ public class ChallengeService(
         {
             logger.LogError("Instance {InstanceId} was terminated due to user request but did not have a corresponding database instance entry.", instanceId);
         }
+        metrics.InstanceStopped();
 
         return new Instance { Id = instanceId, ChallengeName = challengeName, InstanceState = InstanceState.Terminating };
     }

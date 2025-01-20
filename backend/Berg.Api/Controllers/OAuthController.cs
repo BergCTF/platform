@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Berg.Api.Configuration;
 using Berg.Api.Db;
 using Berg.Api.Notifications;
+using Berg.Api.Services;
 using Discord.Rest;
 using MediatR;
 using Microsoft.AspNetCore;
@@ -23,6 +24,7 @@ namespace Berg.Api.Controllers;
 public class OAuthController(
     ILogger<OAuthController> logger,
     BergDbContext dbContext,
+    BergMetrics metrics,
     InfraConfig infraConfig,
     DiscordConfig discordConfig,
     GenericOpenIdConfig genericOpenIdConfig,
@@ -385,6 +387,7 @@ public class OAuthController(
             {
                 DbPlayer = player,
             });
+            metrics.PlayerCreated(player.Id);
         }
         else
         {

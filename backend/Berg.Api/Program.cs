@@ -43,9 +43,11 @@ builder.Services.AddDbContext<BergDbContext>(options => {
     options.UseOpenIddict();
 });
 
+builder.Services.AddSingleton<BergMetrics>();
+builder.AddOpenTelemetryExporters(infraConfig);
+
 builder.AddSwagger(infraConfig);
 builder.AddOpenIddict(kubernetes, infraConfig, discordConfig, genericOpenIdConfig);
-builder.AddOpenTelemetryExporters(infraConfig);
 builder.AddMediatR();
 
 var app = builder.Build();

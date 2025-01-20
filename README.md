@@ -10,10 +10,11 @@ To get started with berg development, you have to run the following command once
 ./setup-local.sh
 ```
 
-This will install a local kubernetes cluster within docker, with `cilium`, `traefik`, `dex`, `cert-manager` and `jaeger` pre-installed. You can access them here:
+This will install a local kubernetes cluster within docker, with `cilium`, `traefik`, `mock-identity-provider`, `cert-manager` and `uptrace` pre-installed. You can access them here:
 
 - https://hubble.localhost/
-- https://jaeger.localhost/
+- https://idp.localhost/
+- https://uptrace.localhost/
 
 Whenever you want to deploy and test a change you have made, you can run:
 
@@ -39,13 +40,4 @@ r = requests.post("https://berg.localhost/api/openid/token", data={
     "password": "<api-key-here>"
 })
 print(r.json())
-# Prints:
-# {
-#     'access_token': 'ey...',
-#     'token_type': 'Bearer',
-#     'expires_in': 1800,
-#     'scope': 'profile roles openid offline_access',
-#     'id_token': 'ey...',
-#     'refresh_token': 'ey...'
-# }
 ```

@@ -21,6 +21,7 @@ public class SolveController(
     CtfConfig ctfConfig,
     BergDbContext dbContext,
     IChallengeService challengeService,
+    BergMetrics metrics,
     IMediator mediator) : ControllerBase
 {
     private readonly object _submitFlagLock = new();
@@ -187,6 +188,7 @@ public class SolveController(
                 logger.LogWarning("Player {PlayerId} has reached the daily submission limit", playerId);
                 Response.StatusCode = StatusCodes.Status429TooManyRequests;
                 Response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromDays(1)).ToString();
+                metrics.RateLimitedSubmission(challengeName, playerId);
                 return new ObjectResult(new ProblemDetails
                 {
                     Title = "Too many requests",
@@ -201,6 +203,7 @@ public class SolveController(
                 logger.LogWarning("Player {PlayerId} has reached the hourly submission limit", playerId);
                 Response.StatusCode = StatusCodes.Status429TooManyRequests;
                 Response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromHours(1)).ToString();
+                metrics.RateLimitedSubmission(challengeName, playerId);
                 return new ObjectResult(new ProblemDetails
                 {
                     Title = "Too many requests",
@@ -215,6 +218,7 @@ public class SolveController(
                 logger.LogWarning("Player {PlayerId} has reached the minute submission limit", playerId);
                 Response.StatusCode = StatusCodes.Status429TooManyRequests;
                 Response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromMinutes(1)).ToString();
+                metrics.RateLimitedSubmission(challengeName, playerId);
                 return new ObjectResult(new ProblemDetails
                 {
                     Title = "Too many requests",
@@ -260,6 +264,7 @@ public class SolveController(
                 });
                 dbContext.SaveChanges();
                 logger.LogInformation("Player {PlayerId} submitted an invalid flag for challenge {ChallengeName}", playerId, challengeName);
+                metrics.InvalidSubmission(challengeName, playerId);
                 return BadRequest(new ProblemDetails
                 {
                     Title = "Invalid flag",
@@ -277,6 +282,7 @@ public class SolveController(
             dbContext.Solves.Add(dbSolve);
             dbContext.SaveChanges();
             logger.LogInformation("Player {PlayerId} has solved challenge {ChallengeName}", playerId, challengeName);
+            metrics.ValidSubmission(challengeName, playerId);
 
             var freezeStart = ctfConfig.Scoring.FreezeStart;
             var freezeEnd = ctfConfig.Scoring.FreezeStart;

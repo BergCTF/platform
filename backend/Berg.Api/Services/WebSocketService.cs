@@ -35,6 +35,7 @@ public class WebSocketMessage<T> : WebSocketMessage
 
 public class WebSocketService(
     ILogger<ChallengeService> logger,
+    BergMetrics metrics,
     IHostApplicationLifetime applicationLifetime) : IWebSocketService
 {
     private readonly List<WebSocketConnection> _connections = [];
@@ -52,6 +53,7 @@ public class WebSocketService(
                 cancellationToken)
         };
         logger.LogDebug("WebSocket connection {Id} opened for player: {PlayerId}", connection.Id, playerId);
+        metrics.WebSocketStarted(playerId ?? Guid.Empty);
 
         _connections.Add(connection);
 
@@ -180,6 +182,7 @@ public class WebSocketService(
         if(_connections.Remove(connection))
         {
             logger.LogDebug("WebSocket connection {} closed", connection.Id);
+            metrics.WebSocketStopped(connection.PlayerId ?? Guid.Empty);
         }
         connection.CancellationTokenSource.Cancel();
         try

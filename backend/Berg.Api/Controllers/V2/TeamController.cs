@@ -12,6 +12,7 @@ using Team = Berg.Api.Models.V2.Team;
 using CurrentTeam = Berg.Api.Models.V2.CurrentTeam;
 using MediatR;
 using Berg.Api.Notifications;
+using Berg.Api.Services;
 
 namespace Berg.Api.Controllers.V2;
 
@@ -20,6 +21,7 @@ namespace Berg.Api.Controllers.V2;
 public partial class TeamController(
     ILogger<TeamController> logger,
     BergDbContext dbContext,
+    BergMetrics metrics,
     CtfConfig ctfConfig,
     IMediator mediator) : ControllerBase
 {
@@ -185,6 +187,7 @@ public partial class TeamController(
             }
         }, cancel);
         logger.LogInformation("Player {PlayerId} created team: {TeamId}", playerId, dbTeam.Id);
+        metrics.TeamCreated(playerId);
 
         return Ok(new CurrentTeam
         {
@@ -325,6 +328,7 @@ public partial class TeamController(
         if (newTeamPlayerIds.Count == 0)
         {
             dbContext.Teams.Remove(previousTeam);
+            metrics.TeamDeleted();
             logger.LogInformation("Deleting Team {TeamId} since there are no more players in it.", previousTeam.Id);
         }
         await dbContext.SaveChangesAsync();

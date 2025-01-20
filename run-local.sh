@@ -67,7 +67,18 @@ berg:
       email: "email"
   openTelemetry:
     grpc:
-      tracingEndpoint: http://jaeger-operator-jaeger-collector.jaeger.svc.cluster.local:4317
+      tracingEndpoint: http://uptrace.uptrace.svc.cluster.local:14317
+      loggingEndpoint: http://uptrace.uptrace.svc.cluster.local:14317
+      metricsEndpoint: http://uptrace.uptrace.svc.cluster.local:14317
+  extraEnv:
+    - name: OTEL_EXPORTER_OTLP_HEADERS
+      value: "uptrace-dsn=http://berg_uptrace_token@uptrace.uptrace.svc.cluster.local:14318?grpc=14317"
+    - name: OTEL_EXPORTER_OTLP_COMPRESSION
+      value: gzip
+    - name: OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION
+      value: BASE2_EXPONENTIAL_BUCKET_HISTOGRAM
+    - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+      value: DELTA
   ctf:
     start: "$(date --date 'now + 1 minute' -Iseconds)"
     end: "$(date --date 'now + 10 minutes' -Iseconds)"

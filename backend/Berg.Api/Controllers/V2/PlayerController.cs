@@ -2,6 +2,7 @@ using Berg.Api.Configuration;
 using Berg.Api.Db;
 using Berg.Api.Models.V2;
 using Berg.Api.Notifications;
+using Berg.Api.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +18,7 @@ namespace Berg.Api.Controllers.V2;
 [ApiExplorerSettings(GroupName = "v2")]
 public class PlayerController(CtfConfig ctfConfig,
     BergDbContext dbContext,
+    BergMetrics metrics,
     IMediator mediator) : ControllerBase
 {
     [HttpGet]
@@ -168,6 +170,8 @@ public class PlayerController(CtfConfig ctfConfig,
                 }
             });
         }
+
+        metrics.PlayerDeleted();
 
         return SignOut();
     }
