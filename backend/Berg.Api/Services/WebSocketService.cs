@@ -18,6 +18,7 @@ public class WebSocketConnection
     public Guid? PlayerId { get; set; }
     public required WebSocket WebSocket { get; set; }
     public required DateTime CreatedAt { get; set; }
+    public readonly SemaphoreSlim SendMessageSemaphore = new(1, 1);
     public required CancellationTokenSource CancellationTokenSource { get; set; }
 }
 
@@ -39,6 +40,7 @@ public class WebSocketService(
     IHostApplicationLifetime applicationLifetime) : IWebSocketService
 {
     private readonly List<WebSocketConnection> _connections = [];
+    private readonly Lock _connectionLock = new();
 
     public async Task HandleWebSocketConnection(WebSocket webSocket, Guid? playerId, CancellationToken cancellationToken)
     { 
@@ -55,7 +57,9 @@ public class WebSocketService(
         logger.LogDebug("WebSocket connection {Id} opened for player: {PlayerId}", connection.Id, playerId);
         metrics.WebSocketStarted(playerId ?? Guid.Empty);
 
-        _connections.Add(connection);
+        lock (_connectionLock) {
+            _connections.Add(connection);
+        }
 
         await SendPlayerIdMessage(connection);
 
@@ -131,6 +135,8 @@ public class WebSocketService(
     private async Task SendMessage(WebSocketConnection connection, byte[] messageBytes)
     {
         using var activity = Constants.BergActivitySource.StartActivity();
+
+        await connection.SendMessageSemaphore.WaitAsync().ConfigureAwait(false);;
         try
         {
             await connection.WebSocket.SendAsync(messageBytes, WebSocketMessageType.Text, true, CancellationToken.None);
@@ -139,6 +145,8 @@ public class WebSocketService(
         {
             logger.LogDebug(ex, "WebSocket connection {} had an exception calling SendMessage<T>()", connection.Id);
             await CloseConnection(connection);
+        } finally {
+            connection.SendMessageSemaphore.Release();
         }
     }
 
@@ -188,10 +196,12 @@ public class WebSocketService(
 
     private async Task CloseConnection(WebSocketConnection connection)
     {
-        if(_connections.Remove(connection))
-        {
-            logger.LogDebug("WebSocket connection {} closed", connection.Id);
-            metrics.WebSocketStopped(connection.PlayerId ?? Guid.Empty);
+        lock (_connectionLock) {
+            if(_connections.Remove(connection))
+            {
+                logger.LogDebug("WebSocket connection {} closed", connection.Id);
+                metrics.WebSocketStopped(connection.PlayerId ?? Guid.Empty);
+            }
         }
         connection.CancellationTokenSource.Cancel();
         try
