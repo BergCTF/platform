@@ -778,7 +778,8 @@ public class ChallengeService(
                                     // Prevent root users from reading files that do not have the respective
                                     // file permissions.
                                     "DAC_OVERRIDE",
-                                ]
+                                ],
+                                Add = container.AdditionalCapabilities ?? []
                             }
                         },
                         Name = container.Hostname,

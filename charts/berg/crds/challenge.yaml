@@ -126,6 +126,10 @@ spec:
                               mode:
                                 type: integer
                                 nullable: true
+                      additionalCapabilities:
+                        type: array
+                        items:
+                          type: string
                 attachments:
                   type: array
                   items:

@@ -21,4 +21,7 @@ public class V1ChallengeContainer
 
     [JsonPropertyName("ports")]
     public List<V1ChallengePort>? Ports { get; set; }
+
+    [JsonPropertyName("additionalCapabilities")]
+    public List<string>? AdditionalCapabilities { get; set; }
 }
