@@ -19,6 +19,12 @@ public class V1ChallengeContainer
     [JsonPropertyName("resourceLimits")]
     public Dictionary<string, string>? ResourceLimits { get; set; }
 
+    [JsonPropertyName("runtimeClassName")]
+    public string? RuntimeClassName { get; set; }
+
+    [JsonPropertyName("egressBandwidth")]
+    public string? EgressBandwidth { get; set; }
+
     [JsonPropertyName("ports")]
     public List<V1ChallengePort>? Ports { get; set; }
 

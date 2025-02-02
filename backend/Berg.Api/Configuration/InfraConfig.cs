@@ -15,6 +15,8 @@ public class InfraConfig
     public Guid PlayerIdNamespace { get; set; } = Guid.Empty;
     public List<string>? RedirectUris { get; set; }
     public TimeSpan ChallengeInstanceTimeout { get; set; } = TimeSpan.FromHours(2);
+    public string? ChallengeRuntimeClassName { get; set; }
+    public string ChallengeEgressBandwidth { get; set; } = "1M";
     public string? HandoutServiceUrl { get; set; }
     public string? OpenTelemetryGrpcTracingEndpoint { get; set; }
     public string? OpenTelemetryGrpcMetricsEndpoint { get; set; }

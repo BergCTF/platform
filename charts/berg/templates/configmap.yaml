@@ -29,9 +29,13 @@ data:
         "pullSecretName": {{ .Values.berg.pullSecretName | quote }},
         "challengeImagePullPolicy": {{ .Values.berg.challengeImagePullPolicy | quote }},
         "challengeInstanceTimeout": {{ .Values.berg.challengeInstanceTimeout | quote }},
-        {{ if .Values.handout.enabled }}
+        {{- if .Values.berg.challengeRuntimeClassName }}
+        "challengeRuntimeClassName": {{ .Values.berg.challengeRuntimeClassName | quote }},
+        {{- end }}
+        "challengeEgressBandwidth": {{ .Values.berg.challengeEgressBandwidth | quote }},
+        {{- if .Values.handout.enabled }}
         "handoutServiceUrl": "http://{{ include "berg.fullname" . }}-handout",
-        {{ end }}
+        {{- end }}
         "openTelemetryGrpcTracingEndpoint": {{ .Values.berg.openTelemetry.grpc.tracingEndpoint | toJson }},
         "openTelemetryGrpcMetricsEndpoint": {{ .Values.berg.openTelemetry.grpc.metricsEndpoint | toJson }},
         "openTelemetryGrpcLoggingEndpoint": {{ .Values.berg.openTelemetry.grpc.loggingEndpoint | toJson }},

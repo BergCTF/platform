@@ -46,7 +46,7 @@ berg:
     repository: "kind.localhost/berg/api"
     tag: local
   domain: berg.localhost
-  pullSecretName: "berg-pull-secret"
+  pullSecretName: ""
   challengeImagePullPolicy: "IfNotPresent"
   challengeInstanceTimeout: "0.00:01:00"
   logLevel:

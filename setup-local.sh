@@ -71,6 +71,8 @@ image:
   pullPolicy: IfNotPresent
 operator:
   replicas: 1
+bandwidthManager:
+  enabled: true
 hubble:
   enabled: true
   relay:

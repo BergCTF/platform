@@ -761,6 +761,7 @@ public class ChallengeService(
                 AutomountServiceAccountToken = false,
                 TerminationGracePeriodSeconds = 0,
                 ImagePullSecrets = [new(infraConfig.PullSecretName)],
+                RuntimeClassName = container.RuntimeClassName ?? infraConfig.ChallengeRuntimeClassName,
                 Containers =
                 [
                     new()
@@ -895,7 +896,10 @@ public class ChallengeService(
                         Metadata = new V1ObjectMeta
                         {
                             Name = container.Hostname,
-                            Labels = labels
+                            Labels = labels,
+                            Annotations = new Dictionary<string, string>() {
+                                { "kubernetes.io/egress-bandwidth", container.EgressBandwidth ?? infraConfig.ChallengeEgressBandwidth }
+                            }
                         },
                         Spec = podSpec
                     }
