@@ -1,0 +1,51 @@
+<div class="cover-whole-page">
+    <div class="container pb-5">
+        <div class="row mt-3 mb-3">
+            <h1>Player Attributes</h1>
+            <p>Please complete your player profile here.</p>
+        </div>
+        @for (currentAttr of currentPlayerAttributes; track currentAttr) {
+            <div class="mb-5">
+                <div class="row">
+                    <h3>
+                        @if (currentAttr.attr.public) {
+                            <span><i class="bi bi-eye" ngbTooltip="Your selection will be visible to other players."></i></span>
+                        } @else {
+                            <span><i class="bi bi-eye-slash" ngbTooltip="Only you and the organisers will see your selection."></i></span>
+                        }
+                        {{ currentAttr.attr.title }}
+                        @if (currentAttr.attr.required) {
+                            <span class="text-danger"> *</span>
+                        }
+                    </h3>
+                    <p>{{ currentAttr.attr.description }}</p>
+                </div>
+                @for (value of currentAttr.attr.values; track value) {
+                    <div class="row mb-2">
+                        <div class="col">
+                            <input type="radio" class="btn-check" [checked]="value.value == currentAttr.selectedValue" name="{{ currentAttr.attr.name + '_' + value.value }}" autocomplete="off" >
+                            <label class="btn btn-outline-secondary full-width" for="{{ currentAttr.attr.name + '_' + value.value }}" (click)="setPlayerAttribute(currentAttr.attr.name, value.value)">
+                                <p class="m-2">
+                                    <b>{{ value.title }}</b>
+                                    <br/>
+                                    {{ value.description }}
+                                </p>
+                            </label>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        <div class="row">
+            <div class="col">
+                @if (hasMissingRequiredAttributes) {
+                    <div class="alert alert-warning" role="alert">
+                        You must fill out all required information to continue.
+                    </div>
+                } @else {
+                    <button routerLink="/challenges" type="button" class="btn btn-success full-width">Continue <i class="bi bi-arrow-right"></i></button>
+                }
+            </div>
+        </div>
+    </div>
+</div>

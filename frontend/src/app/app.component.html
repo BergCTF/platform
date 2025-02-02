@@ -30,7 +30,8 @@
             {{ currentPlayer.name }}
           </a>
           <div ngbDropdownMenu class="dropdown-menu">
-            <a ngbDropdownItem [routerLink]="['/players', currentPlayer.id]">Profile</a>
+            <a ngbDropdownItem [routerLink]="['/players', currentPlayer.id]">Stats</a>
+            <a ngbDropdownItem routerLink="/player-attributes">Attributes</a>
             <a ngbDropdownItem routerLink="/profile-settings">Settings</a>
             <a ngbDropdownItem (click)="dataService.logout()">Logout</a>
           </div>

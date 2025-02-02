@@ -16,9 +16,17 @@ export class Metadata {
 
 export class PlayerAttribute {
   public name = '';
+  public title = '';
+  public description = '';
   public public = true;
   public required = false;
-  public values: string[] = [];
+  public values: PlayerAttributeValue[] = [];
+}
+
+export class PlayerAttributeValue {
+  public value = '';
+  public title = '';
+  public description = '';
 }
 
 export class Challenge {

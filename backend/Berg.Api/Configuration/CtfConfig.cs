@@ -17,7 +17,16 @@ public class CtfConfig
 public class PlayerAttribute
 {
     public string Name { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Description { get; set; } = "";
     public bool Public { get; set; } = false;
     public bool Required { get; set; } = false;
-    public List<string> Values { get; set; } = [];
+    public List<PlayerAttributeValue> Values { get; set; } = [];
+}
+
+public class PlayerAttributeValue
+{
+    public string Value { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Description { get; set; } = "";
 }

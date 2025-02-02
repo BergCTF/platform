@@ -94,7 +94,7 @@ public class PlayerController(CtfConfig ctfConfig,
         {
             if(!configAttributesByName.TryGetValue(attr.Key, out var configAttr))
                 return BadRequest(new ProblemDetails { Title = "Bad Request", Detail = $"Invalid attribute name: {attr.Key}"});
-            if (!configAttr.Values.Contains(attr.Value))
+            if (!configAttr.Values.Select(v => v.Value).Contains(attr.Value))
                 return BadRequest(new ProblemDetails { Title = "Bad Request", Detail = $"Invalid attribute value: {attr.Value}"});
         }
 

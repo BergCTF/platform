@@ -6,6 +6,7 @@ import { PrettyDateComponent } from '../../widgets/pretty-date/pretty-date.compo
 import { map, Subscription } from 'rxjs';
 import { PlayerDetail } from 'src/app/model';
 import { KeyValuePipe } from '@angular/common';
+import { Metadata } from 'src/app/api-model';
 
 @Component({
     selector: 'app-player',
@@ -17,9 +18,11 @@ export class PlayerDetailComponent implements OnInit, OnDestroy {
 
   private playerDetailSubscription: Subscription | null = null;
   private areTeamsEnabledSubscription: Subscription | null = null;
+  private metadataSubscription: Subscription | null = null;
 
   playerDetail: PlayerDetail | null = null;
   areTeamsEnabled = false;
+  metadata = new Metadata();
 
   constructor(
     public dataService: DataService,
@@ -35,10 +38,31 @@ export class PlayerDetailComponent implements OnInit, OnDestroy {
     this.areTeamsEnabledSubscription = this.dataService.areTeamsEnabled().subscribe(areTeamsEnabled => {
       this.areTeamsEnabled = areTeamsEnabled;
     });
+    this.metadataSubscription = this.dataService.metadata.subscribe(metadata => {
+      this.metadata = metadata;
+    });
   }
 
   ngOnDestroy(): void {
     this.playerDetailSubscription?.unsubscribe();
     this.areTeamsEnabledSubscription?.unsubscribe();
+    this.metadataSubscription?.unsubscribe();
+  }
+
+  getAttributeTitle(name: string) {
+    return this.metadata.playerAttributes.find(a => a.name == name)?.title ?? name;
+  }
+
+  getAttributeValueTitle(name: string, value: string) {
+    return this.metadata.playerAttributes.find(a => a.name == name)?.values.find(v => v.value == value)?.title ?? value;
+  }
+
+  hasAttributes() {
+    if (this.playerDetail) {
+      if (Object.keys(this.playerDetail.attributes).length > 0) {
+        return true;
+      }
+    }
+    return false;
   }
 }

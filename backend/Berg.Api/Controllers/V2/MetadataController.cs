@@ -28,9 +28,16 @@ public class MetadataController(CtfConfig ctfConfig) : ControllerBase
             PlayerAttributes = ctfConfig.PlayerAttributes?.Select(a => new Models.V2.PlayerAttribute
             {
                 Name = a.Name,
+                Title = a.Title,
+                Description = a.Description,
                 Public = a.Public,
                 Required = a.Required,
-                Values = a.Values,
+                Values = a.Values?.Select(v => new Models.V2.PlayerAttributeValue
+                {
+                    Value = v.Value,
+                    Title = v.Title,
+                    Description = v.Description
+                }).ToList() ?? [],
             }).ToList() ?? [],
             Teams = ctfConfig.Teams,
             ChallengeMaximumValue = ctfConfig.Scoring.MaximumScore,

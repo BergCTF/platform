@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
-import { BehaviorSubject, Observable, ReplaySubject, Subject, combineLatest, distinctUntilChanged, filter, map, mergeMap, retry, share, shareReplay, take, tap, timer } from 'rxjs';
+import { BehaviorSubject, Observable, ReplaySubject, combineLatest, distinctUntilChanged, filter, map, mergeMap, retry, share, shareReplay, take, tap, timer } from 'rxjs';
 import { Challenge, CurrentPlayer, Instance, Metadata, Page, Player, Solve, Team, WebSocketMessage } from '../api-model';
 import { LoginResponse, OidcSecurityService } from 'angular-auth-oidc-client';
 import { ChallengeDetail, ChallengeDetailCategory, PlayerDetail, ScoreboardChallengeByCategory as ScoreboardChallengesByCategory, ScoreboardChallengeEntry, ScoreboardRanking, SolveDetail, TeamDetail, TeamSolveDetail, ActivityEntry } from '../model';
@@ -68,7 +68,7 @@ export class DataService {
 
         if(isAuthenticated) {
           this._currentPlayerId.next(userData["sub"]);
-          this.refreshCurrentPlayer();
+          this.refreshCurrentPlayer().subscribe();
         } else {
           this._currentPlayerId.next(null);
         }
@@ -164,6 +164,23 @@ export class DataService {
       return false;
     }), distinctUntilChanged()).subscribe(freezeEnded => {
       this._hasFreezeEnded.next(freezeEnded);
+    });
+
+    combineLatest([this.metadata, this.currentPlayer]).subscribe(params => {
+      const [metadata, currentPlayer] = params;
+
+      if (!currentPlayer)
+        return;
+
+      let requiredAttributes = metadata.playerAttributes.filter(a => a.required);
+      let playerAttributes = new Set(Object.keys(currentPlayer.attributes));
+      let missingAttributes = requiredAttributes.filter(a => !playerAttributes.has(a.name));
+
+      // Redirect to attribute page if the current player
+      // does not have all required attributes set.
+      if (missingAttributes.length != 0) {
+        router.navigateByUrl('/player-attributes');
+      }
     });
   }
 
@@ -315,10 +332,10 @@ export class DataService {
     }));
   }
 
-  refreshCurrentPlayer() {
-    this.apiService.getCurrentPlayer().subscribe(player => {
+  refreshCurrentPlayer(): Observable<CurrentPlayer | null> {
+    return this.apiService.getCurrentPlayer().pipe(tap(player => {
       this._currentPlayer.next(Object.freeze(player));
-    });
+    }));
   }
 
   refreshCurrentTeamJoinToken() {
@@ -372,6 +389,10 @@ export class DataService {
 
   leaveTeam() {
     return this.apiService.leaveCurrentTeam();
+  }
+
+  setPlayerAttributes(attrs: Record<string, string>) {
+    return this.apiService.setCurrentPlayerAttributes(attrs);
   }
 
   downloadFile(relativeUrl: string, filename: string) {
@@ -611,6 +632,7 @@ export class DataService {
     var playerDetail = new PlayerDetail();
     playerDetail.id = player.id;
     playerDetail.name = player.name;
+    playerDetail.attributes = player.attributes;
     playerDetail.team = teams.find(t => t.players.includes(player.id)) || null;
     playerDetail.solves = solves.filter(s => s.playerId == player.id).map(s => this.toSolveDetail(s, challenges.find(c => c.challenge.name == s.challengeName)?.challenge || null, players, teams));
     playerDetail.solves.sort((a, b) => b.solvedAt.getTime() - a.solvedAt.getTime());

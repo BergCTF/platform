@@ -11,6 +11,8 @@ import { ScoreboardComponent } from './pages/scoreboard/scoreboard.component';
 import { ActivityComponent } from './pages/activity/activity.component';
 import { combineLatest, map, Observable, of, take } from 'rxjs';
 import { DataService } from './services/data.service';
+import { playerAttributeGuard } from './guards/player-attribute.guard';
+import { PlayerAttributesComponent } from './pages/player-attributes/player-attributes.component';
 
 const challengeTitleResolver: ResolveFn<string> = (
   route: ActivatedRouteSnapshot
@@ -90,17 +92,18 @@ function prefixedTitleResolver(title: string): ResolveFn<string> {
 }
 
 const routes: Routes = [
-  { path: 'challenges', component: ChallengesComponent, title: prefixedTitleResolver('Challenges'), runGuardsAndResolvers: "always" },
-  { path: 'challenges/:name', component: ChallengeDetailComponent, title: challengeTitleResolver, runGuardsAndResolvers: "always" },
-  { path: 'profile-settings', component: ProfileSettingsComponent, title: prefixedTitleResolver('Profile Settings'), runGuardsAndResolvers: "always" },
-  { path: 'players/:uuid', component: PlayerDetailComponent, title: playerTitleResolver, runGuardsAndResolvers: "always" },
-  { path: 'player/:uuid', component: PlayerDetailComponent, title: playerTitleResolver, runGuardsAndResolvers: "always" },
-  { path: 'teams/:uuid', component: TeamDetailComponent, title: teamTitleResolver, runGuardsAndResolvers: "always" },
-  { path: 'team/:uuid', component: TeamDetailComponent, title: teamTitleResolver, runGuardsAndResolvers: "always" },
-  { path: 'team', component: TeamComponent, title: prefixedTitleResolver('Team Settings'), runGuardsAndResolvers: "always" },
-  { path: 'activity', component: ActivityComponent, title: prefixedTitleResolver('Activity'), runGuardsAndResolvers: "always" },
-  { path: 'scoreboard', component: ScoreboardComponent, title: prefixedTitleResolver('Scoreboard'), runGuardsAndResolvers: "always" },
-  { path: '**', component: DynamicPageComponent, title: dynamicPageTitleResolver, runGuardsAndResolvers: "always" },
+  { path: 'challenges', component: ChallengesComponent, title: prefixedTitleResolver('Challenges'), canActivate: [playerAttributeGuard], runGuardsAndResolvers: "always" },
+  { path: 'challenges/:name', component: ChallengeDetailComponent, title: challengeTitleResolver, canActivate: [playerAttributeGuard], runGuardsAndResolvers: "always" },
+  { path: 'profile-settings', component: ProfileSettingsComponent, title: prefixedTitleResolver('Profile Settings'), canActivate: [playerAttributeGuard], runGuardsAndResolvers: "always" },
+  { path: 'player-attributes', component: PlayerAttributesComponent, title: prefixedTitleResolver('Player Attributes'), canActivate: [], runGuardsAndResolvers: "always" },
+  { path: 'players/:uuid', component: PlayerDetailComponent, title: playerTitleResolver, canActivate: [playerAttributeGuard], runGuardsAndResolvers: "always" },
+  { path: 'player/:uuid', component: PlayerDetailComponent, title: playerTitleResolver, canActivate: [playerAttributeGuard], runGuardsAndResolvers: "always" },
+  { path: 'teams/:uuid', component: TeamDetailComponent, title: teamTitleResolver, canActivate: [playerAttributeGuard], runGuardsAndResolvers: "always" },
+  { path: 'team/:uuid', component: TeamDetailComponent, title: teamTitleResolver, canActivate: [playerAttributeGuard], runGuardsAndResolvers: "always" },
+  { path: 'team', component: TeamComponent, title: prefixedTitleResolver('Team Settings'), canActivate: [playerAttributeGuard], runGuardsAndResolvers: "always" },
+  { path: 'activity', component: ActivityComponent, title: prefixedTitleResolver('Activity'), canActivate: [playerAttributeGuard], runGuardsAndResolvers: "always" },
+  { path: 'scoreboard', component: ScoreboardComponent, title: prefixedTitleResolver('Scoreboard'), canActivate: [playerAttributeGuard], runGuardsAndResolvers: "always" },
+  { path: '**', component: DynamicPageComponent, title: dynamicPageTitleResolver, canActivate: [playerAttributeGuard], runGuardsAndResolvers: "always" },
 ];
 
 @NgModule({

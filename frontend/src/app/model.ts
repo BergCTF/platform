@@ -3,6 +3,7 @@ import { Challenge, Player, Team } from "./api-model";
 export class PlayerDetail {
     public id: string = '';
     public name: string = '';
+    public attributes: Record<string, string> = {};
     public team: Team | null = null;
     public score: number = 0;
     public solves: SolveDetail[] = [];

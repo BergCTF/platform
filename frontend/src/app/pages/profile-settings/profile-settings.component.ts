@@ -54,7 +54,7 @@ export class ProfileSettingsComponent implements OnInit, OnDestroy {
     this.apiService.resetApiKey().subscribe(key => {
       this.apiKey = key;
       this.apiKeyPlaceholder = null;
-      this.dataService.refreshCurrentPlayer();
+      this.dataService.refreshCurrentPlayer().subscribe();
     });
   }
 
