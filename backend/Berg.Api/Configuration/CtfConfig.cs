@@ -4,6 +4,7 @@ public class CtfConfig
 {
     public string EventName { get; set; } = "";
     public string EventOrganiser { get; set; } = "";
+    public string EventLogoUrl { get; set; } = "";
     public DateTime Start { get; set; }
     public DateTime End { get; set; }
     public bool Teams { get; set; } = false;

@@ -13,6 +13,9 @@ public class Metadata
     [JsonPropertyName("eventOrganiser")]
     public required string EventOrganiser { get; set; }
 
+    [JsonPropertyName("eventLogoUrl")]
+    public required string EventLogoUrl { get; set; }
+
     [JsonPropertyName("start")]
     public DateTime Start { get; set; }
 

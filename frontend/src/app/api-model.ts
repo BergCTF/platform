@@ -2,6 +2,7 @@ export class Metadata {
   public version = '';
   public eventName = '';
   public eventOrganiser = '';
+  public eventLogoUrl = '';
   public start = '';
   public end = '';
   public allowAnonymousAccess = true;

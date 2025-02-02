@@ -11,7 +11,7 @@
   <div class="container">
     <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start navbar navbar-expand-lg navbar-95">
       <a routerLink="/" class="d-flex align-items-center mb-2 mb-lg-0 text-primary text-decoration-none">
-        <img class="bi me-2" width="32" height="32" src="/assets/img/logo-small.png" alt="Logo" />
+        <img class="bi me-2" width="32" height="32" [src]="metadata?.eventLogoUrl" alt="Logo" />
       </a>
       <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
         @for (page of pages; track page) {
