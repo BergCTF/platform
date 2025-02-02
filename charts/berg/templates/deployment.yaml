@@ -19,11 +19,15 @@ spec:
       labels:
         {{- include "berg.selectorLabels" . | nindent 8 }}
         component: api
+      {{- if .Values.berg.createConfigMap }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      {{- end }}
     spec:
-      {{ if .Values.berg.pullSecretName }}
+      {{- if .Values.berg.pullSecretName }}
       imagePullSecrets:
         - name: {{ .Values.berg.pullSecretName }}
-      {{ end }}
+      {{- end }}
       serviceAccountName: {{ include "berg.fullname" . }}
       containers:
         - name: berg-api
@@ -49,16 +53,20 @@ spec:
           {{- end }}
           ports:
             - containerPort: 8080
+          {{- if .Values.berg.createConfigMap }}
           volumeMounts:
             - name: appsettings
               mountPath: /app/appsettings.json
               subPath: appsettings.json
+          {{- end }}
           resources:
             {{- toYaml .Values.berg.resources | nindent 12 }}
+      {{- if .Values.berg.createConfigMap }}
       volumes:
         - name: appsettings
           configMap:
             name: {{ include "berg.fullname" . }}-appsettings
+      {{- end }}
 {{ if .Values.frontend.enabled }}
 ---
 apiVersion: apps/v1
