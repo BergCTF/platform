@@ -5,6 +5,7 @@ public class InfraConfig
     public string ChallengeDomain { get; set; } = "localhost";
     public string PlatformDomain { get; set; } = "localhost";
     public string GatewayName { get; set; } = "";
+    public string GatewayNamespace { get; set; } = "";
     public string PullSecretName { get; set; } = "";
     public string ChallengeImagePullPolicy { get; set; } = "Always";
     public int ChallengeHttpPort { get; set; } = 1337;

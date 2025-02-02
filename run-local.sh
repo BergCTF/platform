@@ -25,8 +25,13 @@ echo "Installing berg"
 cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait berg . -n berg -f -
 gateway:
   domain: berg.localhost
-  tlsSecretName: "berg-gateway-tls"
-  gatewayClassName: "traefik"
+  name: "traefik-gateway"
+  namespace: "traefik"
+  httpListenerName: "web"
+  httpsListenerName: "websecure"
+  httpRouteRedirectListenerName: "http-chall"
+  httpRouteListenerName: "https-chall"
+  tlsRouteListenerName: "tls-chall"
 frontend:
   image:
     repository: "kind.localhost/berg/frontend"
@@ -41,7 +46,6 @@ berg:
     repository: "kind.localhost/berg/api"
     tag: local
   domain: berg.localhost
-  tlsSecretName: "berg-gateway-tls"
   pullSecretName: "berg-pull-secret"
   challengeImagePullPolicy: "IfNotPresent"
   challengeInstanceTimeout: "0.00:01:00"
@@ -137,9 +141,6 @@ pages:
     index: 1
     content: |
       Extra Page Content
-
-postgresql:
-  enabled: false
 EOF
 
 echo "Upgrading CRD's"

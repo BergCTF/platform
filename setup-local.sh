@@ -96,7 +96,41 @@ globalArguments:
   - "--global.checknewversion=false"
   - "--global.sendanonymoususage=false"
 gateway:
-  enabled: false
+  enabled: true
+  name: "traefik-gateway"
+  listeners:
+    web:
+      port: 8000
+      protocol: HTTP
+      namespacePolicy: All
+    websecure:
+      port: 8443
+      protocol: HTTPS
+      namespacePolicy: All
+      certificateRefs:
+        - kind: Secret
+          name: berg-gateway-tls
+      mode: Terminate
+    http-chall:
+      port: 1337
+      protocol: HTTP
+      namespacePolicy: All
+    https-chall:
+      port: 1337
+      protocol: HTTPS
+      namespacePolicy: All
+      certificateRefs:
+        - kind: Secret
+          name: berg-gateway-tls
+      mode: Terminate
+    tls-chall:
+      port: 31337
+      protocol: TLS
+      namespacePolicy: All
+      certificateRefs:
+        - kind: Secret
+          name: berg-gateway-tls
+      mode: Terminate
 gatewayClass:
   enabled: true
 providers:
@@ -110,8 +144,12 @@ service:
   type: NodePort
 ports:
   web:
+    port: 8000
+    exposedPort: 80
     nodePort: 30080
   websecure:
+    port: 8443
+    exposedPort: 443
     nodePort: 30443
   http-chall:
     protocol: TCP
@@ -150,9 +188,6 @@ helm --kube-context kind-berg-dev-cluster install --wait \
 echo "Deploying mkcert private key to cert-manager namespace"
 kubectl --context kind-berg-dev-cluster create secret tls mkcert --namespace cert-manager --cert="${XDG_DATA_HOME:-$HOME/.local/share}/mkcert/rootCA.pem" --key="${XDG_DATA_HOME:-$HOME/.local/share}/mkcert/rootCA-key.pem"
 
-echo "Create berg namespace"
-kubectl --context kind-berg-dev-cluster create ns berg || true
-
 # Configure mkcert ClusterIssuer and cert
 cat <<EOF | kubectl --context kind-berg-dev-cluster create -f -
 apiVersion: cert-manager.io/v1
@@ -167,7 +202,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: berg-gateway-cert
-  namespace: berg
+  namespace: traefik
 spec:
   secretName: berg-gateway-tls
   commonName: localhost
@@ -214,6 +249,9 @@ ingress:
         - idp.localhost
       secretName: idp-tls
 EOF
+
+echo "Create berg namespace"
+kubectl --context kind-berg-dev-cluster create ns berg || true
 
 echo "Installing postgres db"
 cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait berg-postgresql bitnami/postgresql -n berg -f -
@@ -281,7 +319,3 @@ uptrace:
           - service_name
           - host_name
 EOF
-
-echo "Fetching helm dependencies"
-cd charts/berg
-helm dependency update

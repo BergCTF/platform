@@ -8,7 +8,7 @@ metadata:
     component: api
 spec:
   strategy:
-    type: Recreate
+    type: RollingUpdate
   replicas: 1
   selector:
     matchLabels:
@@ -70,7 +70,7 @@ metadata:
     component: frontend
 spec:
   strategy:
-    type: Recreate
+    type: RollingUpdate
   replicas: 1
   selector:
     matchLabels:
@@ -93,7 +93,7 @@ spec:
           ports:
             - containerPort: 80
           resources:
-            {{- toYaml .Values.berg.resources | nindent 12 }}
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
 {{ end }}
 {{ if .Values.handout.enabled }}
 ---
@@ -106,7 +106,7 @@ metadata:
     component: handout
 spec:
   strategy:
-    type: Recreate
+    type: RollingUpdate
   replicas: 1
   selector:
     matchLabels:
@@ -129,5 +129,5 @@ spec:
           ports:
             - containerPort: 80
           resources:
-            {{- toYaml .Values.berg.resources | nindent 12 }}
+            {{- toYaml .Values.handout.resources | nindent 12 }}
 {{ end }}

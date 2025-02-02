@@ -542,6 +542,14 @@ public class ChallengeService(
             foreach (var httpRoutePort in httpRoutePorts)
             {
                 var serviceGuid = Guid.NewGuid();
+
+                if (httpRoutePort.Name != null)
+                {
+                    serviceEndpoints.Remove(httpRoutePort.Name);
+                    serviceEndpoints.Add(httpRoutePort.Name,
+                        $"{serviceGuid}.{infraConfig.ChallengeDomain}:{infraConfig.ChallengeHttpPort}");
+                }
+
                 var httpRoute = new V1HTTPRoute
                 {
                     Metadata = new V1ObjectMeta
@@ -568,7 +576,7 @@ public class ChallengeService(
                                 Kind = "Gateway",
                                 Name = infraConfig.GatewayName,
                                 SectionName = infraConfig.ChallengeHttpListenerName,
-                                Namespace = _bergNamespace,
+                                Namespace = infraConfig.GatewayNamespace,
                             }
                         ],
                         Rules =
@@ -588,12 +596,6 @@ public class ChallengeService(
                         ]
                     }
                 };
-                if (httpRoutePort.Name != null)
-                {
-                    serviceEndpoints.Remove(httpRoutePort.Name);
-                    serviceEndpoints.Add(httpRoutePort.Name,
-                        $"{serviceGuid}.{infraConfig.ChallengeDomain}:{infraConfig.ChallengeHttpPort}");
-                }
                 try
                 {
                     await _httpRouteClient.CreateNamespacedAsync(httpRoute, ns.Name(), cancel: cancellationToken);
@@ -638,7 +640,7 @@ public class ChallengeService(
                                 Kind = "Gateway",
                                 Name = infraConfig.GatewayName,
                                 SectionName = infraConfig.ChallengeTlsListenerName,
-                                Namespace = _bergNamespace,
+                                Namespace = infraConfig.GatewayNamespace,
                             }
                         ],
                         Rules =

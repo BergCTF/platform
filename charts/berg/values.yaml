@@ -4,10 +4,16 @@ fullnameOverride: ""
 
 gateway:
   domain: ""
-  gatewayClassName: ""
-  tlsSecretName: ""
-  httpPort: 1337
-  tlsPort: 31337
+  name: "default-gateway"
+  namespace: "default"
+  httpListenerName: "http"
+  httpsPort: 443
+  httpsListenerName: "https"
+  httpRoutePort: 1337
+  httpRouteRedirectListenerName: "http-chall"
+  httpRouteListenerName: "https-chall"
+  tlsRoutePort: 31337
+  tlsRouteListenerName: "tls-chall"
 
 frontend:
   enabled: true
@@ -16,6 +22,13 @@ frontend:
     repository: "ghcr.io/norelect/berg/frontend"
     imagePullPolicy: IfNotPresent
     tag: ""
+  resources:
+    limits:
+      cpu: "1"
+      memory: "500Mi"
+    requests:
+      cpu: "0.2"
+      memory: "100Mi"
 
 handout:
   enabled: false
@@ -24,6 +37,13 @@ handout:
     repository: "ghcr.io/norelect/berg/handouts"
     imagePullPolicy: IfNotPresent
     tag: ""
+  resources:
+    limits:
+      cpu: "1"
+      memory: "500Mi"
+    requests:
+      cpu: "0.2"
+      memory: "100Mi"
 
 berg:
   # additional env vars to add to the berg api server instance
@@ -31,7 +51,6 @@ berg:
   # additional env vars from secrets or configmaps
   extraEnvFrom: []
   domain: ""
-  tlsSecretName: ""
   image:
     repository: "ghcr.io/norelect/berg/api"
     imagePullPolicy: IfNotPresent
@@ -125,24 +144,3 @@ pages:
     index: 0
     content: |
       Welcome to your berg installation!
-
-postgresql:
-  enabled: true
-  auth:
-    username: berg
-    password: ""
-    postgresPassword: ""
-    database: berg
-    volumePermissions:
-      enabled: true
-  persistence:
-    storageClass: ""
-    accessModes: [ReadWriteOnce]
-    size: 20Gi
-  resources:
-    limits:
-      cpu: "2"
-      memory: "2Gi"
-    requests:
-      cpu: "0.5"
-      memory: "300Mi"
