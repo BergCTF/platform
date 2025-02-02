@@ -245,27 +245,12 @@ public class OAuthController(
 
             var discordUserId = ulong.Parse(userId ?? "0");
 
-            if (discordConfig.GuildIdRequirement != 0 ||
+            if (discordConfig.PlayerGuildId != 0 && discordConfig.PlayerRoleId != 0 ||
                 (discordConfig.AuthorGuildId != 0 && discordConfig.AuthorRoleId != 0) ||
                 (discordConfig.AdminGuildId != 0 && discordConfig.AdminRoleId != 0))
             {
                 var discordClient = new DiscordRestClient();
                 await discordClient.LoginAsync(Discord.TokenType.Bot, discordConfig.BotToken);
-
-                if (discordConfig.GuildIdRequirement != 0)
-                {
-                    // Apply discord server membership check
-                    var guildUser = await discordClient.GetGuildUserAsync(discordConfig.GuildIdRequirement, discordUserId);
-                    if (guildUser == null)
-                    {
-                        logger.LogDebug("Prevented discord user {DiscordId} from logging in because the guild membership requirement is not met.", discordUserId);
-                        return Results.Problem(new ProblemDetails
-                        {
-                            Title = "Missing discord server membership",
-                            Detail = "This event requires players to be members of a specific discord server."
-                        });
-                    }
-                }
 
                 if (discordConfig.AuthorGuildId != 0 && discordConfig.AuthorRoleId != 0)
                 {
@@ -287,11 +272,38 @@ public class OAuthController(
                     }
                 }
 
+                if (discordConfig.PlayerGuildId != 0 && discordConfig.PlayerRoleId != 0)
+                {
+                    // Apply discord server membership check
+                    var guildUser = await discordClient.GetGuildUserAsync(discordConfig.PlayerGuildId, discordUserId);
+                    if (guildUser == null && roles.Count == 0)
+                    {
+                        logger.LogDebug("Prevented discord user {DiscordId} from logging in because the the player is not part of the required discord guild.", discordUserId);
+                        return Results.Problem(new ProblemDetails
+                        {
+                            Title = "Missing discord server membership",
+                            Detail = "This event requires players to be members of a specific discord server."
+                        });
+                    }
+
+                    if (guildUser != null && guildUser.RoleIds.Contains(discordConfig.PlayerRoleId))
+                    {
+                        roles.Add(Constants.Roles.Player);
+                    }
+
+                    if (roles.Count == 0)
+                    {
+                        logger.LogDebug("Prevented discord user {DiscordId} from logging in because the player is missing the required discord role.", discordUserId);
+                        return Results.Problem(new ProblemDetails
+                        {
+                            Title = "Missing discord server role",
+                            Detail = "This event requires players to be members of a specific discord role."
+                        });
+                    }
+                }
+
                 await discordClient.LogoutAsync();
             }
-
-            // Every user that logs in with discord gets at least the player role
-            roles.Add(Constants.Roles.Player);
         }
 
         if (string.IsNullOrEmpty(userId))
@@ -316,6 +328,14 @@ public class OAuthController(
             {
                 Title = "Missing claim",
                 Detail = "The value for the user email claim is missing."
+            });
+        }
+
+        if (roles.Count == 0) {
+            return Results.Problem(new ProblemDetails
+            {
+                Title = "Missing role",
+                Detail = "You need at least one role to continue."
             });
         }
 

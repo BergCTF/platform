@@ -132,7 +132,7 @@ public static class OpenIddictBuilder
     {
         var keyProvider = infraConfig.UseKubernetesSecretKeyProvider ? new KubernetesSecretKeyProvider(kubernetes) : null;
 
-        if ((discordConfig.GuildIdRequirement != 0 ||
+        if (((discordConfig.PlayerGuildId != 0 && discordConfig.PlayerRoleId != 0) ||
             (discordConfig.AuthorGuildId != 0 && discordConfig.AuthorRoleId != 0) ||
             (discordConfig.AdminGuildId != 0 && discordConfig.AdminRoleId != 0)) && string.IsNullOrEmpty(discordConfig.BotToken))
         {
