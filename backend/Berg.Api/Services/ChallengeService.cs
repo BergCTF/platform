@@ -777,12 +777,12 @@ public class ChallengeService(
                             AllowPrivilegeEscalation = true,
                             Capabilities = new V1Capabilities
                             {
-                                Drop = [
+                                Add = container.AdditionalCapabilities ?? [],
+                                Drop = [.. new HashSet<string>([
                                     // Prevent root users from reading files that do not have the respective
-                                    // file permissions.
+                                    // file permissions unless the container explicitly has this capability added.
                                     "DAC_OVERRIDE",
-                                ],
-                                Add = container.AdditionalCapabilities ?? []
+                                ]).Except(new HashSet<string>(container.AdditionalCapabilities ?? []))],
                             }
                         },
                         Name = container.Hostname,

@@ -25,6 +25,8 @@ spec:
       dynamicFlag:
         executable:
           path: /printflag
+      additionalCapabilities:
+        - DAC_OVERRIDE
   attachments:
     - fileName: example-web-rce.tar.gz
       downloadUrl: /handouts/example-web-rce.tar.gz
