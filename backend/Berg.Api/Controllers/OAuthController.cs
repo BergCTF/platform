@@ -301,6 +301,11 @@ public class OAuthController(
                         });
                     }
                 }
+                else
+                {
+                    // If no membership check is enforced, grant player role unconditionally
+                    roles.Add(Constants.Roles.Player);
+                }
 
                 await discordClient.LogoutAsync();
             }
