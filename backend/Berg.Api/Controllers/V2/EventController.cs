@@ -12,7 +12,7 @@ public class EventsController(IWebSocketService webSocketService) : ControllerBa
 {
     [HttpGet]
     [Route("/api/v2/events")]
-    [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
+    [Authorize(Policy = Constants.Policies.Anonymous)]
     [ProducesResponseType(StatusCodes.Status101SwitchingProtocols)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -27,9 +27,8 @@ public class EventsController(IWebSocketService webSocketService) : ControllerBa
             });
         }
 
-        Guid? player = (User.Identity?.IsAuthenticated ?? false) ? Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!) : null;
         using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-        await webSocketService.HandleWebSocketConnection(webSocket, player, cancellationToken);
+        await webSocketService.HandleWebSocketConnection(webSocket, cancellationToken);
         return new EmptyResult();
     }
 }

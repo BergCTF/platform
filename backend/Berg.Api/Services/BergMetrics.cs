@@ -63,16 +63,14 @@ public class BergMetrics
             new KeyValuePair<string, object?>("berg.challenge.name", challengeName));
     }
 
-    public void WebSocketStarted(Guid playerId)
+    public void WebSocketStarted()
     {
-        _webSocketCount.Add(1,
-            new KeyValuePair<string, object?>("berg.player.id", playerId));
+        _webSocketCount.Add(1);
     }
 
-    public void WebSocketStopped(Guid playerId)
+    public void WebSocketStopped()
     {
-        _webSocketCount.Add(-1,
-            new KeyValuePair<string, object?>("berg.player.id", playerId));
+        _webSocketCount.Add(-1);
     }
 
     public void PlayerCreated(Guid playerId)

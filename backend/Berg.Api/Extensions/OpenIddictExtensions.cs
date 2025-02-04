@@ -59,33 +59,6 @@ public sealed class InternalBackChannelReplacement(IConfiguration configuration)
     }
 }
 
-public sealed class PatchWebSocketTokenValidationParameters : IOpenIddictValidationHandler<OpenIddictValidationEvents.ValidateTokenContext>
-{
-    public static OpenIddictValidationHandlerDescriptor Descriptor { get; }
-        = OpenIddictValidationHandlerDescriptor.CreateBuilder<OpenIddictValidationEvents.ValidateTokenContext>()
-            .UseSingletonHandler<PatchWebSocketTokenValidationParameters>()
-            .SetOrder(int.MinValue + 100_001)
-            .SetType(OpenIddictValidationHandlerType.BuiltIn)
-            .Build();
-
-    public ValueTask HandleAsync(OpenIddictValidationEvents.ValidateTokenContext context)
-    {
-        // Hack because OpenIddict searches for the issuer with a wss:// prefix in websocket requests.
-        context.TokenValidationParameters.ValidIssuers = context.TokenValidationParameters.ValidIssuers.Select(issuer => {
-            if (issuer.StartsWith("wss://", StringComparison.InvariantCultureIgnoreCase))
-            {
-                return "https" + issuer[3..];
-            }
-            else if (issuer.StartsWith("ws://", StringComparison.InvariantCultureIgnoreCase))
-            {
-                return "http" + issuer[2..];
-            }
-            return issuer;
-        }).ToList();
-        return default;
-    }
-}
-
 public class DynamicAuthenticatedPlayerRequirement : IAuthorizationRequirement
 {
 }
@@ -178,6 +151,8 @@ public static class OpenIddictBuilder
             });
         builder.Services.AddSingleton<IAuthorizationHandler, DynamicAuthenticatedUserAuthorizationHandler>();
         builder.Services.AddAuthorization(options => {
+            options.AddPolicy(Constants.Policies.Anonymous, policy =>
+                policy.RequireAssertion(_ => true));
             options.AddPolicy(Constants.Policies.AnonymousIfAllowedOrPlayer, policy =>
                 policy.AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
                     .AddRequirements(new DynamicAuthenticatedPlayerRequirement()));
@@ -328,8 +303,8 @@ public static class OpenIddictBuilder
                 options.UseLocalServer();
                 options.UseAspNetCore(options => {
                     options.DisableAccessTokenExtractionFromBodyForm();
+                    options.DisableAccessTokenExtractionFromQueryString();
                 });
-                options.AddEventHandler(PatchWebSocketTokenValidationParameters.Descriptor);
                 options.AddAudiences(Constants.ClientIds.Berg);
             });
     }

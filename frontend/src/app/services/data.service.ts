@@ -213,12 +213,15 @@ export class DataService {
   refreshWebSocket(accessToken: string | null) {
     this._webSocket?.complete();
     let protocol = window.location.protocol == 'https:' ? 'wss' : 'ws';
-    let query = accessToken == null ? '' : ('?access_token=' + encodeURIComponent(accessToken));
     this._webSocket = webSocket<WebSocketMessage<any>>({
-      url: protocol + '://' + window.location.host + '/api/v2/events' + query,
+      url: protocol + '://' + window.location.host + '/api/v2/events',
       openObserver: {
-        next: () => {
-          this.refreshAllData();
+        next: _ => {
+          let message: WebSocketMessage<string | null> = {
+            type: "auth",
+            message: accessToken
+          };
+          this._webSocket?.next(message);
         }
       }
     });
@@ -302,7 +305,11 @@ export class DataService {
             var currentPlayerId: string | null = this._currentPlayerId.getValue();
             if (playerId != currentPlayerId) {
               this.oidcSecurityService.getAccessToken().subscribe(accessToken => {
-                this.refreshWebSocket(accessToken);
+                let message: WebSocketMessage<string | null> = {
+                  type: "auth",
+                  message: accessToken
+                };
+                this._webSocket?.next(message);
               });
             }
           }

@@ -33,6 +33,11 @@ public static class Constants
     public static class Policies
     {
         /// <summary>
+        /// The name of the anonymous policy
+        /// </summary>
+        public const string Anonymous = "anonymous";
+
+        /// <summary>
         /// The name of the anonymous (if allowed) policy that
         /// requires the player role if anonymous authentication is disabled.
         /// </summary>
@@ -156,12 +161,12 @@ public static class Constants
         /// <summary>
         /// The lifetime of the access token
         /// </summary>
-        public static readonly TimeSpan AccessTokenLifetime = TimeSpan.FromMinutes(30);
+        public static readonly TimeSpan AccessTokenLifetime = TimeSpan.FromHours(1);
 
         /// <summary>
         /// The lifetime of the refresh token
         /// </summary>
-        public static readonly TimeSpan RefreshTokenLifetime = TimeSpan.FromDays(1);
+        public static readonly TimeSpan RefreshTokenLifetime = TimeSpan.FromDays(3);
 
         /// <summary>
         /// The lifetime of the federated login cookie

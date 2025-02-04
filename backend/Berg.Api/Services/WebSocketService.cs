@@ -1,12 +1,16 @@
 using System.Net.WebSockets;
+using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Berg.Api.Configuration;
+using OpenIddict.Abstractions;
+using OpenIddict.Validation;
 
 namespace Berg.Api.Services;
 
 public interface IWebSocketService
 {
-    Task HandleWebSocketConnection(WebSocket webSocket, Guid? playerId, CancellationToken cancellationToken);
+    Task HandleWebSocketConnection(WebSocket webSocket, CancellationToken cancellationToken);
     Task PushEvent<T>(string eventType, T message, Func<Guid, bool> filter);
     Task PushEventAll<T>(string eventType, T message);
     Task DowngradeExpiredConnections(CancellationToken cancellationToken);
@@ -17,7 +21,7 @@ public class WebSocketConnection
     public Guid Id { get; set; }
     public Guid? PlayerId { get; set; }
     public required WebSocket WebSocket { get; set; }
-    public required DateTime CreatedAt { get; set; }
+    public required DateTime? ExpiresAt { get; set; }
     public readonly SemaphoreSlim SendMessageSemaphore = new(1, 1);
     public required CancellationTokenSource CancellationTokenSource { get; set; }
 }
@@ -37,36 +41,36 @@ public class WebSocketMessage<T> : WebSocketMessage
 public class WebSocketService(
     ILogger<ChallengeService> logger,
     BergMetrics metrics,
+    OpenIddictValidationService openIddictValidationService,
+    CtfConfig ctfConfig,
     IHostApplicationLifetime applicationLifetime) : IWebSocketService
 {
     private readonly List<WebSocketConnection> _connections = [];
     private readonly Lock _connectionLock = new();
 
-    public async Task HandleWebSocketConnection(WebSocket webSocket, Guid? playerId, CancellationToken cancellationToken)
+    public async Task HandleWebSocketConnection(WebSocket webSocket, CancellationToken cancellationToken)
     { 
         var connection = new WebSocketConnection
         {
             Id = Guid.NewGuid(),
             WebSocket = webSocket,
-            PlayerId = playerId,
-            CreatedAt = DateTime.UtcNow,
+            PlayerId = null,
+            ExpiresAt = null,
             CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
                 applicationLifetime.ApplicationStopping,
                 cancellationToken)
         };
-        logger.LogDebug("WebSocket connection {Id} opened for player: {PlayerId}", connection.Id, playerId);
-        metrics.WebSocketStarted(playerId ?? Guid.Empty);
+        logger.LogDebug("WebSocket connection {ConnectionId} opened", connection.Id);
+        metrics.WebSocketStarted();
 
         lock (_connectionLock) {
             _connections.Add(connection);
         }
 
-        await SendPlayerIdMessage(connection);
-
         var buffer = new byte[1024 * 4];
         while (!connection.CancellationTokenSource.IsCancellationRequested)
         {
-            var webSocketMessage = await ReceiveMessage<dynamic>(connection, buffer);
+            var webSocketMessage = await ReceiveMessage<JsonElement?>(connection, buffer);
             if (webSocketMessage != null)
             {
                 if (webSocketMessage.Type == "ping" &&
@@ -74,6 +78,24 @@ public class WebSocketService(
                 {
                     var messageBytes = SerializeMessage("pong", webSocketMessage.Message);
                     await SendMessage(connection, messageBytes);
+                }
+                else if (webSocketMessage.Type == "auth" &&
+                    !connection.CancellationTokenSource.IsCancellationRequested)
+                {
+                    try
+                    {
+                        var token = webSocketMessage.Message?.Deserialize<string?>();
+                        var principal = await openIddictValidationService.ValidateAccessTokenAsync(token ?? "", connection.CancellationTokenSource.Token);
+                        connection.PlayerId = Guid.Parse(principal.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
+                        connection.ExpiresAt = principal.GetExpirationDate()?.UtcDateTime;
+                        logger.LogDebug("WebSocket connection {ConnectionId} was authenticated", connection.Id);
+                    }
+                    catch (Exception ex) {
+                        logger.LogDebug(ex, "Got exception during authentication");
+                        connection.PlayerId = null;
+                    }
+                    // Report back the current authentication state
+                    await SendPlayerIdMessage(connection);
                 }
                 else
                 {
@@ -101,6 +123,7 @@ public class WebSocketService(
         using var activity = Constants.BergActivitySource.StartActivity();
         var messageBytes = SerializeMessage(eventType, message);
         var sendTasks = _connections
+            .Where(c => ctfConfig.AllowAnonymousAccess || c.PlayerId.HasValue)
             .Select(c => SendMessage(c, messageBytes))
             .ToArray();
         await Task.WhenAll(sendTasks);
@@ -115,14 +138,15 @@ public class WebSocketService(
             if (conn == null || !conn.PlayerId.HasValue)
                 continue;
 
-            // Only look at expired connections
-            if (DateTime.UtcNow < conn.CreatedAt.Add(Constants.Lifetimes.AccessTokenLifetime))
+            // Skip connections that have not expired yet
+            if (DateTime.UtcNow < conn.ExpiresAt)
                 continue;
 
             // Downgrade socket by removing player association, keep socket alive to still receive public events
             conn.PlayerId = null;
+            conn.ExpiresAt = null;
             await SendPlayerIdMessage(conn);
-            logger.LogDebug("WebSocket connection {} was unauthenticated", conn.Id);
+            logger.LogDebug("WebSocket connection {ConnectionId} was unauthenticated", conn.Id);
         }
     }
 
@@ -143,7 +167,7 @@ public class WebSocketService(
         }
         catch (Exception ex)
         {
-            logger.LogDebug(ex, "WebSocket connection {} had an exception calling SendMessage<T>()", connection.Id);
+            logger.LogDebug(ex, "WebSocket connection {ConnectionId} had an exception calling SendMessage<T>()", connection.Id);
             await CloseConnection(connection);
         } finally {
             connection.SendMessageSemaphore.Release();
@@ -183,12 +207,12 @@ public class WebSocketService(
             }
             catch (JsonException ex)
             {
-                logger.LogWarning(ex, "WebSocket connection {Id} got invalid json from player: {PlayerId} {HexData}", connection.Id, connection.PlayerId, Convert.ToHexString(receivedBytes));
+                logger.LogWarning(ex, "WebSocket connection {ConnectionId} got invalid json from player: {PlayerId} {HexData}", connection.Id, connection.PlayerId, Convert.ToHexString(receivedBytes));
             }
         }
         catch (WebSocketException ex)
         {
-            logger.LogError(ex, "WebSocket connection {} had an exception calling ReceiveMessage<T>()", connection.Id);
+            logger.LogError(ex, "WebSocket connection {ConnectionId} had an exception calling ReceiveMessage<T>()", connection.Id);
             await CloseConnection(connection);
         }
         return null;
@@ -199,8 +223,8 @@ public class WebSocketService(
         lock (_connectionLock) {
             if(_connections.Remove(connection))
             {
-                logger.LogDebug("WebSocket connection {} closed", connection.Id);
-                metrics.WebSocketStopped(connection.PlayerId ?? Guid.Empty);
+                logger.LogDebug("WebSocket connection {ConnectionId} closed", connection.Id);
+                metrics.WebSocketStopped();
             }
         }
         connection.CancellationTokenSource.Cancel();
