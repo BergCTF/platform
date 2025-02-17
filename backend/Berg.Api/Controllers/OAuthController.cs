@@ -309,6 +309,11 @@ public class OAuthController(
 
                 await discordClient.LogoutAsync();
             }
+            else
+            {
+                // If nothing is configured, grant player role unconditionally
+                roles.Add(Constants.Roles.Player);
+            }
         }
 
         if (string.IsNullOrEmpty(userId))
