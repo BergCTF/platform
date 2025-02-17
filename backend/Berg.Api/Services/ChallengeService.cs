@@ -753,6 +753,14 @@ public class ChallengeService(
                 var dynEnv = container.DynamicFlag.Env;
                 env.Add(new V1EnvVar(dynEnv.Name, dynamicFlag ?? "invalid{env-flag-error}"));
             }
+
+            var dropCapabilities = new HashSet<string>();
+            if (container.DynamicFlag?.Executable != null)
+            {
+                // Prevent root users from reading files that do not have the respective
+                // file permissions set. This prevents reading the dynamic flag binary even as root.
+                dropCapabilities.Add("DAC_OVERRIDE");
+            }
             var podSpec = new V1PodSpec
             {
                 RestartPolicy = "Always",
@@ -778,11 +786,7 @@ public class ChallengeService(
                             Capabilities = new V1Capabilities
                             {
                                 Add = container.AdditionalCapabilities ?? [],
-                                Drop = [.. new HashSet<string>([
-                                    // Prevent root users from reading files that do not have the respective
-                                    // file permissions unless the container explicitly has this capability added.
-                                    "DAC_OVERRIDE",
-                                ]).Except(new HashSet<string>(container.AdditionalCapabilities ?? []))],
+                                Drop = [.. dropCapabilities.Except(new HashSet<string>(container.AdditionalCapabilities ?? []))],
                             }
                         },
                         Name = container.Hostname,
