@@ -46,10 +46,10 @@ public class WebSocketService(
     IHostApplicationLifetime applicationLifetime) : IWebSocketService
 {
     private readonly List<WebSocketConnection> _connections = [];
-    private readonly Lock _connectionLock = new();
+    private readonly SemaphoreSlim _connectionSemaphore = new(1, 1);
 
     public async Task HandleWebSocketConnection(WebSocket webSocket, CancellationToken cancellationToken)
-    { 
+    {
         var connection = new WebSocketConnection
         {
             Id = Guid.NewGuid(),
@@ -63,8 +63,14 @@ public class WebSocketService(
         logger.LogDebug("WebSocket connection {ConnectionId} opened", connection.Id);
         metrics.WebSocketStarted();
 
-        lock (_connectionLock) {
+        await _connectionSemaphore.WaitAsync(cancellationToken);
+        try
+        {
             _connections.Add(connection);
+        }
+        finally
+        {
+            _connectionSemaphore.Release();
         }
 
         var buffer = new byte[1024 * 4];
@@ -169,7 +175,9 @@ public class WebSocketService(
         {
             logger.LogDebug(ex, "WebSocket connection {ConnectionId} had an exception calling SendMessage<T>()", connection.Id);
             await CloseConnection(connection);
-        } finally {
+        }
+        finally
+        {
             connection.SendMessageSemaphore.Release();
         }
     }
@@ -220,12 +228,18 @@ public class WebSocketService(
 
     private async Task CloseConnection(WebSocketConnection connection)
     {
-        lock (_connectionLock) {
+        await _connectionSemaphore.WaitAsync();
+        try
+        {
             if(_connections.Remove(connection))
             {
                 logger.LogDebug("WebSocket connection {ConnectionId} closed", connection.Id);
                 metrics.WebSocketStopped();
             }
+        }
+        finally
+        {
+            _connectionSemaphore.Release();
         }
         connection.CancellationTokenSource.Cancel();
         try
