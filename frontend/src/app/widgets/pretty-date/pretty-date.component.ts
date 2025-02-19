@@ -1,14 +1,14 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from "@angular/core";
 
 @Component({
-    selector: 'app-pretty-date',
-    templateUrl: './pretty-date.component.html',
-    styleUrls: ['./pretty-date.component.less'],
-    changeDetection: ChangeDetectionStrategy.OnPush
+  selector: "app-pretty-date",
+  templateUrl: "./pretty-date.component.html",
+  styleUrls: ["./pretty-date.component.less"],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PrettyDateComponent {
   @Input()
-  date: string | Date = '';
+  date: string | Date = "";
   prettyDate = (): string[] => {
     let dateStr = null;
     if (this.date instanceof Date) {

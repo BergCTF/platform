@@ -1,11 +1,17 @@
 <h3 class="mb-3">Scoreboard</h3>
 <div class="row">
   <div class="col d-flex">
-    <button class="btn btn-outline-secondary ms-auto" ngbTooltip="Fullscreen" (click)="toggleFullscreen(chart)"><span class="bi bi-fullscreen"></span></button>
+    <button
+      class="btn btn-outline-secondary ms-auto"
+      ngbTooltip="Fullscreen"
+      (click)="toggleFullscreen(chart)"
+    >
+      <span class="bi bi-fullscreen"></span>
+    </button>
   </div>
 </div>
 
-@let entryType = areTeamsEnabled ? 'teams' : 'players';
+@let entryType = areTeamsEnabled ? "teams" : "players";
 <div class="mb-5">
   <div class="row text-center">
     <h5>Top 10 {{ entryType }}</h5>
@@ -17,13 +23,35 @@
 <div #table id="scoreboard-table" class="use-background-color">
   <div class="row mb-2">
     <div class="col-lg-3 col-md-6 col-sm-12 mb-2">
-      <input #searchText type="text" class="form-control md-w-25 w-100" placeholder="Search {{ entryType }}" (change)="searchTextChanged(searchText.value)" (keyup)="searchTextChanged(searchText.value)" />
+      <input
+        #searchText
+        type="text"
+        class="form-control md-w-25 w-100"
+        placeholder="Search {{ entryType }}"
+        (change)="searchTextChanged(searchText.value)"
+        (keyup)="searchTextChanged(searchText.value)"
+      />
     </div>
     <div class="col d-flex mb-4">
-      <button class="btn btn-outline-secondary ms-auto" ngbTooltip="Toggle view" (click)="toggleAdvancedView()" #btn>
-        <span class="bi" [class.bi-three-dots-vertical]="!advancedView" [class.bi-123]="advancedView"></span>
+      <button
+        class="btn btn-outline-secondary ms-auto"
+        ngbTooltip="Toggle view"
+        (click)="toggleAdvancedView()"
+        #btn
+      >
+        <span
+          class="bi"
+          [class.bi-three-dots-vertical]="!advancedView"
+          [class.bi-123]="advancedView"
+        ></span>
       </button>
-      <button class="btn btn-outline-secondary ms-2" ngbTooltip="Fullscreen" (click)="toggleFullscreen(table)"><span class="bi bi-fullscreen"></span></button>
+      <button
+        class="btn btn-outline-secondary ms-2"
+        ngbTooltip="Fullscreen"
+        (click)="toggleFullscreen(table)"
+      >
+        <span class="bi bi-fullscreen"></span>
+      </button>
     </div>
   </div>
   <div class="row">
@@ -43,8 +71,11 @@
         <tbody class="table-group-divider">
           @if (scoreboardRanking.length === 0) {
             <tr>
-              <td [attr.colspan]="4 + primaryChallengeCategories.length" class="text-center">
-                @if (searchText.value == '') {
+              <td
+                [attr.colspan]="4 + primaryChallengeCategories.length"
+                class="text-center"
+              >
+                @if (searchText.value == "") {
                   No solves yet.
                 } @else {
                   No {{ entryType }} found for the given search.
@@ -52,24 +83,44 @@
               </td>
             </tr>
           }
-          @for (ranking of scoreboardRanking | slice: (pageIndex-1) * pageSize : pageIndex * pageSize; track ranking) {
+          @for (
+            ranking of scoreboardRanking
+              | slice: (pageIndex - 1) * pageSize : pageIndex * pageSize;
+            track ranking
+          ) {
             <tr>
               <th scope="row">{{ ranking.rank }}</th>
               <td>
-                <a [routerLink]="[areTeamsEnabled ? '/teams' : '/players', ranking.id]"><ngb-highlight [result]="ranking.name" [term]="searchText.value" /></a>
+                <a
+                  [routerLink]="[
+                    areTeamsEnabled ? '/teams' : '/players',
+                    ranking.id,
+                  ]"
+                  ><ngb-highlight
+                    [result]="ranking.name"
+                    [term]="searchText.value"
+                /></a>
               </td>
               <td>{{ ranking.score }}</td>
               <td class="text-wrap">
                 @if (ranking.lastSolveAt) {
                   <app-pretty-date [date]="ranking.lastSolveAt" />
                   <wbr />
-                  <span class="text-muted text-nowrap">({{ helper.relativeTime(ranking.lastSolveAt) }})</span>
+                  <span class="text-muted text-nowrap"
+                    >({{ helper.relativeTime(ranking.lastSolveAt) }})</span
+                  >
                 }
               </td>
-              @for (challengeByCategory of ranking.challengesByCategory; track challengeByCategory) {
+              @for (
+                challengeByCategory of ranking.challengesByCategory;
+                track challengeByCategory
+              ) {
                 @if (advancedView) {
                   <td class="text-nowrap">
-                    @for (entry of challengeByCategory.scoreboardChallengeEntries; track entry) {
+                    @for (
+                      entry of challengeByCategory.scoreboardChallengeEntries;
+                      track entry
+                    ) {
                       <span
                         role="button"
                         [class]="getChallengeClasses(entry)"
@@ -77,12 +128,24 @@
                         (mouseenter)="setHover(entry.challenge.name)"
                         (mouseleave)="setHover('')"
                         placement="top"
-                        [ngbTooltip]="entry.challenge.name"></span>
+                        [ngbTooltip]="entry.challenge.name"
+                      ></span>
                     }
                   </td>
                 } @else {
-                  <td class="text-nowrap" [style.color]="helper.getPercentageColor(challengeByCategory.numSolved / challengeByCategory.numTotal * 100)">
-                    {{ challengeByCategory.numSolved }}/{{ challengeByCategory.numTotal }}
+                  <td
+                    class="text-nowrap"
+                    [style.color]="
+                      helper.getPercentageColor(
+                        (challengeByCategory.numSolved /
+                          challengeByCategory.numTotal) *
+                          100
+                      )
+                    "
+                  >
+                    {{ challengeByCategory.numSolved }}/{{
+                      challengeByCategory.numTotal
+                    }}
                   </td>
                 }
               }
@@ -94,8 +157,18 @@
   </div>
   <div class="row">
     <div class="d-flex flex-column flex-sm-row justify-content-between">
-      <ngb-pagination [maxSize]="5" [collectionSize]="scoreboardRanking.length" [(page)]="pageIndex" [pageSize]="pageSize"></ngb-pagination>
-      <select #pageSizeSelect class="form-select form-control pagination-select auto-width" name="pageSize" (change)="pageSizeChanged(pageSizeSelect.value)">
+      <ngb-pagination
+        [maxSize]="5"
+        [collectionSize]="scoreboardRanking.length"
+        [(page)]="pageIndex"
+        [pageSize]="pageSize"
+      ></ngb-pagination>
+      <select
+        #pageSizeSelect
+        class="form-select form-control pagination-select auto-width"
+        name="pageSize"
+        (change)="pageSizeChanged(pageSizeSelect.value)"
+      >
         <option value="20">20 {{ entryType }} per page</option>
         <option value="30">30 {{ entryType }} per page</option>
         <option value="50">50 {{ entryType }} per page</option>

@@ -1,10 +1,10 @@
 export class Metadata {
-  public version = '';
-  public eventName = '';
-  public eventOrganiser = '';
-  public eventLogoUrl = '';
-  public start = '';
-  public end = '';
+  public version = "";
+  public eventName = "";
+  public eventOrganiser = "";
+  public eventLogoUrl = "";
+  public start = "";
+  public end = "";
   public allowAnonymousAccess = true;
   public playerAttributes: PlayerAttribute[] = [];
   public freezeStart: string | null = null;
@@ -16,28 +16,28 @@ export class Metadata {
 }
 
 export class PlayerAttribute {
-  public name = '';
-  public title = '';
-  public description = '';
+  public name = "";
+  public title = "";
+  public description = "";
   public public = true;
   public required = false;
   public values: PlayerAttributeValue[] = [];
 }
 
 export class PlayerAttributeValue {
-  public value = '';
-  public title = '';
-  public description = '';
+  public value = "";
+  public title = "";
+  public description = "";
 }
 
 export class Challenge {
-  public name = '';
-  public displayName = '';
-  public author = '';
-  public description = '';
-  public event: string = '';
-  public difficulty = '';
-  public flagFormat = '';
+  public name = "";
+  public displayName = "";
+  public author = "";
+  public description = "";
+  public event: string = "";
+  public difficulty = "";
+  public flagFormat = "";
   public hasRemote = false;
   public categories: string[] = [];
   public tags: string[] = [];
@@ -45,64 +45,64 @@ export class Challenge {
 }
 
 export class Attachment {
-  public fileName = '';
-  public downloadUrl = '';
+  public fileName = "";
+  public downloadUrl = "";
 }
 
 export class Service {
-  public name = '';
-  public hostname = '';
+  public name = "";
+  public hostname = "";
   public port = 0;
-  public protocol = '';
-  public appProtocol = '';
+  public protocol = "";
+  public appProtocol = "";
   public tls = false;
 }
 
 export class Page {
-  public title = '';
+  public title = "";
   public index = 0;
-  public path = '';
-  public content = '';
+  public path = "";
+  public content = "";
 }
 
 export class Player {
-  public id = '';
-  public name = '';
+  public id = "";
+  public name = "";
   public attributes: Record<string, string> = {};
 }
 
 export class CurrentPlayer {
-  public id = '';
-  public name = '';
-  public federatedId = '';
+  public id = "";
+  public name = "";
+  public federatedId = "";
   public apiKeyPlaceholder: string | null = null;
   public roles: string[] = [];
   public attributes: Record<string, string> = {};
 }
 
 export class CurrentTeam {
-  public id = '';
-  public name = '';
-  public joinToken: string | null = '';
+  public id = "";
+  public name = "";
+  public joinToken: string | null = "";
   public players: string[] = [];
 }
 
 export class Team {
-  public id = '';
-  public name = '';
+  public id = "";
+  public name = "";
   public players: string[] = [];
 }
 
 export class Instance {
-  public name = '';
+  public name = "";
   public status: ChallengeInstanceState = ChallengeInstanceState.None;
   public services: Service[] = [];
 }
 
 export class Solve {
-  public playerId = '';
-  public solvedAt = '';
-  public challengeName = '';
+  public playerId = "";
+  public solvedAt = "";
+  public challengeName = "";
 }
 
 export enum ChallengeInstanceState {
@@ -118,9 +118,9 @@ export interface WebSocketMessage<T> {
 }
 
 export class ProblemDetails {
-  public type = '';
-  public title = '';
+  public type = "";
+  public title = "";
   public status = 0;
-  public detail = '';
-  public instance = '';
+  public detail = "";
+  public instance = "";
 }

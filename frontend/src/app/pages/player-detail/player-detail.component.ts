@@ -1,21 +1,20 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { DataService } from 'src/app/services/data.service';
-import { HelperService } from 'src/app/services/helper.service';
-import { PrettyDateComponent } from '../../widgets/pretty-date/pretty-date.component';
-import { map, Subscription } from 'rxjs';
-import { PlayerDetail } from 'src/app/model';
-import { KeyValuePipe } from '@angular/common';
-import { Metadata } from 'src/app/api-model';
+import { Component, OnDestroy, OnInit } from "@angular/core";
+import { ActivatedRoute, RouterLink } from "@angular/router";
+import { DataService } from "src/app/services/data.service";
+import { HelperService } from "src/app/services/helper.service";
+import { PrettyDateComponent } from "../../widgets/pretty-date/pretty-date.component";
+import { map, Subscription } from "rxjs";
+import { PlayerDetail } from "src/app/model";
+import { KeyValuePipe } from "@angular/common";
+import { Metadata } from "src/app/api-model";
 
 @Component({
-    selector: 'app-player',
-    templateUrl: './player-detail.component.html',
-    styleUrls: ['./player-detail.component.less'],
-    imports: [RouterLink, PrettyDateComponent, KeyValuePipe]
+  selector: "app-player",
+  templateUrl: "./player-detail.component.html",
+  styleUrls: ["./player-detail.component.less"],
+  imports: [RouterLink, PrettyDateComponent, KeyValuePipe],
 })
 export class PlayerDetailComponent implements OnInit, OnDestroy {
-
   private playerDetailSubscription: Subscription | null = null;
   private areTeamsEnabledSubscription: Subscription | null = null;
   private metadataSubscription: Subscription | null = null;
@@ -27,20 +26,26 @@ export class PlayerDetailComponent implements OnInit, OnDestroy {
   constructor(
     public dataService: DataService,
     public helper: HelperService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
-    let playerId = this.route.params.pipe(map(params => params['uuid']));
-    this.playerDetailSubscription = this.dataService.getPlayerDetail(playerId).subscribe(playerDetail => {
-      this.playerDetail = playerDetail;
-    });
-    this.areTeamsEnabledSubscription = this.dataService.areTeamsEnabled().subscribe(areTeamsEnabled => {
-      this.areTeamsEnabled = areTeamsEnabled;
-    });
-    this.metadataSubscription = this.dataService.metadata.subscribe(metadata => {
-      this.metadata = metadata;
-    });
+    let playerId = this.route.params.pipe(map((params) => params["uuid"]));
+    this.playerDetailSubscription = this.dataService
+      .getPlayerDetail(playerId)
+      .subscribe((playerDetail) => {
+        this.playerDetail = playerDetail;
+      });
+    this.areTeamsEnabledSubscription = this.dataService
+      .areTeamsEnabled()
+      .subscribe((areTeamsEnabled) => {
+        this.areTeamsEnabled = areTeamsEnabled;
+      });
+    this.metadataSubscription = this.dataService.metadata.subscribe(
+      (metadata) => {
+        this.metadata = metadata;
+      },
+    );
   }
 
   ngOnDestroy(): void {
@@ -50,11 +55,17 @@ export class PlayerDetailComponent implements OnInit, OnDestroy {
   }
 
   getAttributeTitle(name: string) {
-    return this.metadata.playerAttributes.find(a => a.name == name)?.title ?? name;
+    return (
+      this.metadata.playerAttributes.find((a) => a.name == name)?.title ?? name
+    );
   }
 
   getAttributeValueTitle(name: string, value: string) {
-    return this.metadata.playerAttributes.find(a => a.name == name)?.values.find(v => v.value == value)?.title ?? value;
+    return (
+      this.metadata.playerAttributes
+        .find((a) => a.name == name)
+        ?.values.find((v) => v.value == value)?.title ?? value
+    );
   }
 
   hasAttributes() {

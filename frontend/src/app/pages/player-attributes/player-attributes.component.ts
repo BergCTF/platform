@@ -1,29 +1,28 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
-import { combineLatest, Subscription } from 'rxjs';
-import { PlayerAttribute } from 'src/app/api-model';
-import { DataService } from 'src/app/services/data.service';
+import { Component, OnDestroy, OnInit } from "@angular/core";
+import { RouterLink } from "@angular/router";
+import { NgbTooltip } from "@ng-bootstrap/ng-bootstrap";
+import { combineLatest, Subscription } from "rxjs";
+import { PlayerAttribute } from "src/app/api-model";
+import { DataService } from "src/app/services/data.service";
 
 @Component({
-  selector: 'app-player-attributes',
-  templateUrl: './player-attributes.component.html',
-  styleUrl: './player-attributes.component.less',
+  selector: "app-player-attributes",
+  templateUrl: "./player-attributes.component.html",
+  styleUrl: "./player-attributes.component.less",
   imports: [NgbTooltip, RouterLink],
 })
 export class PlayerAttributesComponent implements OnInit, OnDestroy {
-
   public hasMissingRequiredAttributes: boolean = true;
   public currentPlayerAttributes: CurrentPlayerAttribute[] = [];
   private attributeSubscription: Subscription | undefined;
 
-  constructor(
-    private dataService: DataService
-  ) {}
+  constructor(private dataService: DataService) {}
 
   ngOnInit(): void {
-    this.attributeSubscription = combineLatest([this.dataService.metadata, this.dataService.currentPlayer])
-    .subscribe(params => {
+    this.attributeSubscription = combineLatest([
+      this.dataService.metadata,
+      this.dataService.currentPlayer,
+    ]).subscribe((params) => {
       const [metadata, currentPlayer] = params;
       if (currentPlayer == null) {
         return;
@@ -33,7 +32,7 @@ export class PlayerAttributesComponent implements OnInit, OnDestroy {
 
       let currentPlayerAttributes: CurrentPlayerAttribute[] = [];
       let hasMissingRequiredAttributes = false;
-      requiredAttributes.forEach(a => {
+      requiredAttributes.forEach((a) => {
         let attr = new CurrentPlayerAttribute();
         attr.attr = a;
         if (playerAttributes.has(a.name)) {
@@ -59,11 +58,10 @@ export class PlayerAttributesComponent implements OnInit, OnDestroy {
   setPlayerAttribute(name: string, value: string) {
     let attrs: Record<string, string> = {};
     attrs[name] = value;
-    this.dataService.setPlayerAttributes(attrs).subscribe(_ => {
+    this.dataService.setPlayerAttributes(attrs).subscribe((_) => {
       this.dataService.refreshCurrentPlayer().subscribe();
     });
   }
-
 }
 
 class CurrentPlayerAttribute {

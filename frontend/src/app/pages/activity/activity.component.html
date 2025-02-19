@@ -20,29 +20,50 @@
             </td>
           </tr>
         }
-        @for (activity of activityEntries | slice: (pageIndex-1) * pageSize : pageIndex * pageSize; track activity) {
+        @for (
+          activity of activityEntries
+            | slice: (pageIndex - 1) * pageSize : pageIndex * pageSize;
+          track activity
+        ) {
           <tr>
             <td class="text-wrap">
               <app-pretty-date [date]="activity.solve.solvedAt" />
               <wbr />
-              <span class="text-muted text-nowrap">({{ helper.relativeTime(activity.solve.solvedAt) }})</span>
+              <span class="text-muted text-nowrap"
+                >({{ helper.relativeTime(activity.solve.solvedAt) }})</span
+              >
             </td>
             @if (areTeamsEnabled) {
               <td>
                 @if (activity.solve.teamId) {
-                  <a role="button" [routerLink]="['/teams', activity.solve.teamId]">{{ activity.solve.teamName }}</a>
+                  <a
+                    role="button"
+                    [routerLink]="['/teams', activity.solve.teamId]"
+                    >{{ activity.solve.teamName }}</a
+                  >
                 } @else {
                   <span>-</span>
                 }
               </td>
             }
             <td>
-              <a role="button" [routerLink]="['/players', activity.solve.playerId]">{{ activity.solve.playerName }}</a>
+              <a
+                role="button"
+                [routerLink]="['/players', activity.solve.playerId]"
+                >{{ activity.solve.playerName }}</a
+              >
             </td>
             <td>
               @if (activity.challenge) {
-                <a role="button" [routerLink]="['/challenges', activity.solve.challengeName]">{{ activity.challenge.challenge.displayName }}</a>
-                <wbr /> <span class="text-muted"> ({{ activity.challenge.value }})</span>
+                <a
+                  role="button"
+                  [routerLink]="['/challenges', activity.solve.challengeName]"
+                  >{{ activity.challenge.challenge.displayName }}</a
+                >
+                <wbr />
+                <span class="text-muted">
+                  ({{ activity.challenge.value }})</span
+                >
               } @else {
                 {{ activity.solve.challengeName }}
               }
@@ -55,8 +76,18 @@
 </div>
 <div class="row">
   <div class="d-flex flex-column flex-sm-row justify-content-between">
-    <ngb-pagination [maxSize]="5" [collectionSize]="activityEntries.length" [(page)]="pageIndex" [pageSize]="pageSize"></ngb-pagination>
-    <select #pageSizeSelect class="form-select form-control pagination-select auto-width" name="pageSize" (change)="pageSizeChanged(pageSizeSelect.value)">
+    <ngb-pagination
+      [maxSize]="5"
+      [collectionSize]="activityEntries.length"
+      [(page)]="pageIndex"
+      [pageSize]="pageSize"
+    ></ngb-pagination>
+    <select
+      #pageSizeSelect
+      class="form-select form-control pagination-select auto-width"
+      name="pageSize"
+      (change)="pageSizeChanged(pageSizeSelect.value)"
+    >
       <option value="20">20 rows per page</option>
       <option value="30">30 rows per page</option>
       <option value="50">50 rows per page</option>

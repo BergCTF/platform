@@ -1,24 +1,28 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Location } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { map, Subscription } from 'rxjs';
-import { Instance, ProblemDetails } from 'src/app/api-model';
-import { DataService } from 'src/app/services/data.service';
-import { ChallengeStatusComponent } from 'src/app/widgets/challenge-status/challenge-status.component';
-import { PrettyDateComponent } from 'src/app/widgets/pretty-date/pretty-date.component';
-import { HttpErrorResponse } from '@angular/common/http';
-import { ChallengeDetail } from 'src/app/model';
-import { NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
-import { HelperService } from 'src/app/services/helper.service';
+import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Location } from "@angular/common";
+import { ActivatedRoute, RouterLink } from "@angular/router";
+import { map, Subscription } from "rxjs";
+import { Instance, ProblemDetails } from "src/app/api-model";
+import { DataService } from "src/app/services/data.service";
+import { ChallengeStatusComponent } from "src/app/widgets/challenge-status/challenge-status.component";
+import { PrettyDateComponent } from "src/app/widgets/pretty-date/pretty-date.component";
+import { HttpErrorResponse } from "@angular/common/http";
+import { ChallengeDetail } from "src/app/model";
+import { NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
+import { HelperService } from "src/app/services/helper.service";
 
 @Component({
-  selector: 'app-challenge-detail',
-  templateUrl: './challenge-detail.component.html',
-  styleUrl: './challenge-detail.component.less',
-  imports: [ChallengeStatusComponent, PrettyDateComponent, RouterLink, NgbNavModule]
+  selector: "app-challenge-detail",
+  templateUrl: "./challenge-detail.component.html",
+  styleUrl: "./challenge-detail.component.less",
+  imports: [
+    ChallengeStatusComponent,
+    PrettyDateComponent,
+    RouterLink,
+    NgbNavModule,
+  ],
 })
 export class ChallengeDetailComponent implements OnInit, OnDestroy {
-
   challengeDetail: ChallengeDetail | null = null;
   instance: Instance | null = null;
   isFlagSubmitting = false;
@@ -35,23 +39,31 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy {
     public dataService: DataService,
     public location: Location,
     public helper: HelperService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
-    let name = this.route.params.pipe(map(params => params['name']));
-    this.challengeDetailSubscription = this.dataService.getChallengeDetail(name).subscribe(challengeDetail => {
-      this.challengeDetail = challengeDetail;
-    });
-    this.instanceSubscription = this.dataService.instance.subscribe(instance => {
-      this.instance = instance;
-    });
-    this.hasCTFEndedSubscription = this.dataService.hasCTFEnded.subscribe(hasCTFEnded => {
-      this.hasCTFEnded = hasCTFEnded;
-    });
-    this.areTeamsEnabledSubscription = this.dataService.areTeamsEnabled().subscribe(areTeamsEnabled => {
-      this.areTeamsEnabled = areTeamsEnabled;
-    });
+    let name = this.route.params.pipe(map((params) => params["name"]));
+    this.challengeDetailSubscription = this.dataService
+      .getChallengeDetail(name)
+      .subscribe((challengeDetail) => {
+        this.challengeDetail = challengeDetail;
+      });
+    this.instanceSubscription = this.dataService.instance.subscribe(
+      (instance) => {
+        this.instance = instance;
+      },
+    );
+    this.hasCTFEndedSubscription = this.dataService.hasCTFEnded.subscribe(
+      (hasCTFEnded) => {
+        this.hasCTFEnded = hasCTFEnded;
+      },
+    );
+    this.areTeamsEnabledSubscription = this.dataService
+      .areTeamsEnabled()
+      .subscribe((areTeamsEnabled) => {
+        this.areTeamsEnabled = areTeamsEnabled;
+      });
   }
 
   ngOnDestroy(): void {
@@ -63,17 +75,20 @@ export class ChallengeDetailComponent implements OnInit, OnDestroy {
 
   submitFlag(challenge: string, flag: string) {
     this.isFlagSubmitting = true;
-    this.dataService.addSolve(challenge, flag).subscribe({
-      next: _ => {
-        this.flagErrorText = null;
-      },
-      error: err => {
-        let httpError = err as HttpErrorResponse;
-        let problemDetails = httpError.error as ProblemDetails;
-        this.flagErrorText = problemDetails.detail;
-      }
-    }).add(() => {
-      this.isFlagSubmitting = false;
-    });
+    this.dataService
+      .addSolve(challenge, flag)
+      .subscribe({
+        next: (_) => {
+          this.flagErrorText = null;
+        },
+        error: (err) => {
+          let httpError = err as HttpErrorResponse;
+          let problemDetails = httpError.error as ProblemDetails;
+          this.flagErrorText = problemDetails.detail;
+        },
+      })
+      .add(() => {
+        this.isFlagSubmitting = false;
+      });
   }
 }
