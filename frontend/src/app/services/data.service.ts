@@ -56,7 +56,7 @@ export class DataService {
   private _challenges = new ReplaySubject<readonly Challenge[]>(1);
   private _teams = new ReplaySubject<readonly Team[]>(1);
   private _solves = new ReplaySubject<readonly Solve[]>(1);
-  private _pages = new ReplaySubject<readonly Page[]>(1);
+  private _pages = new BehaviorSubject<readonly Page[]>([]);
   private _metadata = new ReplaySubject<Metadata>(1);
   private _instance = new BehaviorSubject<Instance>(new Instance());
   private _hasCTFStarted = new BehaviorSubject<boolean>(false);
@@ -67,7 +67,6 @@ export class DataService {
   private _lastChallenges: readonly Challenge[] = [];
   private _lastTeams: readonly Team[] = [];
   private _lastSolves: readonly Solve[] = [];
-  private _lastPages: readonly Page[] = [];
   private _pingSent = false;
   private _lastCounterSent = 0;
   private _lastCounterReceived = 0;
@@ -81,8 +80,7 @@ export class DataService {
     .asObservable()
     .pipe(tap((p) => (this._lastPlayers = p)));
   public readonly pages: Observable<readonly Page[]> = this._pages
-    .asObservable()
-    .pipe(tap((p) => (this._lastPages = p)));
+    .asObservable();
   public readonly teams: Observable<readonly Team[]> = this._teams
     .asObservable()
     .pipe(tap((t) => (this._lastTeams = t)));
@@ -375,7 +373,7 @@ export class DataService {
         case "page":
           {
             let page = message.message as Page;
-            let modifiedPages = this._lastPages.filter(
+            let modifiedPages = structuredClone(this._pages.getValue()).filter(
               (p) => p.path != page.path,
             );
             modifiedPages.push(page);
