@@ -35,7 +35,7 @@ public class ChallengeController(
 
         var challenges = await challengeService.GetChallenges(cancellationToken);
         return challenges
-            .Where(c => c.Spec.HideUntil == null || (c.Spec.HideUntil <= utcNow && !isAdmin))
+            .Where(c => c.Spec.HideUntil == null || isAdmin || c.Spec.HideUntil <= utcNow)
             .Select(ToChallenge)
             .ToList();
     }
@@ -61,7 +61,9 @@ public class ChallengeController(
         }
 
         var challenge = await challengeService.GetChallenge(name, cancellationToken);
-        if (challenge == null || challenge.Spec.HideUntil == null || (challenge.Spec.HideUntil <= utcNow && !isAdmin))
+        if (challenge == null)
+            return NotFound();
+        if (challenge.Spec.HideUntil != null && !isAdmin && utcNow < challenge.Spec.HideUntil)
             return NotFound();
         return Ok(ToChallenge(challenge));
     }
