@@ -62,6 +62,8 @@ berg:
   challengeInstanceTimeout: "0.02:00:00"
   challengeRuntimeClassName: null
   challengeEgressBandwidth: "1M"
+  challengeCpuLimit: "1"
+  challengeMemoryLimit: "0.5Gi"
   logLevel:
     Default: Information
     Microsoft.AspNetCore: Warning

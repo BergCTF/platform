@@ -17,6 +17,8 @@ public class InfraConfig
     public TimeSpan ChallengeInstanceTimeout { get; set; } = TimeSpan.FromHours(2);
     public string? ChallengeRuntimeClassName { get; set; }
     public string ChallengeEgressBandwidth { get; set; } = "1M";
+    public string ChallengeCpuLimit { get; set; } = "2";
+    public string ChallengeMemoryLimit { get; set; } = "1Gi";
     public string? HandoutServiceUrl { get; set; }
     public string? OpenTelemetryGrpcTracingEndpoint { get; set; }
     public string? OpenTelemetryGrpcMetricsEndpoint { get; set; }

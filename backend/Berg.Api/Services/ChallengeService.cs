@@ -761,6 +761,13 @@ public class ChallengeService(
                 // file permissions set. This prevents reading the dynamic flag binary even as root.
                 dropCapabilities.Add("DAC_OVERRIDE");
             }
+
+            var resourceLimits = container.ResourceLimits ?? new Dictionary<string, string>
+            {
+                { "cpu", infraConfig.ChallengeCpuLimit },
+                { "memory", infraConfig.ChallengeMemoryLimit },
+            };
+
             var podSpec = new V1PodSpec
             {
                 RestartPolicy = "Always",
@@ -792,18 +799,16 @@ public class ChallengeService(
                         Name = container.Hostname,
                         Image = container.Image,
                         ImagePullPolicy = infraConfig.ChallengeImagePullPolicy,
-                        Resources = container.ResourceLimits != null
-                            ? new V1ResourceRequirements
+                        Resources = new V1ResourceRequirements
+                        {
+                            Limits = resourceLimits
+                                .ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value)),
+                            Requests = new Dictionary<string, ResourceQuantity>()
                             {
-                                Limits = container.ResourceLimits
-                                    .ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value)),
-                                Requests = new Dictionary<string, ResourceQuantity>()
-                                {
-                                    { "cpu", new ResourceQuantity("0") },
-                                    { "memory", new ResourceQuantity("1Mi") }
-                                }
+                                { "cpu", new ResourceQuantity("0") },
+                                { "memory", new ResourceQuantity("1Mi") }
                             }
-                            : null,
+                        },
                         Env = env,
                         Ports = container.Ports?
                             .Select(p => new V1ContainerPort(p.Port, protocol: p.Protocol.ToUpperInvariant()))
