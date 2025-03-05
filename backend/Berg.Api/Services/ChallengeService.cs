@@ -117,9 +117,9 @@ public class ChallengeService(
 
             var _ = mediator.Publish(new InstanceChangeNotification
             {
-                PlayerId = playerId,
                 Instance = new Instance {
                     Id = instanceId,
+                    PlayerId = playerId,
                     ChallengeName = challengeName,
                     InstanceState = InstanceState.Terminating
                 },
@@ -172,6 +172,7 @@ public class ChallengeService(
             return new Instance
             {
                 Id = null,
+                PlayerId = playerId,
                 ChallengeName = "",
                 InstanceState = InstanceState.None
             };
@@ -183,6 +184,7 @@ public class ChallengeService(
             return new Instance
             {
                 Id = instanceId,
+                PlayerId = playerId,
                 ChallengeName = challengeName,
                 InstanceState = InstanceState.Terminating
             };
@@ -195,6 +197,7 @@ public class ChallengeService(
             return new Instance
             {
                 Id = instanceId,
+                PlayerId = playerId,
                 ChallengeName = challengeName,
                 InstanceState = InstanceState.Starting
             };
@@ -251,6 +254,7 @@ public class ChallengeService(
         return new Instance
         {
             Id = instanceId,
+            PlayerId = playerId,
             ChallengeName = challengeName,
             InstanceState = InstanceState.Running,
             Services = services,
@@ -927,11 +931,10 @@ public class ChallengeService(
         }
 
         logger.LogInformation("Created instance of challenge: {}", challengeName);
-        var instance = new Instance { Id = instanceId, ChallengeName = challengeName, InstanceState = InstanceState.Starting };
+        var instance = new Instance { Id = instanceId, PlayerId = playerId, ChallengeName = challengeName, InstanceState = InstanceState.Starting };
 
         var _ = mediator.Publish(new InstanceChangeNotification
         {
-            PlayerId = playerId,
             Instance = instance,
         }, CancellationToken.None);
 
@@ -952,6 +955,7 @@ public class ChallengeService(
             return new Instance
             {
                 Id = null,
+                PlayerId = playerId,
                 ChallengeName = "",
                 InstanceState = InstanceState.None
             };
@@ -964,6 +968,7 @@ public class ChallengeService(
             return new Instance
             {
                 Id = instanceId,
+                PlayerId = playerId,
                 ChallengeName = challengeName,
                 InstanceState = InstanceState.Terminating
             };
@@ -985,7 +990,7 @@ public class ChallengeService(
         }
         metrics.InstanceStopped();
 
-        return new Instance { Id = instanceId, ChallengeName = challengeName, InstanceState = InstanceState.Terminating };
+        return new Instance { Id = instanceId, PlayerId = playerId, ChallengeName = challengeName, InstanceState = InstanceState.Terminating };
     }
 
     public static string ToLabelSelector(IDictionary<string, string> labelSelector)

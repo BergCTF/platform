@@ -158,7 +158,9 @@ public class WebSocketNotificationHandler(
             .Where(p => p.Roles != null && p.Roles.Contains(Constants.Roles.Admin))
             .Select(p => p.Id)
             .ToHashSet();
-        playerIdsToNotify.Add(notification.PlayerId);
+        if (notification.Instance.PlayerId != null) {
+            playerIdsToNotify.Add(notification.Instance.PlayerId.Value);
+        }
         await webSocketService.PushEvent("instance", notification.Instance, playerIdsToNotify.Contains);
     }
 }

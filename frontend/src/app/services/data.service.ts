@@ -384,7 +384,9 @@ export class DataService {
         case "instance":
           {
             let instance = message.message as Instance;
-            this._instance.next(Object.freeze(instance));
+            if (instance.playerId == this._currentPlayerId.getValue()) {
+              this._instance.next(Object.freeze(instance));
+            }
           }
           break;
         case "metadata":

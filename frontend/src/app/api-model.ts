@@ -94,6 +94,8 @@ export class Team {
 }
 
 export class Instance {
+  public id = "";
+  public playerId = "";
   public name = "";
   public status: ChallengeInstanceState = ChallengeInstanceState.None;
   public services: Service[] = [];

@@ -7,6 +7,9 @@ public class Instance
     [JsonPropertyName("id")]
     public required Guid? Id { get; set; }
 
+    [JsonPropertyName("playerId")]
+    public required Guid? PlayerId { get; set; }
+
     [JsonPropertyName("name")]
     public required string ChallengeName { get; set; } = "";
 

@@ -5,6 +5,5 @@ namespace Berg.Api.Notifications;
 
 public record InstanceChangeNotification : INotification
 {
-    public Guid PlayerId { get; set; }
     public required Instance Instance { get; set; }
 }

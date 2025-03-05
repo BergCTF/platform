@@ -98,7 +98,6 @@ public class WatchService(
             var instance = await challengeService.GetChallengeInstance(playerId, cancellationToken);
             await mediator.Publish(new InstanceChangeNotification
             {
-                PlayerId = playerId,
                 Instance = instance,
             }, cancellationToken);
         }
@@ -120,7 +119,6 @@ public class WatchService(
             var instance = await challengeService.GetChallengeInstance(playerId, cancellationToken);
             await mediator.Publish(new InstanceChangeNotification
             {
-                PlayerId = playerId,
                 Instance = instance,
             }, cancellationToken);
         }
