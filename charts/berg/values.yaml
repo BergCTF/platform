@@ -115,6 +115,8 @@ berg:
       loggingEndpoint: null
   redirectUris: []
   # - "https://frontend.example.com/callback"
+  corsOrigins: []
+  # - "https://frontend.example.com"
   ctf:
     eventName: "Berg CTF"
     eventOrganiser: "Berg Contributors"

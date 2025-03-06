@@ -46,6 +46,16 @@ builder.Services.AddDbContext<BergDbContext>(options => {
 builder.Services.AddSingleton<BergMetrics>();
 builder.AddOpenTelemetryExporters(infraConfig);
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(infraConfig.CorsOrigins?.ToArray() ?? []);
+        policy.AllowAnyHeader();
+        policy.AllowAnyMethod();
+    });
+});
+
 builder.AddSwagger(infraConfig);
 builder.AddOpenIddict(kubernetes, infraConfig, discordConfig, genericOpenIdConfig);
 builder.AddMediatR();
@@ -62,6 +72,8 @@ app.MapHealthChecks("/healthz");
 
 app.UseForwardedHeaders();
 app.UseHsts();
+
+app.UseCors();
 
 app.UseWebSockets();
 app.UseSwagger();

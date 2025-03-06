@@ -49,6 +49,9 @@ berg:
   pullSecretName: ""
   challengeImagePullPolicy: "IfNotPresent"
   challengeInstanceTimeout: "0.00:01:00"
+  corsOrigins:
+    - "https://berg.localhost"
+    - "https://otherfrontend.localhost"
   logLevel:
     Berg.Api: Debug
   postgresql:
@@ -91,36 +94,6 @@ berg:
     scoring:
       numSolvesBeforeMinimum: 10
     playerAttributes:
-      - name: category
-        title: Category
-        description: Select your player category.
-        public: true
-        required: true
-        values:
-          - value: junior
-            title: Junior
-            description: People between the age of 14 and 20.
-          - value: senior
-            title: Senior
-            description: People between the age of 21 and 25.
-          - value: open
-            title: Open
-            description: People over the age of 25.
-      - name: country
-        title: Country
-        description: Select your country.
-        public: true
-        required: true
-        values:
-          - value: switzerland
-            title: Switzerland
-            description: You are a citizen of Switzerland.
-          - value: liechtenstein
-            title: Liechtenstein
-            description: You are a citizen of Liechtenstein.
-          - value: world
-            title: World
-            description: You are neither a citizen of Switzerland or Liechtenstein.
       - name: notifications
         title: Notifications
         description: Do you want to get notified about Berg updates?
