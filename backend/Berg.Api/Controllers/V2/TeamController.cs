@@ -192,6 +192,7 @@ public partial class TeamController(
         return Ok(new CurrentTeam
         {
             Id = dbTeam.Id,
+            Name = dbTeam.Name,
             JoinToken = dbTeam.JoinToken,
             Players = [playerId]
         });
