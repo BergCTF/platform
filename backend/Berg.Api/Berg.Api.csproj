@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Discord.Net" Version="3.17.1" />
+    <PackageReference Include="Discord.Net" Version="3.17.2" />
     <PackageReference Include="KubernetesClient" Version="16.0.2" />
     <PackageReference Include="MediatR" Version="12.4.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.2" />
@@ -19,16 +19,16 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.2" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
     <PackageReference Include="Npgsql.OpenTelemetry" Version="9.0.3" />
-    <PackageReference Include="OpenTelemetry" Version="1.11.1" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.11.1" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.11.1" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.11.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.11.0" />
+    <PackageReference Include="OpenTelemetry" Version="1.11.2" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.11.2" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.11.2" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.11.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.11.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.3.1" />
     <PackageReference Include="OpenIddict.AspNetCore" Version="6.1.1" />
     <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="6.1.1" />
     <PackageReference Include="OpenIddict.Quartz" Version="6.1.1" />
-    <PackageReference Include="Quartz.AspNetCore" Version="3.13.1" />
+    <PackageReference Include="Quartz.AspNetCore" Version="3.14.0" />
     <PackageReference Include="UUIDNext" Version="4.1.1" />
   </ItemGroup>
 
