@@ -47,15 +47,6 @@ public class DiscordSolveNotificationHandler(
 
         var username = Format.Sanitize(solve.PlayerName);
         var allowedMentions = new AllowedMentions();
-        if (!string.IsNullOrEmpty(discordConfig.ClientId)) {
-            var discordId = ulong.Parse(solve.PlayerFederatedId);
-            var user = await guild.GetUserAsync(discordId);
-            if (user != null) {
-                // User is member of the discord server where the bot is configured to send messages
-                username = user.Mention;
-            }
-        }
-
         await channel.SendMessageAsync(
                 $"{username}{teamAddendum} has solved challenge `{solve.Challenge}` :triangular_flag_on_post:",
                     allowedMentions: allowedMentions);
