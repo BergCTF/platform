@@ -1,24 +1,19 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { HelperService } from "src/app/services/helper.service";
 import { DataService } from "src/app/services/data.service";
-import { PrettyDateComponent } from "../../widgets/pretty-date/pretty-date.component";
 import { ChallengeStatusComponent } from "../../widgets/challenge-status/challenge-status.component";
 import { BehaviorSubject, combineLatest, map, Subscription } from "rxjs";
 import { RouterLink } from "@angular/router";
 import { ChallengeDetailCategory } from "src/app/model";
 import { Instance } from "src/app/api-model";
 import { NgbTooltip } from "@ng-bootstrap/ng-bootstrap";
+import { DatePipe } from "@angular/common";
 
 @Component({
   selector: "app-challenges",
   templateUrl: "./challenges.component.html",
   styleUrls: ["./challenges.component.less"],
-  imports: [
-    RouterLink,
-    PrettyDateComponent,
-    ChallengeStatusComponent,
-    NgbTooltip,
-  ],
+  imports: [RouterLink, DatePipe, ChallengeStatusComponent, NgbTooltip],
 })
 export class ChallengesComponent implements OnInit, OnDestroy {
   public challengeDetailCategories: readonly ChallengeDetailCategory[] = [];

@@ -2,17 +2,16 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 import { ActivatedRoute, RouterLink } from "@angular/router";
 import { DataService } from "src/app/services/data.service";
 import { HelperService } from "src/app/services/helper.service";
-import { PrettyDateComponent } from "../../widgets/pretty-date/pretty-date.component";
 import { map, Subscription } from "rxjs";
 import { PlayerDetail } from "src/app/model";
-import { KeyValuePipe } from "@angular/common";
+import { DatePipe, KeyValuePipe } from "@angular/common";
 import { Metadata } from "src/app/api-model";
 
 @Component({
   selector: "app-player",
   templateUrl: "./player-detail.component.html",
   styleUrls: ["./player-detail.component.less"],
-  imports: [RouterLink, PrettyDateComponent, KeyValuePipe],
+  imports: [RouterLink, DatePipe, KeyValuePipe],
 })
 export class PlayerDetailComponent implements OnInit, OnDestroy {
   private playerDetailSubscription: Subscription | null = null;

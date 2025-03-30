@@ -10,7 +10,7 @@
           {{ helper.getCountdownText(ctfStart, null) }}
         </h1>
         <ng-template #startDetails>
-          <app-pretty-date [date]="ctfStart" /> UTC
+          {{ ctfStart | date: "medium" }}
         </ng-template>
       </div>
     </div>

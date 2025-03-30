@@ -13,7 +13,7 @@
             <h5>Hidden</h5>
             <p>
               This challenge is hidden until
-              <app-pretty-date [date]="challengeDetail.challenge.hideUntil" />
+              {{ challengeDetail.challenge.hideUntil | date: "medium" }}
               <i class="bi bi-eye-slash-fill"></i>
             </p>
           }
@@ -219,7 +219,7 @@
               <table class="table table-hover">
                 <thead>
                   <tr>
-                    <th scope="col">Solved at (UTC)</th>
+                    <th scope="col">Solved at</th>
                     <th scope="col">Team</th>
                     <th scope="col">Player(s)</th>
                   </tr>
@@ -228,7 +228,7 @@
                   @for (solve of challengeDetail.teamSolves; track solve) {
                     <tr>
                       <td class="text-wrap">
-                        <app-pretty-date [date]="solve.solvedAt" />
+                        {{ solve.solvedAt | date: "medium" }}
                         <wbr />
                         <span class="text-muted text-nowrap"
                           >({{ helper.relativeTime(solve.solvedAt) }})</span
@@ -265,7 +265,7 @@
               <table class="table table-hover">
                 <thead>
                   <tr>
-                    <th scope="col">Solved at (UTC)</th>
+                    <th scope="col">Solved at</th>
                     <th scope="col">Player</th>
                   </tr>
                 </thead>
@@ -273,7 +273,7 @@
                   @for (solve of challengeDetail.playerSolves; track solve) {
                     <tr>
                       <td class="text-wrap">
-                        <app-pretty-date [date]="solve.solvedAt" />
+                        {{ solve.solvedAt | date: "medium" }}
                         <wbr />
                         <span class="text-muted text-nowrap"
                           >({{ helper.relativeTime(solve.solvedAt) }})</span

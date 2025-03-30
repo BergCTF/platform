@@ -62,7 +62,7 @@
             <th scope="col">#</th>
             <th scope="col">Name</th>
             <th scope="col">Score</th>
-            <th scope="col">Last solve (UTC)</th>
+            <th scope="col">Last solve</th>
             @for (category of primaryChallengeCategories; track category) {
               <th scope="col">{{ category }}</th>
             }
@@ -104,7 +104,7 @@
               <td>{{ ranking.score }}</td>
               <td class="text-wrap">
                 @if (ranking.lastSolveAt) {
-                  <app-pretty-date [date]="ranking.lastSolveAt" />
+                  {{ ranking.lastSolveAt | date: "medium" }}
                   <wbr />
                   <span class="text-muted text-nowrap"
                     >({{ helper.relativeTime(ranking.lastSolveAt) }})</span

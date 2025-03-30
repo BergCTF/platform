@@ -81,7 +81,7 @@
                 <thead>
                   <tr>
                     <th scope="col">Challenge</th>
-                    <th scope="col">Solved at (UTC)</th>
+                    <th scope="col">Solved at</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -94,7 +94,7 @@
                         >
                       </td>
                       <td class="text-wrap">
-                        <app-pretty-date [date]="solve.solvedAt" />
+                        {{ solve.solvedAt | date: "medium" }}
                         <wbr />
                         <span class="text-muted text-nowrap"
                           >({{ helper.relativeTime(solve.solvedAt) }})</span

@@ -1,4 +1,4 @@
-import { SlicePipe } from "@angular/common";
+import { DatePipe, SlicePipe } from "@angular/common";
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { RouterLink } from "@angular/router";
 import { NgbPagination } from "@ng-bootstrap/ng-bootstrap";
@@ -6,13 +6,12 @@ import { Subscription } from "rxjs";
 import { ActivityEntry } from "src/app/model";
 import { DataService } from "src/app/services/data.service";
 import { HelperService } from "src/app/services/helper.service";
-import { PrettyDateComponent } from "src/app/widgets/pretty-date/pretty-date.component";
 
 @Component({
   selector: "app-activity",
   templateUrl: "./activity.component.html",
   styleUrl: "./activity.component.less",
-  imports: [NgbPagination, RouterLink, SlicePipe, PrettyDateComponent],
+  imports: [NgbPagination, RouterLink, SlicePipe, DatePipe],
 })
 export class ActivityComponent implements OnInit, OnDestroy {
   private areTeamsEnabledSubscription: Subscription | null = null;

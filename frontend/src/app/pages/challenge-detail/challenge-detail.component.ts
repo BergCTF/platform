@@ -1,11 +1,10 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
-import { Location } from "@angular/common";
+import { DatePipe, Location } from "@angular/common";
 import { ActivatedRoute, RouterLink } from "@angular/router";
 import { map, Subscription } from "rxjs";
 import { Instance, ProblemDetails } from "src/app/api-model";
 import { DataService } from "src/app/services/data.service";
 import { ChallengeStatusComponent } from "src/app/widgets/challenge-status/challenge-status.component";
-import { PrettyDateComponent } from "src/app/widgets/pretty-date/pretty-date.component";
 import { HttpErrorResponse } from "@angular/common/http";
 import { ChallengeDetail } from "src/app/model";
 import { NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
@@ -15,12 +14,7 @@ import { HelperService } from "src/app/services/helper.service";
   selector: "app-challenge-detail",
   templateUrl: "./challenge-detail.component.html",
   styleUrl: "./challenge-detail.component.less",
-  imports: [
-    ChallengeStatusComponent,
-    PrettyDateComponent,
-    RouterLink,
-    NgbNavModule,
-  ],
+  imports: [ChallengeStatusComponent, DatePipe, RouterLink, NgbNavModule],
 })
 export class ChallengeDetailComponent implements OnInit, OnDestroy {
   challengeDetail: ChallengeDetail | null = null;

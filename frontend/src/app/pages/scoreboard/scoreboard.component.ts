@@ -1,4 +1,4 @@
-import { SlicePipe } from "@angular/common";
+import { DatePipe, SlicePipe } from "@angular/common";
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { RouterLink } from "@angular/router";
 import {
@@ -26,7 +26,6 @@ import {
 } from "src/app/model";
 import { DataService } from "src/app/services/data.service";
 import { HelperService } from "src/app/services/helper.service";
-import { PrettyDateComponent } from "src/app/widgets/pretty-date/pretty-date.component";
 
 @Component({
   selector: "app-scoreboard",
@@ -34,7 +33,7 @@ import { PrettyDateComponent } from "src/app/widgets/pretty-date/pretty-date.com
   styleUrl: "./scoreboard.component.less",
   imports: [
     RouterLink,
-    PrettyDateComponent,
+    DatePipe,
     NgxEchartsDirective,
     SlicePipe,
     NgbTooltipModule,
