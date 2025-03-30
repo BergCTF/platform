@@ -8,6 +8,12 @@ export class HelperService {
     return this.relativeTimeTo(new Date(time), new Date(Date.now()));
   }
 
+  isInTheFuture(hideUntil: string | null) {
+    if (hideUntil == null) return false;
+    if (new Date(hideUntil) <= new Date(Date.now())) return false;
+    return true;
+  }
+
   relativeTimeTo(date: Date, now: Date | null): string {
     if (now == null) now = new Date();
     const rtf1 = new Intl.RelativeTimeFormat("en", {});

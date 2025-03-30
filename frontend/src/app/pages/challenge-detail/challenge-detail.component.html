@@ -9,6 +9,14 @@
       <li ngbNavItem>
         <button ngbNavLink>Challenge</button>
         <ng-template ngbNavContent>
+          @if (helper.isInTheFuture(challengeDetail.challenge.hideUntil)) {
+            <h5>Hidden</h5>
+            <p>
+              This challenge is hidden until
+              <app-pretty-date [date]="challengeDetail.challenge.hideUntil" />
+              <i class="bi bi-eye-slash-fill"></i>
+            </p>
+          }
           <h5>Difficulty</h5>
           @switch (challengeDetail.challenge.difficulty) {
             @case ("baby") {

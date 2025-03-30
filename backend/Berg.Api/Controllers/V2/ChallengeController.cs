@@ -128,6 +128,7 @@ public class ChallengeController(
             Author = c.Spec.Author,
             Description = c.Spec.Description,
             Difficulty = c.Spec.Difficulty,
+            HideUntil = c.Spec.HideUntil,
             FlagFormat = c.Spec.FlagFormat,
             Categories = c.Spec.Categories,
             Tags = c.Spec.Tags,

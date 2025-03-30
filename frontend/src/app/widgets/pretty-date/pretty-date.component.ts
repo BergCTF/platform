@@ -8,13 +8,13 @@ import { Component, Input, ChangeDetectionStrategy } from "@angular/core";
 })
 export class PrettyDateComponent {
   @Input()
-  date: string | Date = "";
+  date: string | Date | null = "";
   prettyDate = (): string[] => {
     let dateStr = null;
     if (this.date instanceof Date) {
       dateStr = this.date.toISOString();
     } else {
-      dateStr = this.date;
+      dateStr = this.date || "";
     }
     const datePart = dateStr.slice(0, 10);
     const timePart = dateStr.slice(11, 19);

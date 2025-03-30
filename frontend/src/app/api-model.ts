@@ -35,6 +35,7 @@ export class Challenge {
   public displayName = "";
   public author = "";
   public description = "";
+  public hideUntil: string | null = null;
   public event: string = "";
   public difficulty = "";
   public flagFormat = "";
@@ -97,6 +98,7 @@ export class Instance {
   public id = "";
   public playerId = "";
   public name = "";
+  public timeout = "";
   public status: ChallengeInstanceState = ChallengeInstanceState.None;
   public services: Service[] = [];
 }

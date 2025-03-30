@@ -16,6 +16,9 @@ public class Challenge
     [JsonPropertyName("description")]
     public string Description { get; set; } = "";
 
+    [JsonPropertyName("hideUntil")]
+    public DateTime? HideUntil { get; set; }
+
     [JsonPropertyName("categories")]
     public List<string> Categories { get; set; } = [];
 

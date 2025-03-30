@@ -92,14 +92,13 @@ const dynamicPageTitleResolver: ResolveFn<string> = (
       const [metadata, pages] = params;
 
       let page =
-        pages
-          .find((p) => {
-            let pathPath = structuredClone(p.path);
-            if (!pathPath.startsWith("/")) {
-              pathPath = "/" + pathPath;
-            };
-            return pathPath == url;
-          }) || null;
+        pages.find((p) => {
+          let pathPath = structuredClone(p.path);
+          if (!pathPath.startsWith("/")) {
+            pathPath = "/" + pathPath;
+          }
+          return pathPath == url;
+        }) || null;
       if (page) {
         return `${metadata.eventName}: ${page.title}`;
       }

@@ -50,14 +50,13 @@ export class DynamicPageComponent implements OnInit, OnDestroy {
     if (currentPath.startsWith("/")) {
       currentPath = currentPath.substring(1);
     }
-    let page = this._pages
-      .find((p) => {
-        let pagePath = structuredClone(p.path);
-        if (pagePath.startsWith("/")) {
-          pagePath = pagePath.substring(1);
-        }
-        return pagePath == currentPath;
-      });
+    let page = this._pages.find((p) => {
+      let pagePath = structuredClone(p.path);
+      if (pagePath.startsWith("/")) {
+        pagePath = pagePath.substring(1);
+      }
+      return pagePath == currentPath;
+    });
     if (page != undefined) {
       this.page = page;
     }

@@ -6,7 +6,7 @@ metadata:
 spec:
   author: NoRelect
   flag: bergctf{you-should-never-see-me!}
-  description: You should never see me!
+  description: You should never see me unless you are an admin!
   difficulty: impossible
   hideUntil: "2099-01-01T00:00:00+00:00"
   categories:

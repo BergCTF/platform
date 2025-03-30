@@ -79,8 +79,8 @@ export class DataService {
   public readonly players: Observable<readonly Player[]> = this._players
     .asObservable()
     .pipe(tap((p) => (this._lastPlayers = p)));
-  public readonly pages: Observable<readonly Page[]> = this._pages
-    .asObservable();
+  public readonly pages: Observable<readonly Page[]> =
+    this._pages.asObservable();
   public readonly teams: Observable<readonly Team[]> = this._teams
     .asObservable()
     .pipe(tap((t) => (this._lastTeams = t)));

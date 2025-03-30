@@ -132,6 +132,11 @@
                 @if (hasSolved) {
                   <i class="bi bi-check"></i>
                 }
+                @if (
+                  helper.isInTheFuture(challengeDetail.challenge.hideUntil)
+                ) {
+                  <i class="bi bi-eye-slash-fill"></i>
+                }
                 {{ challengeDetail.challenge.displayName }}
                 <br />
                 <span>{{ challengeDetail.value }}</span>
