@@ -25,9 +25,9 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.11.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.11.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="8.0.0" />
-    <PackageReference Include="OpenIddict.AspNetCore" Version="6.1.1" />
-    <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="6.1.1" />
-    <PackageReference Include="OpenIddict.Quartz" Version="6.1.1" />
+    <PackageReference Include="OpenIddict.AspNetCore" Version="6.2.0" />
+    <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="6.2.0" />
+    <PackageReference Include="OpenIddict.Quartz" Version="6.2.0" />
     <PackageReference Include="Quartz.AspNetCore" Version="3.14.0" />
     <PackageReference Include="UUIDNext" Version="4.1.1" />
   </ItemGroup>
