@@ -255,7 +255,7 @@ public class SolveController(
 
             if (!flagValid)
             {
-                dbContext.Submissions.Add(new Submission
+                dbContext.Submissions.Add(new Db.Submission
                 {
                     Id = UUIDNext.Uuid.NewSequential(),
                     Challenge = dbChallenge,
