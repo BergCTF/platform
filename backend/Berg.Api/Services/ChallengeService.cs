@@ -13,6 +13,7 @@ using k8s.Autorest;
 using k8s.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal;
 
 namespace Berg.Api.Services;
 
@@ -121,7 +122,8 @@ public class ChallengeService(
                     Id = instanceId,
                     PlayerId = playerId,
                     ChallengeName = challengeName,
-                    InstanceState = InstanceState.Terminating
+                    InstanceState = InstanceState.Terminating,
+                    StartedAt = ns.Metadata.CreationTimestamp,
                 },
             }, CancellationToken.None);
 
@@ -174,7 +176,8 @@ public class ChallengeService(
                 Id = null,
                 PlayerId = playerId,
                 ChallengeName = "",
-                InstanceState = InstanceState.None
+                InstanceState = InstanceState.None,
+                StartedAt = null,
             };
         }
 
@@ -186,7 +189,8 @@ public class ChallengeService(
                 Id = instanceId,
                 PlayerId = playerId,
                 ChallengeName = challengeName,
-                InstanceState = InstanceState.Terminating
+                InstanceState = InstanceState.Terminating,
+                StartedAt = ns.Metadata.CreationTimestamp,
             };
 
         var challenge = await _challengeClient.ReadNamespacedAsync<V1Challenge>(_bergNamespace, challengeName, cancellationToken);
@@ -199,7 +203,8 @@ public class ChallengeService(
                 Id = instanceId,
                 PlayerId = playerId,
                 ChallengeName = challengeName,
-                InstanceState = InstanceState.Starting
+                InstanceState = InstanceState.Starting,
+                StartedAt = ns.Metadata.CreationTimestamp,
             };
         }
 
@@ -258,7 +263,8 @@ public class ChallengeService(
             ChallengeName = challengeName,
             InstanceState = InstanceState.Running,
             Services = services,
-            Timeout = ns.CreationTimestamp()?.Add(infraConfig.ChallengeInstanceTimeout)
+            Timeout = ns.Metadata.CreationTimestamp?.Add(infraConfig.ChallengeInstanceTimeout),
+            StartedAt = ns.Metadata.CreationTimestamp
         };
     }
 
@@ -931,7 +937,7 @@ public class ChallengeService(
         }
 
         logger.LogInformation("Created instance of challenge: {}", challengeName);
-        var instance = new Instance { Id = instanceId, PlayerId = playerId, ChallengeName = challengeName, InstanceState = InstanceState.Starting };
+        var instance = new Instance { Id = instanceId, PlayerId = playerId, ChallengeName = challengeName, InstanceState = InstanceState.Starting, StartedAt = ns.Metadata.CreationTimestamp };
 
         var _ = mediator.Publish(new InstanceChangeNotification
         {
@@ -957,7 +963,8 @@ public class ChallengeService(
                 Id = null,
                 PlayerId = playerId,
                 ChallengeName = "",
-                InstanceState = InstanceState.None
+                InstanceState = InstanceState.None,
+                StartedAt = null,
             };
         }
 
@@ -970,7 +977,9 @@ public class ChallengeService(
                 Id = instanceId,
                 PlayerId = playerId,
                 ChallengeName = challengeName,
-                InstanceState = InstanceState.Terminating
+                InstanceState = InstanceState.Terminating,
+                StartedAt = ns.Metadata.CreationTimestamp,
+                TerminatedAt = ns.Metadata.DeletionTimestamp,
             };
         }
 
@@ -990,7 +999,7 @@ public class ChallengeService(
         }
         metrics.InstanceStopped();
 
-        return new Instance { Id = instanceId, PlayerId = playerId, ChallengeName = challengeName, InstanceState = InstanceState.Terminating };
+        return new Instance { Id = instanceId, PlayerId = playerId, ChallengeName = challengeName, InstanceState = InstanceState.Terminating, StartedAt = dbInstance?.StartedAt, TerminatedAt = dbInstance?.TerminatedAt };
     }
 
     public static string ToLabelSelector(IDictionary<string, string> labelSelector)

@@ -21,6 +21,12 @@ public class Instance
 
     [JsonPropertyName("timeout")]
     public DateTime? Timeout { get; set; }
+
+    [JsonPropertyName("startedAt")]
+    public DateTime? StartedAt { get; set; }
+
+    [JsonPropertyName("terminatedAt")]
+    public DateTime? TerminatedAt { get; set; }
 }
 
 public enum InstanceState

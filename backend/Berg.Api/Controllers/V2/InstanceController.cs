@@ -1,11 +1,14 @@
 using Berg.Api.Configuration;
+using Berg.Api.Db;
 using Berg.Api.Models.V2;
 using Berg.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using System.Security.Claims;
 using System.Text.Json.Serialization;
+using Instance = Berg.Api.Models.V2.Instance;
 
 namespace Berg.Api.Controllers.V2;
 
@@ -13,6 +16,7 @@ namespace Berg.Api.Controllers.V2;
 [ApiExplorerSettings(GroupName = "v2")]
 public class InstanceController(
     IChallengeService challengeService,
+    BergDbContext bergDbContext,
     CtfConfig ctfConfig) : ControllerBase
 {
     public class InstanceStartRequest
@@ -28,6 +32,23 @@ public class InstanceController(
     public async Task<ActionResult<List<Instance>>> GetAllChallengeInstances(CancellationToken cancel)
     {
         return await challengeService.GetChallengeInstances(cancel);
+    }
+
+    [HttpGet]
+    [Route("/api/v2/instances/historic")]
+    [Authorize(Policy = Constants.Policies.Admin)]
+    [ProducesResponseType(typeof(List<Instance>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<Instance>>> GetAllHistoricChallengeInstances(CancellationToken cancel)
+    {
+        return await bergDbContext.Instances.Where(i => i.TerminatedAt.HasValue).Select(i => new Instance
+        {
+            Id = i.Id,
+            ChallengeName = i.ChallengeName,
+            PlayerId = i.PlayerId,
+            InstanceState = InstanceState.None,
+            StartedAt = i.StartedAt,
+            TerminatedAt = i.TerminatedAt,
+        }).ToListAsync(cancel);
     }
 
     [HttpGet]
