@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using Solve = Berg.Api.Models.V2.Solve;
+using Submission = Berg.Api.Models.V2.Submission;
 
 namespace Berg.Api.Controllers.V2;
 
@@ -311,5 +312,21 @@ public class SolveController(
                 SolvedAt = utcNow
             });
         }
+    }
+
+    [HttpGet]
+    [Route("/api/v2/submissions")]
+    [Authorize(Policy = Constants.Policies.Admin)]
+    [ProducesResponseType(typeof(List<Submission>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public ActionResult<List<Submission>> ListSubmissions()
+    {
+        return dbContext.Submissions.Select(s => new Submission {
+            Id = s.Id,
+            PlayerId = s.Player.Id,
+            Value = s.Value,
+            SubmittedAt = s.SubmittedAt,
+            ChallengeName = s.Challenge.Name,
+        }).ToList();
     }
 }
