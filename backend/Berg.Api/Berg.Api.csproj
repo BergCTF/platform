@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Discord.Net" Version="3.17.2" />
     <PackageReference Include="KubernetesClient" Version="16.0.2" />
-    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="MediatR" Version="12.5.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.3">
@@ -24,7 +24,7 @@
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.11.2" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.11.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.11.1" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.0" />
     <PackageReference Include="OpenIddict.AspNetCore" Version="6.2.0" />
     <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="6.2.0" />
     <PackageReference Include="OpenIddict.Quartz" Version="6.2.0" />
