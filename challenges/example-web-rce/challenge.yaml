@@ -25,8 +25,10 @@ spec:
       dynamicFlag:
         executable:
           path: /printflag
-      additionalCapabilities:
-        - DAC_OVERRIDE
+      readinessProbe:
+        httpGet:
+          port: 5000
+          path: /
   attachments:
     - fileName: example-web-rce.tar.gz
       downloadUrl: /handouts/example-web-rce.tar.gz

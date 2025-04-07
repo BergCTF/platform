@@ -25,6 +25,8 @@ spec:
       dynamicFlag:
         content:
           path: /flag.txt
+      additionalCapabilities:
+        - DAC_OVERRIDE
   attachments:
     - fileName: example-web-lfi.tar.gz
       downloadUrl: /handouts/example-web-lfi.tar.gz

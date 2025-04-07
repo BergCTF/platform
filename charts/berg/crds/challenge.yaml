@@ -68,6 +68,9 @@ spec:
                       environment:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
+                      readinessProbe:
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
                       resourceLimits:
                         type: object
                         properties:

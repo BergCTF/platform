@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using k8s.Models;
 
 namespace Berg.Api.CustomResources.Berg;
 
@@ -18,6 +19,9 @@ public class V1ChallengeContainer
 
     [JsonPropertyName("resourceLimits")]
     public Dictionary<string, string>? ResourceLimits { get; set; }
+
+    [JsonPropertyName("readinessProbe")]
+    public V1Probe? ReadinessProbe { get; set; }
 
     [JsonPropertyName("runtimeClassName")]
     public string? RuntimeClassName { get; set; }
