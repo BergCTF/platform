@@ -1,6 +1,6 @@
 using Berg.Api.Configuration;
 using Berg.Api.Db;
-using Berg.Api.Models.V2;
+using Berg.Api.Models;
 using Berg.Api.Notifications;
 using Berg.Api.Services;
 using MediatR;
@@ -10,19 +10,19 @@ using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using Player = Berg.Api.Models.V2.Player;
+using Player = Berg.Api.Models.Player;
 
-namespace Berg.Api.Controllers.V2;
+namespace Berg.Api.Controllers;
 
 [ApiController]
-[ApiExplorerSettings(GroupName = "v2")]
+[ApiExplorerSettings(GroupName="berg-api")]
 public class PlayerController(CtfConfig ctfConfig,
     BergDbContext dbContext,
     BergMetrics metrics,
     IMediator mediator) : ControllerBase
 {
     [HttpGet]
-    [Route("/api/v2/players")]
+    [Route("/api/players")]
     [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(List<Player>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -36,7 +36,7 @@ public class PlayerController(CtfConfig ctfConfig,
     }
 
     [HttpGet]
-    [Route("/api/v2/players/{id:guid}")]
+    [Route("/api/players/{id:guid}")]
     [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(Player), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -53,7 +53,7 @@ public class PlayerController(CtfConfig ctfConfig,
     }
 
     [HttpGet]
-    [Route("/api/v2/players/current")]
+    [Route("/api/players/current")]
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(CurrentPlayer), StatusCodes.Status200OK)]
     public async Task<ActionResult<CurrentPlayer>> GetCurrentPlayer(CancellationToken cancel)
@@ -79,7 +79,7 @@ public class PlayerController(CtfConfig ctfConfig,
     }
 
     [HttpPatch]
-    [Route("/api/v2/players/current")]
+    [Route("/api/players/current")]
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public ActionResult UpdateCurrentPlayerAttributes(AttributesUpdateRequest attrUpdate)
@@ -127,7 +127,7 @@ public class PlayerController(CtfConfig ctfConfig,
 
 
     [HttpDelete]
-    [Route("/api/v2/players/current")]
+    [Route("/api/players/current")]
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public ActionResult DeleteCurrentPlayer()
@@ -160,7 +160,7 @@ public class PlayerController(CtfConfig ctfConfig,
                 .Single(t => t.Id == player.TeamId);
             var __ = mediator.Publish(new TeamUpdateNotification
             {
-                Team = new Models.V2.Team
+                Team = new Models.Team
                 {
                     Id = dbTeam.Id,
                     Name = dbTeam.Name,
@@ -177,7 +177,7 @@ public class PlayerController(CtfConfig ctfConfig,
     }
 
     [HttpDelete]
-    [Route("/api/v2/players/current/api-key")]
+    [Route("/api/players/current/api-key")]
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

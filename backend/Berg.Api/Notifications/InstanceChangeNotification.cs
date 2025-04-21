@@ -1,4 +1,4 @@
-using Berg.Api.Models.V2;
+using Berg.Api.Models;
 using MediatR;
 
 namespace Berg.Api.Notifications;

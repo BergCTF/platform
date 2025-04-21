@@ -1,17 +1,17 @@
 using Berg.Api.Configuration;
-using Berg.Api.Models.V2;
+using Berg.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Berg.Api.Controllers.V2;
+namespace Berg.Api.Controllers;
 
 [ApiController]
-[ApiExplorerSettings(GroupName = "v2")]
+[ApiExplorerSettings(GroupName="berg-api")]
 public class MetadataController(CtfConfig ctfConfig) : ControllerBase
 {
 
     [HttpGet]
-    [Route("/api/v2/metadata")]
+    [Route("/api/metadata")]
     [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     public Metadata GetMetadata()
     {
@@ -26,14 +26,14 @@ public class MetadataController(CtfConfig ctfConfig) : ControllerBase
             FreezeStart = ctfConfig.Scoring.FreezeStart,
             FreezeEnd = ctfConfig.Scoring.FreezeEnd,
             AllowAnonymousAccess = ctfConfig.AllowAnonymousAccess,
-            PlayerAttributes = ctfConfig.PlayerAttributes?.Select(a => new Models.V2.PlayerAttribute
+            PlayerAttributes = ctfConfig.PlayerAttributes?.Select(a => new Models.PlayerAttribute
             {
                 Name = a.Name,
                 Title = a.Title,
                 Description = a.Description,
                 Public = a.Public,
                 Required = a.Required,
-                Values = a.Values?.Select(v => new Models.V2.PlayerAttributeValue
+                Values = a.Values?.Select(v => new Models.PlayerAttributeValue
                 {
                     Value = v.Value,
                     Title = v.Title,

@@ -36,14 +36,14 @@ export class ApiService {
 
   getChallenges(): Observable<Challenge[]> {
     return this.http.get<Challenge[]>(
-      this.baseUrl + "/api/v2/challenges",
+      this.baseUrl + "/api/challenges",
       this.httpOptions,
     );
   }
 
   getChallenge(name: string): Observable<Challenge> {
     return this.http.get<Challenge>(
-      this.baseUrl + "/api/v2/challenges/" + name,
+      this.baseUrl + "/api/challenges/" + name,
       this.httpOptions,
     );
   }
@@ -52,14 +52,14 @@ export class ApiService {
 
   getInstances(): Observable<Instance[]> {
     return this.http.get<Instance[]>(
-      this.baseUrl + "/api/v2/instances",
+      this.baseUrl + "/api/instances",
       this.httpOptions,
     );
   }
 
   getInstance(): Observable<Instance> {
     return this.http.get<Instance>(
-      this.baseUrl + "/api/v2/instances/current",
+      this.baseUrl + "/api/instances/current",
       this.httpOptions,
     );
   }
@@ -69,7 +69,7 @@ export class ApiService {
       challenge: challengeName,
     };
     return this.http.post<Instance>(
-      this.baseUrl + "/api/v2/instances/current",
+      this.baseUrl + "/api/instances/current",
       data,
       this.httpOptions,
     );
@@ -77,7 +77,7 @@ export class ApiService {
 
   stopInstance(): Observable<Instance> {
     return this.http.delete<Instance>(
-      this.baseUrl + "/api/v2/instances/current",
+      this.baseUrl + "/api/instances/current",
       this.httpOptions,
     );
   }
@@ -86,7 +86,7 @@ export class ApiService {
 
   getMetadata(): Observable<Metadata> {
     return this.http.get<Metadata>(
-      this.baseUrl + "/api/v2/metadata",
+      this.baseUrl + "/api/metadata",
       this.httpOptions,
     );
   }
@@ -95,7 +95,7 @@ export class ApiService {
 
   getPages(): Observable<Page[]> {
     return this.http.get<Page[]>(
-      this.baseUrl + "/api/v2/pages",
+      this.baseUrl + "/api/pages",
       this.httpOptions,
     );
   }
@@ -104,21 +104,21 @@ export class ApiService {
 
   getPlayers(): Observable<Player[]> {
     return this.http.get<Player[]>(
-      this.baseUrl + "/api/v2/players",
+      this.baseUrl + "/api/players",
       this.httpOptions,
     );
   }
 
   getPlayer(id: string): Observable<Player> {
     return this.http.get<Player>(
-      this.baseUrl + "/api/v2/players/" + id,
+      this.baseUrl + "/api/players/" + id,
       this.httpOptions,
     );
   }
 
   getCurrentPlayer(): Observable<CurrentPlayer> {
     return this.http.get<CurrentPlayer>(
-      this.baseUrl + "/api/v2/players/current",
+      this.baseUrl + "/api/players/current",
       this.httpOptions,
     );
   }
@@ -130,7 +130,7 @@ export class ApiService {
       attributes: attributes,
     };
     return this.http.patch<void>(
-      this.baseUrl + "/api/v2/players/current",
+      this.baseUrl + "/api/players/current",
       data,
       this.httpOptions,
     );
@@ -138,14 +138,14 @@ export class ApiService {
 
   resetApiKey(): Observable<string> {
     return this.http.delete<string>(
-      this.baseUrl + "/api/v2/players/current/api-key",
+      this.baseUrl + "/api/players/current/api-key",
       this.httpOptions,
     );
   }
 
   deleteCurrentPlayer(): Observable<void> {
     return this.http.delete<void>(
-      this.baseUrl + "/api/v2/players/current",
+      this.baseUrl + "/api/players/current",
       this.httpOptions,
     );
   }
@@ -153,10 +153,7 @@ export class ApiService {
   /* Solve */
 
   getSolves(): Observable<Solve[]> {
-    return this.http.get<Solve[]>(
-      this.baseUrl + "/api/v2/solves",
-      this.httpOptions,
-    );
+    return this.http.get<Solve[]>(this.baseUrl+'/api/solves', this.httpOptions);
   }
 
   addSolve(challenge: string, flag: string): Observable<void> {
@@ -164,56 +161,35 @@ export class ApiService {
       challenge: challenge,
       flag: flag,
     };
-    return this.http.post<void>(
-      this.baseUrl + "/api/v2/solves",
-      data,
-      this.httpOptions,
-    );
+    return this.http.post<void>(this.baseUrl+'/api/solves', data, this.httpOptions);
   }
 
   /* Team */
 
   getTeams(): Observable<Team[]> {
-    return this.http.get<Team[]>(
-      this.baseUrl + "/api/v2/teams",
-      this.httpOptions,
-    );
+    return this.http.get<Team[]>(this.baseUrl+'/api/teams', this.httpOptions);
   }
 
   getCurrentTeam(): Observable<CurrentTeam> {
-    return this.http.get<CurrentTeam>(
-      this.baseUrl + "/api/v2/teams/current",
-      this.httpOptions,
-    );
+    return this.http.get<CurrentTeam>(this.baseUrl+'/api/teams/current', this.httpOptions);
   }
 
   leaveCurrentTeam(): Observable<void> {
-    return this.http.delete<void>(
-      this.baseUrl + "/api/v2/teams/current",
-      this.httpOptions,
-    );
+    return this.http.delete<void>(this.baseUrl+'/api/teams/current', this.httpOptions);
   }
 
   createTeam(name: string): Observable<void> {
     let data = {
       name: name,
     };
-    return this.http.post<void>(
-      this.baseUrl + "/api/v2/teams/create",
-      data,
-      this.httpOptions,
-    );
+    return this.http.post<void>(this.baseUrl+'/api/teams/create', data, this.httpOptions);
   }
 
   joinTeam(joinToken: string): Observable<CurrentTeam> {
     let data = {
       joinToken: joinToken,
     };
-    return this.http.post<CurrentTeam>(
-      this.baseUrl + "/api/v2/teams/join",
-      data,
-      this.httpOptions,
-    );
+    return this.http.post<CurrentTeam>(this.baseUrl+'/api/teams/join', data, this.httpOptions);
   }
 
   downloadFile(relativeUrl: string): Observable<Blob> {

@@ -1,20 +1,20 @@
-using Berg.Api.Models.V2;
+using Berg.Api.Models;
 using Berg.Api.CustomResources;
 using Berg.Api.CustomResources.Berg;
 using Microsoft.AspNetCore.Mvc;
 using k8s;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Berg.Api.Controllers.V2;
+namespace Berg.Api.Controllers;
 
 [ApiController]
-[ApiExplorerSettings(GroupName = "v2")]
+[ApiExplorerSettings(GroupName="berg-api")]
 public class PageController(Kubernetes kubernetes) : ControllerBase
 {
     private readonly GenericClient pageClient = CustomResource.CreateGenericClient<V1Page>(kubernetes, false);
 
     [HttpGet]
-    [Route("/api/v2/pages")]
+    [Route("/api/pages")]
     [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(List<Page>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

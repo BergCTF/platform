@@ -10,13 +10,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
-using Solve = Berg.Api.Models.V2.Solve;
-using Submission = Berg.Api.Models.V2.Submission;
+using Solve = Berg.Api.Models.Solve;
+using Submission = Berg.Api.Models.Submission;
 
-namespace Berg.Api.Controllers.V2;
+namespace Berg.Api.Controllers;
 
 [ApiController]
-[ApiExplorerSettings(GroupName = "v2")]
+[ApiExplorerSettings(GroupName="berg-api")]
 public class SolveController(
     ILogger<SolveController> logger,
     CtfConfig ctfConfig,
@@ -36,7 +36,7 @@ public class SolveController(
     }
 
     [HttpGet]
-    [Route("/api/v2/solves")]
+    [Route("/api/solves")]
     [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(List<Solve>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -92,7 +92,7 @@ public class SolveController(
     }
 
     [HttpPost]
-    [Route("/api/v2/solves")]
+    [Route("/api/solves")]
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(Solve), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -315,7 +315,7 @@ public class SolveController(
     }
 
     [HttpGet]
-    [Route("/api/v2/submissions")]
+    [Route("/api/submissions")]
     [Authorize(Policy = Constants.Policies.Admin)]
     [ProducesResponseType(typeof(List<Submission>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

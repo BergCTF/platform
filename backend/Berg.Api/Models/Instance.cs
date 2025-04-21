@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Berg.Api.Models.V2;
+namespace Berg.Api.Models;
 
 public class Instance
 {

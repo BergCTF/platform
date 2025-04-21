@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
 
-namespace Berg.Api.Controllers.V2;
+namespace Berg.Api.Controllers;
 
 [ApiController]
-[ApiExplorerSettings(GroupName = "v2")]
+[ApiExplorerSettings(GroupName="berg-api")]
 public class EventsController(IWebSocketService webSocketService) : ControllerBase
 {
     [HttpGet]

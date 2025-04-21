@@ -1,5 +1,5 @@
 using Berg.Api.Configuration;
-using Berg.Api.Controllers.V2;
+using Berg.Api.Controllers;
 using Berg.Api.CustomResources.Berg;
 using Berg.Api.Db;
 using Berg.Api.Services;
@@ -28,7 +28,7 @@ public class WebSocketNotificationHandler(
 {
     public async Task Handle(SolveNotification solve, CancellationToken cancellationToken)
     {
-        var dtoSolve = new Models.V2.Solve
+        var dtoSolve = new Models.Solve
         {
             Id = solve.Id,
             PlayerId = solve.PlayerId,

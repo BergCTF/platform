@@ -6,7 +6,7 @@ using Berg.Api.CustomResources;
 using Berg.Api.CustomResources.Berg;
 using Berg.Api.CustomResources.Cilium;
 using Berg.Api.CustomResources.GatewayApi;
-using Berg.Api.Models.V2;
+using Berg.Api.Models;
 using Berg.Api.Notifications;
 using k8s;
 using k8s.Autorest;

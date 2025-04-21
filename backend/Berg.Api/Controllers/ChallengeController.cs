@@ -2,16 +2,16 @@ using Berg.Api.CustomResources.Berg;
 using Berg.Api.Services;
 using k8s.Models;
 using Microsoft.AspNetCore.Mvc;
-using Challenge = Berg.Api.Models.V2.Challenge;
-using Attachment = Berg.Api.Models.V2.Attachment;
+using Challenge = Berg.Api.Models.Challenge;
+using Attachment = Berg.Api.Models.Attachment;
 using Berg.Api.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using OpenIddict.Abstractions;
 
-namespace Berg.Api.Controllers.V2;
+namespace Berg.Api.Controllers;
 
 [ApiController]
-[ApiExplorerSettings(GroupName = "v2")]
+[ApiExplorerSettings(GroupName="berg-api")]
 public class ChallengeController(
     IChallengeService challengeService,
     HttpClient httpClient,
@@ -19,7 +19,7 @@ public class ChallengeController(
     CtfConfig ctfConfig) : ControllerBase
 {
     [HttpGet]
-    [Route("/api/v2/challenges")]
+    [Route("/api/challenges")]
     [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(List<Challenge>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -41,7 +41,7 @@ public class ChallengeController(
     }
 
     [HttpGet]
-    [Route("/api/v2/challenges/{name}")]
+    [Route("/api/challenges/{name}")]
     [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(Challenge), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -69,7 +69,7 @@ public class ChallengeController(
     }
 
     [HttpGet]
-    [Route("/api/v2/challenges/{name}/handout/{index}")]
+    [Route("/api/challenges/{name}/handout/{index}")]
     [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [Produces("application/octet-stream")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -150,7 +150,7 @@ public class ChallengeController(
                     return new Attachment
                     {
                         FileName = a.FileName,
-                        DownloadUrl = $"/api/v2/challenges/{challengeName}/handout/{i}",
+                        DownloadUrl = $"/api/challenges/{challengeName}/handout/{i}",
                     };
                 }
             }).ToList() ?? [],

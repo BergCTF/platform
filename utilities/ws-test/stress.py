@@ -16,7 +16,7 @@ j = requests.post(f"https://{API_URL}/api/openid/token", data={
 }, verify=ROOT_CA_PATH).json()
 access_token = j["access_token"]
 
-TARGET_URL = f"wss://{API_URL}/api/v2/events?access_token={access_token}"
+TARGET_URL = f"wss://{API_URL}/api/events?access_token={access_token}"
 
 class ClientListener(WSListener):
     i = 0

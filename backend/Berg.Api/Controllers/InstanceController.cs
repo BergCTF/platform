@@ -1,6 +1,6 @@
 using Berg.Api.Configuration;
 using Berg.Api.Db;
-using Berg.Api.Models.V2;
+using Berg.Api.Models;
 using Berg.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,12 +8,12 @@ using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using System.Security.Claims;
 using System.Text.Json.Serialization;
-using Instance = Berg.Api.Models.V2.Instance;
+using Instance = Berg.Api.Models.Instance;
 
-namespace Berg.Api.Controllers.V2;
+namespace Berg.Api.Controllers;
 
 [ApiController]
-[ApiExplorerSettings(GroupName = "v2")]
+[ApiExplorerSettings(GroupName="berg-api")]
 public class InstanceController(
     IChallengeService challengeService,
     BergDbContext bergDbContext,
@@ -26,7 +26,7 @@ public class InstanceController(
     }
 
     [HttpGet]
-    [Route("/api/v2/instances")]
+    [Route("/api/instances")]
     [Authorize(Policy = Constants.Policies.Admin)]
     [ProducesResponseType(typeof(List<Instance>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<Instance>>> GetAllChallengeInstances(CancellationToken cancel)
@@ -35,7 +35,7 @@ public class InstanceController(
     }
 
     [HttpGet]
-    [Route("/api/v2/instances/historic")]
+    [Route("/api/instances/historic")]
     [Authorize(Policy = Constants.Policies.Admin)]
     [ProducesResponseType(typeof(List<Instance>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<Instance>>> GetAllHistoricChallengeInstances(CancellationToken cancel)
@@ -52,7 +52,7 @@ public class InstanceController(
     }
 
     [HttpGet]
-    [Route("/api/v2/instances/current")]
+    [Route("/api/instances/current")]
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(Instance), StatusCodes.Status200OK)]
     public async Task<ActionResult<Instance>> GetChallengeInstance(CancellationToken cancel)
@@ -62,7 +62,7 @@ public class InstanceController(
     }
 
     [HttpPost]
-    [Route("/api/v2/instances/current")]
+    [Route("/api/instances/current")]
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(Instance), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -103,7 +103,7 @@ public class InstanceController(
     }
 
     [HttpDelete]
-    [Route("/api/v2/instances/current")]
+    [Route("/api/instances/current")]
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(Instance), StatusCodes.Status200OK)]
     public async Task<ActionResult<Instance>> StopChallengeInstance(CancellationToken cancel)

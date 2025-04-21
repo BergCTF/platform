@@ -8,16 +8,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
-using Team = Berg.Api.Models.V2.Team;
-using CurrentTeam = Berg.Api.Models.V2.CurrentTeam;
+using Team = Berg.Api.Models.Team;
+using CurrentTeam = Berg.Api.Models.CurrentTeam;
 using MediatR;
 using Berg.Api.Notifications;
 using Berg.Api.Services;
 
-namespace Berg.Api.Controllers.V2;
+namespace Berg.Api.Controllers;
 
 [ApiController]
-[ApiExplorerSettings(GroupName = "v2")]
+[ApiExplorerSettings(GroupName="berg-api")]
 public partial class TeamController(
     ILogger<TeamController> logger,
     BergDbContext dbContext,
@@ -27,7 +27,7 @@ public partial class TeamController(
 {
 
     [HttpGet]
-    [Route("/api/v2/teams")]
+    [Route("/api/teams")]
     [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(List<Team>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -42,7 +42,7 @@ public partial class TeamController(
     }
 
     [HttpGet]
-    [Route("/api/v2/teams/{id:guid}")]
+    [Route("/api/teams/{id:guid}")]
     [Authorize(Policy = Constants.Policies.AnonymousIfAllowedOrPlayer)]
     [ProducesResponseType(typeof(List<Team>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -60,7 +60,7 @@ public partial class TeamController(
     }
 
     [HttpGet]
-    [Route("/api/v2/teams/current")]
+    [Route("/api/teams/current")]
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -109,7 +109,7 @@ public partial class TeamController(
     private static partial Regex TeamNameRegex();
 
     [HttpPost]
-    [Route("/api/v2/teams/create")]
+    [Route("/api/teams/create")]
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -205,7 +205,7 @@ public partial class TeamController(
     }
 
     [HttpPost]
-    [Route("/api/v2/teams/join")]
+    [Route("/api/teams/join")]
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -287,7 +287,7 @@ public partial class TeamController(
     }
 
     [HttpDelete]
-    [Route("/api/v2/teams/current")]
+    [Route("/api/teams/current")]
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(CurrentTeam), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

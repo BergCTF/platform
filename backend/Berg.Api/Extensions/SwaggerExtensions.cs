@@ -23,9 +23,9 @@ public static class SwaggerExtensions
             };
             options.AddSecurityDefinition("oidc", securityScheme);
             options.AddOperationFilterInstance(new AuthorizationOperationFilter());
-            options.SwaggerDoc("v2", new OpenApiInfo {
-                Title = "Berg.API v2",
-                Version = "v2"
+            options.SwaggerDoc("berg-api", new OpenApiInfo {
+                Title = "Berg.API",
+                Version = Environment.GetEnvironmentVariable("BERG_VERSION") ?? "0.0.0"
             });
         });
     }
@@ -46,7 +46,7 @@ public static class SwaggerExtensions
                 { "prompt", "login" },
             };
 
-            options.SwaggerEndpoint("/swagger/v2/swagger.json", "Berg.API v2");
+            options.SwaggerEndpoint("/swagger/berg-api/swagger.json", "Berg.API");
         });
     }
 

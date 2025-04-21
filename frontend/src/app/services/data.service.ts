@@ -300,7 +300,7 @@ export class DataService {
     this._webSocket?.complete();
     let protocol = window.location.protocol == "https:" ? "wss" : "ws";
     this._webSocket = webSocket<WebSocketMessage<any>>({
-      url: protocol + "://" + window.location.host + "/api/v2/events",
+      url: protocol + "://" + window.location.host + "/api/events",
       openObserver: {
         next: (_) => {
           let message: WebSocketMessage<string | null> = {
