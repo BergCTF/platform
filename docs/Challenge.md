@@ -63,7 +63,7 @@ spec:
 
 When printing the flag, you can see that the dynamic flag modifies the flag specified in the `flag` property to contain random data:
 
-```txt
+```console
 root@nginx:/# ls -lah /folder/flag.txt
 -r--r--r-- 1 root root 29 Jan  8 23:09 /folder/flag.txt
 root@nginx:/# cat /folder/flag.txt
