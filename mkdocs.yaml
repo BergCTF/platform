@@ -27,6 +27,10 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Configuration: configuration.md
+  - Integrations:
+    - Discord: Discord.md
   - Guides:
       - Developing Challenges: Challenge.md
       - Metrics Support: Metrics.md
+      - OIDC with Authentik: OIDC-Authentik.md
