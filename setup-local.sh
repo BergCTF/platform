@@ -60,11 +60,11 @@ EOL
 kubectl --context kind-berg-dev-cluster cluster-info
 
 echo "Pre-loading cilium image"
-docker pull quay.io/cilium/cilium:v1.16.5
-kind load docker-image --name=berg-dev-cluster quay.io/cilium/cilium:v1.16.5
+docker pull quay.io/cilium/cilium:v1.17.4
+kind load docker-image --name=berg-dev-cluster quay.io/cilium/cilium:v1.17.4
 
 echo "Installing cilium"
-cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait cilium cilium/cilium -n cilium --version 1.16.5 --create-namespace -f -
+cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait cilium cilium/cilium -n cilium --version 1.17.4 --create-namespace -f -
 ipam:
   mode: kubernetes
 image:
@@ -93,7 +93,7 @@ hubble:
 EOF
 
 echo "Installing traefik"
-cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait traefik traefik/traefik -n traefik --create-namespace -f -
+cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait traefik traefik/traefik --version v35.4.0 -n traefik --create-namespace -f -
 globalArguments:
   - "--global.checknewversion=false"
   - "--global.sendanonymoususage=false"
@@ -181,6 +181,7 @@ echo "Installing cert-manager"
 helm --kube-context kind-berg-dev-cluster install --wait \
     cert-manager \
     jetstack/cert-manager \
+    --version v1.17.2 \
     --create-namespace \
     --namespace cert-manager \
     --set ingressShim.defaultIssuerName=mkcert \
@@ -219,7 +220,7 @@ spec:
 EOF
 
 echo "Installing mock idp"
-cat <<'EOF' | helm --kube-context kind-berg-dev-cluster install --wait idp oci://ghcr.io/norelect/charts/mock-identity-provider --create-namespace -n mock-idp -f -
+cat <<'EOF' | helm --kube-context kind-berg-dev-cluster install --wait idp oci://ghcr.io/norelect/charts/mock-identity-provider --version 0.7.1 --create-namespace -n mock-idp -f -
 issuer: https://idp.localhost
 users:
   - id: player
