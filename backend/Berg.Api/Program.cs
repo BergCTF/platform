@@ -39,7 +39,17 @@ builder.Services.AddSingleton<IDynamicFlagExecutableService, DynamicFlagExecutab
 builder.Services.AddHostedService<WatchService>();
 builder.Services.AddHostedService<RefreshService>();
 builder.Services.AddDbContext<BergDbContext>(options => {
-    options.UseNpgsql(builder.Configuration.GetConnectionString("BergDbConnection"));
+    var connString = builder.Configuration.GetConnectionString("BergDbConnection");
+    if (string.IsNullOrEmpty(connString))
+    {
+        var host = Environment.GetEnvironmentVariable("PGHOST");
+        var port = Environment.GetEnvironmentVariable("PGPORT");
+        var database = Environment.GetEnvironmentVariable("PGDATABASE");
+        var username = Environment.GetEnvironmentVariable("PGUSER");
+        var password = Environment.GetEnvironmentVariable("PGPASSWORD");
+        connString = $"Host={host};Port={port};Database={database};Username={username};Password={password}";
+    }
+    options.UseNpgsql(connString);
     options.UseOpenIddict();
 });
 

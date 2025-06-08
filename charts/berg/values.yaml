@@ -56,7 +56,6 @@ berg:
     imagePullPolicy: IfNotPresent
     tag: ""
   pullSecretName: ""
-  createConfigMap: true
   challengeImagePullPolicy: "Always"
   # By default, all challenges will be terminated after 2h
   challengeInstanceTimeout: "0.02:00:00"
@@ -79,6 +78,13 @@ berg:
       cpu: "0.2"
       memory: "100Mi"
   postgresql:
+    existingSecret:
+      name: ""
+      hostKey: "host"
+      portKey: "port"
+      databaseKey: "dbname"
+      usernameKey: "username"
+      passwordKey: "password"
     host: ""
     database: ""
     username: ""

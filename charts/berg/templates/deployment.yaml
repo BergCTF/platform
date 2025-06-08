@@ -19,10 +19,8 @@ spec:
       labels:
         {{- include "berg.selectorLabels" . | nindent 8 }}
         component: api
-      {{- if .Values.berg.createConfigMap }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-      {{- end }}
     spec:
       {{- if .Values.berg.pullSecretName }}
       imagePullSecrets:
@@ -44,6 +42,33 @@ spec:
               value: "http://0.0.0.0:8080"
             - name: "ASPNETCORE_FORWARDEDHEADERS_ENABLED"
               value: "true"
+          {{- if .Values.berg.postgresql.existingSecret.name }}
+            - name: PGHOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.berg.postgresql.existingSecret.name | quote }}
+                  key: {{ .Values.berg.postgresql.existingSecret.hostKey | quote }}
+            - name: PGPORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.berg.postgresql.existingSecret.name | quote }}
+                  key: {{ .Values.berg.postgresql.existingSecret.portKey | quote }}
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.berg.postgresql.existingSecret.name | quote }}
+                  key: {{ .Values.berg.postgresql.existingSecret.databaseKey | quote }}
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.berg.postgresql.existingSecret.name | quote }}
+                  key: {{ .Values.berg.postgresql.existingSecret.usernameKey | quote }}
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.berg.postgresql.existingSecret.name | quote }}
+                  key: {{ .Values.berg.postgresql.existingSecret.passwordKey | quote }}
+          {{- end }}
           {{- with .Values.berg.extraEnv }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -53,20 +78,16 @@ spec:
           {{- end }}
           ports:
             - containerPort: 8080
-          {{- if .Values.berg.createConfigMap }}
           volumeMounts:
             - name: appsettings
               mountPath: /app/appsettings.json
               subPath: appsettings.json
-          {{- end }}
           resources:
             {{- toYaml .Values.berg.resources | nindent 12 }}
-      {{- if .Values.berg.createConfigMap }}
       volumes:
         - name: appsettings
           configMap:
             name: {{ include "berg.fullname" . }}-appsettings
-      {{- end }}
 {{ if .Values.frontend.enabled }}
 ---
 apiVersion: apps/v1

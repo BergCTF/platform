@@ -83,7 +83,6 @@ Configuration for optional handout service. Structure mirrors the one for the `f
 
 ### Configuration
 
-* `berg.createConfigMap`: Whether to create a config map from the helm configuration.
 * `berg.challengeImagePullPolicy`: Image pull policy for challenges.
 * `berg.challengeInstanceTimeout`: Timeout for challenge instances (`HH:MM:SS` format).
 * `berg.challengeRuntimeClassName`: Optional runtime class name.
@@ -199,7 +198,7 @@ Defines event branding and metadata:
 * `berg.ctf.eventName`: CTF name
 * `berg.ctf.eventOrganizer`: CTF Organizer
 * `berg.ctf.eventLogoUrl`: Brand logo URL
-* `berg.ctf.start`: CTF start time 
+* `berg.ctf.start`: CTF start time
 * `berg.ctf.end` Logos and scheduling.
 * `berg.ctf.allowAnonymousAccess`: Enables access without login.
 * `berg.ctf.teams`: Whether team mode is enabled.

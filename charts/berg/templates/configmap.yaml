@@ -1,4 +1,3 @@
-{{- if .Values.berg.createConfigMap }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -13,9 +12,15 @@ data:
         "LogLevel": {{ .Values.berg.logLevel | toJson }}
       },
       "AllowedHosts": {{ .Values.berg.domain | quote }},
+      {{- if .Values.berg.postgresql.existingSecret.name }}
+      "ConnectionStrings": {
+        "BergDbConnection": ""
+      },
+      {{- else -}}
       "ConnectionStrings": {
         "BergDbConnection": "Host={{ .Values.berg.postgresql.host }}; Database={{ .Values.berg.postgresql.database }}; Username={{ .Values.berg.postgresql.username }}; Password={{ .Values.berg.postgresql.password }};"
       },
+      {{- end }}
       "infra": {
         "challengeDomain": {{ .Values.gateway.domain | quote }},
         "platformDomain": {{ .Values.berg.domain | quote }},
@@ -49,4 +54,3 @@ data:
       "genericOpenId": {{ .Values.berg.genericOpenId | toJson }},
       "ctf": {{ .Values.berg.ctf | toJson }}
     }
-{{- end }}
