@@ -11,7 +11,7 @@ namespace Berg.Api.Controllers;
 public class EventsController(IWebSocketService webSocketService) : ControllerBase
 {
     [HttpGet]
-    [Route("/api/v2/events")]
+    [Route("/api/events")]
     [Authorize(Policy = Constants.Policies.Anonymous)]
     [ProducesResponseType(StatusCodes.Status101SwitchingProtocols)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
