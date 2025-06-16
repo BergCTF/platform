@@ -34,3 +34,4 @@ nav:
       - Developing Challenges: Challenge.md
       - Metrics Support: Metrics.md
       - OIDC with Authentik: OIDC-Authentik.md
+      - Production Deployment: Production.md
