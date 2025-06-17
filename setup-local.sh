@@ -26,6 +26,7 @@ helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
 helm repo add cilium https://helm.cilium.io/
 helm repo add traefik https://traefik.github.io/charts
 helm repo add uptrace https://charts.uptrace.dev
+helm repo add project-zot http://zotregistry.dev/helm-charts
 helm repo update
 
 echo "Recreating kind cluster"
@@ -321,4 +322,26 @@ uptrace:
         pinned_attrs:
           - service_name
           - host_name
+EOF
+
+echo "Installing zot"
+
+cat <<EOF | helm --kube-context kind-berg-dev-cluster install -n zot --create-namespace zot project-zot/zot -f -
+ingress:
+  className: traefik
+  enabled: true
+  annotations:
+    cert-manager.io/cluster-issuer: mkcert
+  hosts:
+    - host: zot.localhost
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - hosts:
+        - zot.localhost
+      secretName: zot-tls
+service:
+    type: ClusterIP
+    port: 5000
 EOF

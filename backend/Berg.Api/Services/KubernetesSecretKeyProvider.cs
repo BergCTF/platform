@@ -16,16 +16,15 @@ public class KubernetesSecretKeyProvider : IXmlRepository
     public readonly SymmetricSecurityKey ServerEncryptionKey;
     public readonly RsaSecurityKey ServerSigningKey;
     private readonly Kubernetes _kubernetes;
-    private readonly string _bergNamespace;
-    private readonly string _releaseName;
+    private readonly KubernetesClientConfiguration _kubernetesConfig;
 
-    public KubernetesSecretKeyProvider(Kubernetes kubernetes)
+    public const string BergOpenIdSecretName = "berg-openid";
+    public const string BergProtectSecretName = "berg-protect";
+
+    public KubernetesSecretKeyProvider(Kubernetes kubernetes, KubernetesClientConfiguration kubernetesConfig)
     {
         _kubernetes = kubernetes;
-
-        _bergNamespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "berg";
-        _releaseName = Environment.GetEnvironmentVariable("BERG_RELEASE") ?? "berg";
-        var secretName = $"{_releaseName[0..Math.Min(_releaseName.Length, 55)]}-openid";
+        _kubernetesConfig = kubernetesConfig;
         var secretsLoaded = false;
         var serverSigningRsa = RSA.Create(4096);
         var clientSigningRsa = RSA.Create(4096);
@@ -35,7 +34,7 @@ public class KubernetesSecretKeyProvider : IXmlRepository
         {
             try
             {
-                var secret = kubernetes.ReadNamespacedSecret(secretName, _bergNamespace);
+                var secret = kubernetes.ReadNamespacedSecret(BergOpenIdSecretName, _kubernetesConfig.Namespace);
                 ClientEncryptionKey = new SymmetricSecurityKey(secret.Data["clientEncryptionKey"]);
                 clientSigningRsa.ImportRSAPrivateKey(secret.Data["clientSigningKey"], out _);
                 ServerEncryptionKey = new SymmetricSecurityKey(secret.Data["serverEncryptionKey"]);
@@ -46,14 +45,15 @@ public class KubernetesSecretKeyProvider : IXmlRepository
             {
                 Console.Error.WriteLine("Unable to load existing openid secret keys, generating new ones");
             }
-            if(!secretsLoaded) {
+            if (!secretsLoaded)
+            {
                 try
                 {
-                    kubernetes.CreateNamespacedSecret(new k8s.Models.V1Secret
+                    kubernetes.CreateNamespacedSecret(new V1Secret
                     {
-                        Metadata = new k8s.Models.V1ObjectMeta
+                        Metadata = new V1ObjectMeta
                         {
-                            Name = secretName
+                            Name = BergOpenIdSecretName
                         },
                         Data = new Dictionary<string, byte[]> {
                             { "clientEncryptionKey", ClientEncryptionKey.Key },
@@ -61,30 +61,30 @@ public class KubernetesSecretKeyProvider : IXmlRepository
                             { "serverEncryptionKey", ServerEncryptionKey.Key },
                             { "serverSigningKey", serverSigningRsa.ExportRSAPrivateKey() },
                         }
-                    }, _bergNamespace);
+                    }, _kubernetesConfig.Namespace);
                 }
-                catch (HttpOperationException)
+                catch (HttpOperationException ex)
                 {
                     Console.Error.WriteLine("Failed to write newly created openid keys");
+                    Console.Error.WriteLine(ex);
                 }
             }
-        } while(!secretsLoaded);
+        } while (!secretsLoaded);
 
         ClientSigningKey = new RsaSecurityKey(clientSigningRsa);
         ServerSigningKey = new RsaSecurityKey(serverSigningRsa);
 
-        var protectSecretName = $"{_releaseName[0..Math.Min(_releaseName.Length, 55)]}-protect";
-        var secretNames = _kubernetes.ListNamespacedSecret(_bergNamespace).Items.Select(s => s.Name()).ToHashSet();
-        if(!secretNames.Contains(protectSecretName))
+        var secretNames = _kubernetes.ListNamespacedSecret(_kubernetesConfig.Namespace).Items.Select(s => s.Name()).ToHashSet();
+        if (!secretNames.Contains(BergProtectSecretName))
         {
             _kubernetes.CreateNamespacedSecret(new V1Secret
             {
                 Metadata = new V1ObjectMeta
                 {
-                    Name = protectSecretName
+                    Name = BergProtectSecretName
                 },
                 Data = new Dictionary<string, byte[]>()
-            }, _bergNamespace);
+            }, _kubernetesConfig.Namespace);
         }
     }
 
@@ -102,10 +102,10 @@ public class KubernetesSecretKeyProvider : IXmlRepository
 
     private IEnumerable<XElement> GetAllElementsCore()
     {
-        var secretName = $"{_releaseName[0..Math.Min(_releaseName.Length, 55)]}-protect";
-        var secret = _kubernetes.ReadNamespacedSecret(secretName, _bergNamespace);
-        if (secret.Data != null) {
-            foreach(var pair in secret.Data)
+        var secret = _kubernetes.ReadNamespacedSecret(BergProtectSecretName, _kubernetesConfig.Namespace);
+        if (secret.Data != null)
+        {
+            foreach (var pair in secret.Data)
             {
                 yield return XElement.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(Encoding.UTF8.GetString(pair.Value))));
             }
@@ -114,10 +114,9 @@ public class KubernetesSecretKeyProvider : IXmlRepository
 
     public void StoreElement(XElement element, string friendlyName)
     {
-        var secretName = $"{_releaseName[0..Math.Min(_releaseName.Length, 55)]}-protect";
         var content = Convert.ToBase64String(Encoding.UTF8.GetBytes(element.ToString(SaveOptions.DisableFormatting)));
         var patch = $"{{\"stringData\": {{\"{friendlyName}\": \"{content}\"}}}}";
-        _kubernetes.PatchNamespacedSecret(new V1Patch(patch, V1Patch.PatchType.MergePatch), secretName, _bergNamespace);
+        _kubernetes.PatchNamespacedSecret(new V1Patch(patch, V1Patch.PatchType.MergePatch), BergProtectSecretName, _kubernetesConfig.Namespace);
     }
 
     private static readonly RandomNumberGenerator RandomNumberGenerator = RandomNumberGenerator.Create();

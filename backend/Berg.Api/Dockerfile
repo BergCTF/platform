@@ -17,6 +17,8 @@ RUN dotnet publish "Berg.Api.csproj" -c Release -o /app/publish /p:UseAppHost=fa
 
 FROM base AS final
 WORKDIR /app
+ARG BERG_VERSION
+ENV BERG_VERSION=$BERG_VERSION
 
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Berg.Api.dll"]

@@ -148,6 +148,16 @@ spec:
                         type: string
                       downloadUrl:
                         type: string
+                        nullable: true
+                      downloadImage:
+                        type: string
+                        nullable: true
+                      downloadImagePullSecret:
+                        type: string
+                        nullable: true
+                      downloadImageInsecure:
+                        type: boolean
+                        nullable: true
       additionalPrinterColumns:
         - name: Event
           type: string

@@ -1,20 +1,31 @@
-using Berg.Api.CustomResources.Berg;
-using Berg.Api.Services;
-using k8s.Models;
-using Microsoft.AspNetCore.Mvc;
-using Challenge = Berg.Api.Models.Challenge;
 using Attachment = Berg.Api.Models.Attachment;
 using Berg.Api.Configuration;
+using Berg.Api.CustomResources.Berg;
+using Berg.Api.Services;
+using Challenge = Berg.Api.Models.Challenge;
+using k8s.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
+using OrasProject.Oras.Oci;
+using OrasProject.Oras.Registry;
+using OrasProject.Oras.Registry.Remote;
+using OrasProject.Oras.Registry.Remote.Auth;
+using System.Text.Json;
+using k8s;
+using Berg.Api.Resources;
+using System.Text;
 
 namespace Berg.Api.Controllers;
 
 [ApiController]
-[ApiExplorerSettings(GroupName="berg-api")]
+[ApiExplorerSettings(GroupName = "berg-api")]
 public class ChallengeController(
     IChallengeService challengeService,
+    Kubernetes kubernetes,
+    KubernetesClientConfiguration kubernetesConfig,
     HttpClient httpClient,
+    ILogger<ChallengeController> logger,
     InfraConfig infraConfig,
     CtfConfig ctfConfig) : ControllerBase
 {
@@ -82,6 +93,7 @@ public class ChallengeController(
         var isAdmin = User.HasClaim(OpenIddictConstants.Claims.Role, Constants.Roles.Admin);
         if (utcNow < ctfConfig.Start && !isAdmin)
         {
+            logger.LogWarning("Non admin user tried to access handout before ctf start");
             return BadRequest(new ProblemDetails
             {
                 Title = "Bad Request",
@@ -89,7 +101,8 @@ public class ChallengeController(
             });
         }
 
-        if (infraConfig.HandoutServiceUrl == null) {
+        if (infraConfig.HandoutServiceUrl == null)
+        {
             return BadRequest(new ProblemDetails
             {
                 Title = "Bad Request",
@@ -107,15 +120,72 @@ public class ChallengeController(
         if (attachment == null)
             return NotFound();
 
-        Response.Headers.XContentTypeOptions = "nosniff";
-        Response.Headers.ContentType = "application/octet-stream";
-        Response.Headers.ContentDisposition = $"attachment; filename={attachment.FileName}";
+        if (!string.IsNullOrEmpty(attachment.DownloadUrl))
+        {
+            // Download from an internal webserver that requires no authentication
+            Response.Headers.XContentTypeOptions = "nosniff";
+            Response.Headers.ContentType = "application/octet-stream";
+            Response.Headers.ContentDisposition = $"attachment; filename={attachment.FileName}";
+            var uri = new UriBuilder(new Uri(infraConfig.HandoutServiceUrl))
+            {
+                Path = attachment.DownloadUrl,
+            }.Uri;
+            var stream = await httpClient.GetStreamAsync(uri, cancellationToken);
+            return new FileStreamResult(stream, "application/octet-stream");
+        }
 
-        var uri = new UriBuilder(new Uri(infraConfig.HandoutServiceUrl)) {
-            Path = attachment.DownloadUrl,
-        }.Uri;
-        var stream = await httpClient.GetStreamAsync(uri, cancellationToken);
-        return new FileStreamResult(stream, "application/octet-stream");
+        if (!string.IsNullOrEmpty(attachment.DownloadImage))
+        {
+            // Download from a docker image registry
+            Response.Headers.XContentTypeOptions = "nosniff";
+            Response.Headers.ContentType = "application/octet-stream";
+            Response.Headers.ContentDisposition = $"attachment; filename={attachment.FileName}";
+
+            var reference = Reference.Parse(attachment.DownloadImage);
+
+            var pullSecretName = attachment.DownloadImagePullSecret ?? infraConfig.PullSecretName;
+            var pullSecret = await kubernetes.ReadNamespacedSecretAsync(pullSecretName, kubernetesConfig.Namespace, cancellationToken: cancellationToken);
+            if (pullSecret.Type != "kubernetes.io/dockerconfigjson")
+            {
+                return Problem(title: "Invalid attachment pull secret", detail: "The pull secret specified for this attachment has the wrong type.");
+            }
+            var dockerConfigJson = pullSecret.Data[".dockerconfigjson"];
+            var dockerConfig = JsonSerializer.Deserialize<DockerConfig>(dockerConfigJson);
+
+            HttpClient httpClient;
+            if (dockerConfig?.Authentications?.TryGetValue(reference.Host, out DockerAuth? auth) ?? false)
+            {
+                if (auth == null || string.IsNullOrEmpty(auth.Authentication))
+                    return Problem(title: "Invalid attachment pull secret", detail: "The pull secret specified for this attachment has no creds.");
+                var usernamePasswordPair = Encoding.UTF8.GetString(Convert.FromBase64String(auth.Authentication));
+                var splitAt = usernamePasswordPair.IndexOf(':');
+                var username = usernamePasswordPair[0..splitAt];
+                var password = usernamePasswordPair[(splitAt + 1)..];
+                httpClient = new HttpClientWithBasicAuth(username, password);
+            }
+            else
+            {
+                httpClient = new HttpClient();
+            }
+
+            var registry = new Registry(new RepositoryOptions
+            {
+                HttpClient = httpClient,
+                Reference = new Reference(reference.Registry),
+                PlainHttp = attachment.DownloadImageInsecure,
+            });
+            var repo = await registry.GetRepositoryAsync(reference.Repository, cancellationToken);
+            var (_, manifestStream) = await repo.Manifests.FetchAsync(reference.ContentReference, cancellationToken);
+            var manifest = JsonSerializer.Deserialize<Manifest>(manifestStream);
+            var stream = await repo.Blobs.FetchAsync(manifest.Layers.Single(), cancellationToken);
+            return new FileStreamResult(stream, "application/octet-stream");
+        }
+
+        return BadRequest(new ProblemDetails
+        {
+            Title = "Bad Request",
+            Detail = "This attachment is not properly configured.",
+        });
     }
 
     internal static Challenge ToChallenge(V1Challenge c)
@@ -134,19 +204,33 @@ public class ChallengeController(
             Tags = c.Spec.Tags,
             Event = c.Spec.Event ?? "",
             HasRemote = c.Spec.Containers?.Any() ?? false,
-            Attachments = c.Spec.Attachments?.Select((a, i) => {
+            Attachments = c.Spec.Attachments?.Select((a, i) =>
+            {
+
+                if (a.DownloadImage != null)
+                {
+                    return new Attachment
+                    {
+                        FileName = a.FileName,
+                        DownloadUrl = $"/api/v2/challenges/{challengeName}/handout/{i}",
+                    };
+                }
+
                 var url = new Uri(a.DownloadUrl);
                 // Only rewrite relative urls, since other urls can point to external file
                 // hosting services. We do not want to proxy those attachments as those links
                 // are not guessable and might require user interaction with the website to download.
                 // Examples of this are Microsoft OneDrive or Google Drive Links.
-                if (!string.IsNullOrEmpty(url.Host)) {
+                if (!string.IsNullOrEmpty(url.Host))
+                {
                     return new Attachment
                     {
                         FileName = a.FileName,
                         DownloadUrl = a.DownloadUrl,
                     };
-                } else {
+                }
+                else
+                {
                     return new Attachment
                     {
                         FileName = a.FileName,

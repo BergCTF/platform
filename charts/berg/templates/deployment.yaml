@@ -32,12 +32,6 @@ spec:
           image: "{{ .Values.berg.image.repository }}:{{ .Values.berg.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.berg.image.imagePullPolicy }}
           env:
-            - name: "BERG_NAMESPACE"
-              value: {{ .Release.Namespace | quote }}
-            - name: "BERG_RELEASE"
-              value: {{ include "berg.fullname" . | quote }}
-            - name: "BERG_VERSION"
-              value: {{ .Chart.AppVersion | quote }}
             - name: "ASPNETCORE_URLS"
               value: "http://0.0.0.0:8080"
             - name: "ASPNETCORE_FORWARDEDHEADERS_ENABLED"

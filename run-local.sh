@@ -125,3 +125,7 @@ echo "Deploying example challenges"
 cd ../../challenges
 ./create-challenges-yaml.py
 kubectl --context kind-berg-dev-cluster apply -f all-challenges.yaml
+
+tar -czvf example-web-lfi.tar.gz -C example-web-lfi/challenge-handout .
+oras push zot.localhost/handouts/example-web-lfi:latest --artifact-type application/vnd.norelect.berg.handout example-web-lfi.tar.gz:application/octet-stream
+rm example-web-lfi.tar.gz

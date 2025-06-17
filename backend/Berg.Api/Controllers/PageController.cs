@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.Authorization;
 namespace Berg.Api.Controllers;
 
 [ApiController]
-[ApiExplorerSettings(GroupName="berg-api")]
-public class PageController(Kubernetes kubernetes) : ControllerBase
+[ApiExplorerSettings(GroupName = "berg-api")]
+public class PageController(Kubernetes kubernetes, KubernetesClientConfiguration kubernetesConfig) : ControllerBase
 {
     private readonly GenericClient pageClient = CustomResource.CreateGenericClient<V1Page>(kubernetes, false);
 
@@ -20,8 +20,7 @@ public class PageController(Kubernetes kubernetes) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<Page>>> ListPages(CancellationToken cancellationToken)
     {
-        var bergNamespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
-        var pages = await pageClient.ListNamespacedAsync<CustomResourceList<V1Page>>(bergNamespace, cancellationToken);
+        var pages = await pageClient.ListNamespacedAsync<CustomResourceList<V1Page>>(kubernetesConfig.Namespace, cancellationToken);
         return pages.Items
             .Select(ToPage)
             .ToList();
@@ -29,7 +28,8 @@ public class PageController(Kubernetes kubernetes) : ControllerBase
 
     internal static Page ToPage(V1Page p)
     {
-        return new Page{
+        return new Page
+        {
             Title = p.Spec.Title,
             Path = p.Spec.Path,
             Index = p.Spec.Index,

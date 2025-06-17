@@ -26,11 +26,14 @@ var genericOpenIdConfig = new GenericOpenIdConfig();
 builder.Configuration.GetSection("GenericOpenId").Bind(genericOpenIdConfig);
 builder.Services.AddSingleton(genericOpenIdConfig);
 
-var kubernetes = new Kubernetes(KubernetesClientConfiguration.BuildDefaultConfig());
+var kubernetesConfig = KubernetesClientConfiguration.BuildDefaultConfig();
+var kubernetes = new Kubernetes(kubernetesConfig);
+builder.Services.AddSingleton(kubernetesConfig);
 builder.Services.AddSingleton(kubernetes);
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
-builder.Services.AddWebSockets(options => {
+builder.Services.AddWebSockets(options =>
+{
     options.KeepAliveInterval = TimeSpan.FromSeconds(15);
 });
 builder.Services.AddScoped<IChallengeService, ChallengeService>();
@@ -38,7 +41,8 @@ builder.Services.AddSingleton<IWebSocketService, WebSocketService>();
 builder.Services.AddSingleton<IDynamicFlagExecutableService, DynamicFlagExecutableService>();
 builder.Services.AddHostedService<WatchService>();
 builder.Services.AddHostedService<RefreshService>();
-builder.Services.AddDbContext<BergDbContext>(options => {
+builder.Services.AddDbContext<BergDbContext>(options =>
+{
     var connString = builder.Configuration.GetConnectionString("BergDbConnection");
     if (string.IsNullOrEmpty(connString))
     {
@@ -67,7 +71,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.AddSwagger(infraConfig);
-builder.AddOpenIddict(kubernetes, infraConfig, discordConfig, genericOpenIdConfig);
+builder.AddOpenIddict(kubernetes, kubernetesConfig, infraConfig, discordConfig, genericOpenIdConfig);
 builder.AddMediatR();
 
 var app = builder.Build();

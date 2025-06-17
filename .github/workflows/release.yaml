@@ -89,6 +89,8 @@ jobs:
           file: backend/Berg.Api/Dockerfile
           push: true
           tags: ${{ steps.berg-api-meta.outputs.tags }}
+          build-args: |
+            BERG_VERSION=${{ steps.semrel.outputs.version }}
           labels: |
             ${{ steps.berg-api-meta.outputs.labels }}
 

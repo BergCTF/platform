@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using OpenIddict.Abstractions;
 using OpenIddict.Client;
-using OpenIddict.Validation;
 using OpenIddict.Validation.AspNetCore;
 using Quartz;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -36,15 +35,15 @@ public sealed class InternalBackChannelReplacement(IConfiguration configuration)
             return default;
 
         var baseUri = new Uri(internalIssuer);
-        if(context.Configuration.JsonWebKeySetUri != null)
+        if (context.Configuration.JsonWebKeySetUri != null)
             context.Configuration.JsonWebKeySetUri = ReplaceBaseUri(baseUri, context.Configuration.JsonWebKeySetUri);
-        if(context.Configuration.UserInfoEndpoint != null)
+        if (context.Configuration.UserInfoEndpoint != null)
             context.Configuration.UserInfoEndpoint = ReplaceBaseUri(baseUri, context.Configuration.UserInfoEndpoint);
-        if(context.Configuration.IntrospectionEndpoint != null)
+        if (context.Configuration.IntrospectionEndpoint != null)
             context.Configuration.IntrospectionEndpoint = ReplaceBaseUri(baseUri, context.Configuration.IntrospectionEndpoint);
-        if(context.Configuration.TokenEndpoint != null)
+        if (context.Configuration.TokenEndpoint != null)
             context.Configuration.TokenEndpoint = ReplaceBaseUri(baseUri, context.Configuration.TokenEndpoint);
-        if(context.Configuration.AuthorizationEndpoint != null && context.Configuration.Issuer != null)
+        if (context.Configuration.AuthorizationEndpoint != null && context.Configuration.Issuer != null)
             context.Configuration.AuthorizationEndpoint = ReplaceBaseUri(context.Configuration.Issuer, context.Configuration.AuthorizationEndpoint);
         return default;
     }
@@ -71,12 +70,13 @@ public class DynamicAuthenticatedUserAuthorizationHandler(
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context, DynamicAuthenticatedPlayerRequirement requirement)
     {
-        if (ctfConfig.AllowAnonymousAccess) {
+        if (ctfConfig.AllowAnonymousAccess)
+        {
             context.Succeed(requirement);
         }
         else
         {
-            if(!(context.User.Identity?.IsAuthenticated ?? false))
+            if (!(context.User.Identity?.IsAuthenticated ?? false))
             {
                 context.Fail(new AuthorizationFailureReason(this, "Anonymous access is disabled, but user is not logged in."));
                 logger.LogDebug("Anonymous access is disabled, but user is not logged in.");
@@ -86,7 +86,8 @@ public class DynamicAuthenticatedUserAuthorizationHandler(
             var roleClaims = context.User.GetClaims(Claims.Role);
             if (roleClaims.Contains(Constants.Roles.Player) ||
                 roleClaims.Contains(Constants.Roles.Author) ||
-                roleClaims.Contains(Constants.Roles.Admin)) {
+                roleClaims.Contains(Constants.Roles.Admin))
+            {
                 context.Succeed(requirement);
             }
             else
@@ -101,9 +102,9 @@ public class DynamicAuthenticatedUserAuthorizationHandler(
 
 public static class OpenIddictBuilder
 {
-    public static void AddOpenIddict(this WebApplicationBuilder builder, Kubernetes kubernetes, InfraConfig infraConfig, DiscordConfig discordConfig, GenericOpenIdConfig genericOpenIdConfig)
+    public static void AddOpenIddict(this WebApplicationBuilder builder, Kubernetes kubernetes, KubernetesClientConfiguration kubernetesConfig, InfraConfig infraConfig, DiscordConfig discordConfig, GenericOpenIdConfig genericOpenIdConfig)
     {
-        var keyProvider = infraConfig.UseKubernetesSecretKeyProvider ? new KubernetesSecretKeyProvider(kubernetes) : null;
+        var keyProvider = infraConfig.UseKubernetesSecretKeyProvider ? new KubernetesSecretKeyProvider(kubernetes, kubernetesConfig) : null;
 
         if (((discordConfig.PlayerGuildId != 0 && discordConfig.PlayerRoleId != 0) ||
             (discordConfig.AuthorGuildId != 0 && discordConfig.AuthorRoleId != 0) ||
@@ -128,7 +129,8 @@ public static class OpenIddictBuilder
         });
         builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
         builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-            .AddCookie(options => {
+            .AddCookie(options =>
+            {
                 options.Cookie.Name = "berg-idp-session";
                 options.Cookie.Path = Constants.Endpoints.BasePath;
                 options.SlidingExpiration = true;
@@ -150,7 +152,8 @@ public static class OpenIddictBuilder
                 };
             });
         builder.Services.AddSingleton<IAuthorizationHandler, DynamicAuthenticatedUserAuthorizationHandler>();
-        builder.Services.AddAuthorization(options => {
+        builder.Services.AddAuthorization(options =>
+        {
             options.AddPolicy(Constants.Policies.Anonymous, policy =>
                 policy.RequireAssertion(_ => true));
             options.AddPolicy(Constants.Policies.AnonymousIfAllowedOrPlayer, policy =>
@@ -301,7 +304,8 @@ public static class OpenIddictBuilder
             {
                 options.EnableTokenEntryValidation();
                 options.UseLocalServer();
-                options.UseAspNetCore(options => {
+                options.UseAspNetCore(options =>
+                {
                     options.DisableAccessTokenExtractionFromBodyForm();
                     options.DisableAccessTokenExtractionFromQueryString();
                 });

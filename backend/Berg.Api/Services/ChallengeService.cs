@@ -13,7 +13,6 @@ using k8s.Autorest;
 using k8s.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal;
 
 namespace Berg.Api.Services;
 
@@ -35,17 +34,18 @@ public class ChallengeService(
     BergMetrics metrics,
     Db.BergDbContext dbContext,
     Kubernetes kubernetes,
+    KubernetesClientConfiguration kubernetesConfig,
     InfraConfig infraConfig,
     IMediator mediator) :
     IChallengeService
 {
-    public const string ManagedByLabel      = "app.kubernetes.io/managed-by";
-    public const string ComponentLabel      = "app.kubernetes.io/component";
-    public const string PlayerIdLabel       = "berg.norelect.ch/player-id";
-    public const string InstanceIdLabel     = "berg.norelect.ch/instance-id";
-    public const string ChallengeLabel      = "berg.norelect.ch/challenge";
-    public const string ContainerLabel      = "berg.norelect.ch/container";
-    public const string HostnameLabel       = "berg.norelect.ch/hostname";
+    public const string ManagedByLabel = "app.kubernetes.io/managed-by";
+    public const string ComponentLabel = "app.kubernetes.io/component";
+    public const string PlayerIdLabel = "berg.norelect.ch/player-id";
+    public const string InstanceIdLabel = "berg.norelect.ch/instance-id";
+    public const string ChallengeLabel = "berg.norelect.ch/challenge";
+    public const string ContainerLabel = "berg.norelect.ch/container";
+    public const string HostnameLabel = "berg.norelect.ch/hostname";
 
     public static readonly ImmutableDictionary<string, string> ChallengeNamespaceLabelSelector = new Dictionary<string, string>
     {
@@ -63,20 +63,21 @@ public class ChallengeService(
     private readonly GenericClient _httpRouteClient = CustomResource.CreateGenericClient<V1HTTPRoute>(kubernetes, false);
     private readonly GenericClient _tlsRouteClient = CustomResource.CreateGenericClient<V1Alpha2TLSRoute>(kubernetes, false);
     private readonly GenericClient _ciliumNetworkPolicyClient = CustomResource.CreateGenericClient<V2CiliumNetworkPolicy>(kubernetes, false);
-    private readonly string _bergNamespace = Environment.GetEnvironmentVariable("BERG_NAMESPACE") ?? "default";
 
     public async Task<IEnumerable<V1Challenge>> GetChallenges(CancellationToken cancellationToken)
     {
         return (await _challengeClient
-            .ListNamespacedAsync<CustomResourceList<V1Challenge>>(_bergNamespace, cancellationToken)).Items;
+            .ListNamespacedAsync<CustomResourceList<V1Challenge>>(kubernetesConfig.Namespace, cancellationToken)).Items;
     }
 
     public async Task<V1Challenge?> GetChallenge(string challengeName, CancellationToken cancellationToken)
     {
         try
         {
-            return await _challengeClient.ReadNamespacedAsync<V1Challenge>(_bergNamespace, challengeName, cancellationToken);
-        } catch {
+            return await _challengeClient.ReadNamespacedAsync<V1Challenge>(kubernetesConfig.Namespace, challengeName, cancellationToken);
+        }
+        catch
+        {
             return null;
         }
     }
@@ -86,7 +87,7 @@ public class ChallengeService(
         using var activity = Constants.BergActivitySource.StartActivity();
 
         var challengeList = (await _challengeClient
-            .ListNamespacedAsync<CustomResourceList<V1Challenge>>(_bergNamespace, cancellationToken)).Items;
+            .ListNamespacedAsync<CustomResourceList<V1Challenge>>(kubernetesConfig.Namespace, cancellationToken)).Items;
 
         var now = DateTime.UtcNow;
         var pastWindow = now.Subtract(window);
@@ -118,7 +119,8 @@ public class ChallengeService(
 
             var _ = mediator.Publish(new InstanceChangeNotification
             {
-                Instance = new Instance {
+                Instance = new Instance
+                {
                     Id = instanceId,
                     PlayerId = playerId,
                     ChallengeName = challengeName,
@@ -150,7 +152,7 @@ public class ChallengeService(
 
         var playersWithActiveInstances = nsList.Items.Select(ns => Guid.Parse(ns.GetLabel(PlayerIdLabel)));
         var instances = new List<Instance>();
-        foreach(var playerId in playersWithActiveInstances)
+        foreach (var playerId in playersWithActiveInstances)
         {
             instances.Add(await GetChallengeInstance(playerId, cancellationToken));
         }
@@ -193,7 +195,7 @@ public class ChallengeService(
                 StartedAt = ns.Metadata.CreationTimestamp,
             };
 
-        var challenge = await _challengeClient.ReadNamespacedAsync<V1Challenge>(_bergNamespace, challengeName, cancellationToken);
+        var challenge = await _challengeClient.ReadNamespacedAsync<V1Challenge>(kubernetesConfig.Namespace, challengeName, cancellationToken);
 
         var podList = await kubernetes.ListNamespacedPodAsync(ns.Name(), cancellationToken: cancellationToken);
         if (podList.Items.Any(p => p.Status.Phase != "Running") || podList.Items.Count == 0)
@@ -249,7 +251,7 @@ public class ChallengeService(
                 {
                     var ingress = tlsRouteList.Items
                         .FirstOrDefault(i => i.Name() == $"{container.Hostname}-{port.Port}");
-                    service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + "." +infraConfig.ChallengeDomain;
+                    service.Hostname = (ingress?.GetLabel(HostnameLabel) ?? "<loading>") + "." + infraConfig.ChallengeDomain;
                     service.Port = infraConfig.ChallengeTlsPort;
                 }
                 services.Add(service);
@@ -282,7 +284,7 @@ public class ChallengeService(
             var existingInstance = await GetChallengeInstance(playerId, cancellationToken);
             logger.LogWarning("Player {PlayerId} tried to start challenge {NewChallengeName}, but already had an instance of challenge {OldChallengeName} running! ({InstanceId})", playerId, challengeName, existingInstance.ChallengeName, existingInstance.Id);
             return existingInstance;
-        };
+        }
 
         if ((challenge.Spec.Containers?.Count ?? 0) == 0)
             throw new ArgumentException("Challenge can't be instantiated");
@@ -327,11 +329,12 @@ public class ChallengeService(
             }
         }, cancellationToken: cancellationToken);
 
-        if (!string.IsNullOrEmpty(infraConfig.PullSecretName)) {
+        if (!string.IsNullOrEmpty(infraConfig.PullSecretName))
+        {
             try
             {
                 var imagePullSecret =
-                    await kubernetes.ReadNamespacedSecretAsync(infraConfig.PullSecretName, _bergNamespace, cancellationToken: cancellationToken);
+                    await kubernetes.ReadNamespacedSecretAsync(infraConfig.PullSecretName, kubernetesConfig.Namespace, cancellationToken: cancellationToken);
                 await kubernetes.CreateNamespacedSecretAsync(new V1Secret
                 {
                     Metadata = new V1ObjectMeta
@@ -344,7 +347,7 @@ public class ChallengeService(
             }
             catch (HttpOperationException ex)
             {
-                logger.LogWarning("Image pull secret '{}' not found in namespace '{}'", infraConfig.PullSecretName, _bergNamespace);
+                logger.LogWarning("Image pull secret '{}' not found in namespace '{}'", infraConfig.PullSecretName, kubernetesConfig.Namespace);
                 logger.LogWarning("Detailed exception for pull secret copy operations: {}", ex);
             }
         }
@@ -1009,7 +1012,7 @@ public class ChallengeService(
         var pairs = labelSelector.ToArray();
         for (var i = 0; i < pairs.Length; i++)
         {
-            if(i != 0)
+            if (i != 0)
                 sb.Append(',');
             var pair = pairs[i];
             sb.Append(pair.Key);
