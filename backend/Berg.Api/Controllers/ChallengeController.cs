@@ -156,7 +156,7 @@ public class ChallengeController(
             if (dockerConfig?.Authentications?.TryGetValue(reference.Host, out DockerAuth? auth) ?? false)
             {
                 if (auth == null || string.IsNullOrEmpty(auth.Authentication))
-                    return Problem(title: "Invalid attachment pull secret", detail: "The pull secret specified for this attachment has no creds.");
+                    return Problem(title: "Invalid handout pull secret", detail: "The pull secret specified for this attachment has no creds.");
                 var usernamePasswordPair = Encoding.UTF8.GetString(Convert.FromBase64String(auth.Authentication));
                 var splitAt = usernamePasswordPair.IndexOf(':');
                 var username = usernamePasswordPair[0..splitAt];
@@ -174,17 +174,25 @@ public class ChallengeController(
                 Reference = new Reference(reference.Registry),
                 PlainHttp = attachment.DownloadImageInsecure,
             });
-            var repo = await registry.GetRepositoryAsync(reference.Repository, cancellationToken);
-            var (_, manifestStream) = await repo.Manifests.FetchAsync(reference.ContentReference, cancellationToken);
-            var manifest = JsonSerializer.Deserialize<Manifest>(manifestStream);
-            var stream = await repo.Blobs.FetchAsync(manifest.Layers.Single(), cancellationToken);
-            return new FileStreamResult(stream, "application/octet-stream");
+            try
+            {
+                var repo = await registry.GetRepositoryAsync(reference.Repository, cancellationToken);
+                var (_, manifestStream) = await repo.Manifests.FetchAsync(reference.ContentReference, cancellationToken);
+                var manifest = JsonSerializer.Deserialize<Manifest>(manifestStream);
+                var stream = await repo.Blobs.FetchAsync(manifest.Layers.Single(), cancellationToken);
+                return new FileStreamResult(stream, "application/octet-stream");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Exception while trying to fetch handout from OCI registry");
+                return Problem(title: "Server error", detail: "Error fetching handout from upstream.");
+            }
         }
 
         return BadRequest(new ProblemDetails
         {
             Title = "Bad Request",
-            Detail = "This attachment is not properly configured.",
+            Detail = "This handout is not properly configured.",
         });
     }
 
@@ -206,13 +214,12 @@ public class ChallengeController(
             HasRemote = c.Spec.Containers?.Any() ?? false,
             Attachments = c.Spec.Attachments?.Select((a, i) =>
             {
-
-                if (a.DownloadImage != null)
+                if (!string.IsNullOrEmpty(a.DownloadImage))
                 {
                     return new Attachment
                     {
                         FileName = a.FileName,
-                        DownloadUrl = $"/api/v2/challenges/{challengeName}/handout/{i}",
+                        DownloadUrl = $"/api/challenges/{challengeName}/handout/{i}",
                     };
                 }
 
