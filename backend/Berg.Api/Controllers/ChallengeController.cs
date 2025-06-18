@@ -1,20 +1,22 @@
 using Attachment = Berg.Api.Models.Attachment;
 using Berg.Api.Configuration;
 using Berg.Api.CustomResources.Berg;
+using Berg.Api.Resources;
 using Berg.Api.Services;
 using Challenge = Berg.Api.Models.Challenge;
+using k8s;
 using k8s.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
+using OrasProject.Oras.Content;
 using OrasProject.Oras.Oci;
 using OrasProject.Oras.Registry;
 using OrasProject.Oras.Registry.Remote;
 using OrasProject.Oras.Registry.Remote.Auth;
-using System.Text.Json;
-using k8s;
-using Berg.Api.Resources;
+using System.Net;
 using System.Text;
+using System.Text.Json;
 
 namespace Berg.Api.Controllers;
 
@@ -144,33 +146,38 @@ public class ChallengeController(
             var reference = Reference.Parse(attachment.DownloadImage);
 
             var pullSecretName = attachment.DownloadImagePullSecret ?? infraConfig.PullSecretName;
-            var pullSecret = await kubernetes.ReadNamespacedSecretAsync(pullSecretName, kubernetesConfig.Namespace, cancellationToken: cancellationToken);
-            if (pullSecret.Type != "kubernetes.io/dockerconfigjson")
+            DockerConfig? dockerConfig = null;
+            if (!string.IsNullOrWhiteSpace(pullSecretName))
             {
-                return Problem(title: "Invalid attachment pull secret", detail: "The pull secret specified for this attachment has the wrong type.");
+                var pullSecret = await kubernetes.ReadNamespacedSecretAsync(pullSecretName, kubernetesConfig.Namespace, cancellationToken: cancellationToken);
+                if (pullSecret.Type != "kubernetes.io/dockerconfigjson")
+                {
+                    return Problem(
+                        title: "Invalid attachment pull secret",
+                        detail: $"The pull secret specified for this attachment has the wrong type: {pullSecret.Type}"
+                    );
+                }
+                var dockerConfigJson = pullSecret.Data[".dockerconfigjson"];
+                dockerConfig = JsonSerializer.Deserialize<DockerConfig>(dockerConfigJson);
             }
-            var dockerConfigJson = pullSecret.Data[".dockerconfigjson"];
-            var dockerConfig = JsonSerializer.Deserialize<DockerConfig>(dockerConfigJson);
 
-            HttpClient httpClient;
+            ICredentialProvider? credentialProvider = null;
             if (dockerConfig?.Authentications?.TryGetValue(reference.Host, out DockerAuth? auth) ?? false)
             {
                 if (auth == null || string.IsNullOrEmpty(auth.Authentication))
                     return Problem(title: "Invalid handout pull secret", detail: "The pull secret specified for this attachment has no creds.");
+                logger.LogDebug("Using ORAS client with basic authentication");
                 var usernamePasswordPair = Encoding.UTF8.GetString(Convert.FromBase64String(auth.Authentication));
                 var splitAt = usernamePasswordPair.IndexOf(':');
                 var username = usernamePasswordPair[0..splitAt];
                 var password = usernamePasswordPair[(splitAt + 1)..];
-                httpClient = new HttpClientWithBasicAuth(username, password);
+                credentialProvider = new SingleRegistryCredentialProvider(reference.Registry, new Credential(username, password));
             }
-            else
-            {
-                httpClient = new HttpClient();
-            }
+            var client = new Client(credentialProvider: credentialProvider);
 
             var registry = new Registry(new RepositoryOptions
             {
-                HttpClient = httpClient,
+                Client = client,
                 Reference = new Reference(reference.Registry),
                 PlainHttp = attachment.DownloadImageInsecure,
             });
