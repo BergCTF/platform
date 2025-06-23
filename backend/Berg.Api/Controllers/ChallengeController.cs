@@ -103,15 +103,6 @@ public class ChallengeController(
             });
         }
 
-        if (infraConfig.HandoutServiceUrl == null)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Bad Request",
-                Detail = "This instance is not configured to host handouts.",
-            });
-        }
-
         var challenge = await challengeService.GetChallenge(name, cancellationToken);
         if (challenge == null)
             return NotFound();
@@ -124,6 +115,15 @@ public class ChallengeController(
 
         if (!string.IsNullOrEmpty(attachment.DownloadUrl))
         {
+            if (infraConfig.HandoutServiceUrl == null)
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Bad Request",
+                    Detail = "This instance is not configured to host handouts.",
+                });
+            }
+
             // Download from an internal webserver that requires no authentication
             Response.Headers.XContentTypeOptions = "nosniff";
             Response.Headers.ContentType = "application/octet-stream";
