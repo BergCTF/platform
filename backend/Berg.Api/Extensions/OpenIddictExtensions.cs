@@ -307,7 +307,6 @@ public static class OpenIddictBuilder
                 options.UseAspNetCore(options =>
                 {
                     options.DisableAccessTokenExtractionFromBodyForm();
-                    options.DisableAccessTokenExtractionFromQueryString();
                 });
                 options.AddAudiences(Constants.ClientIds.Berg);
             });

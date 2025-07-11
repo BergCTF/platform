@@ -514,14 +514,19 @@ export class DataService {
   }
 
   downloadFile(relativeUrl: string, filename: string) {
-    this.apiService.downloadFile(relativeUrl).subscribe((blob) => {
-      const a = document.createElement("a");
-      const objectUrl = URL.createObjectURL(blob);
-      a.href = objectUrl;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(objectUrl);
-    });
+    if (this.isAuthenticated) {
+      this.oidcSecurityService.getAccessToken().subscribe(token => {
+        const a = document.createElement("a");
+        a.href = relativeUrl + "?access_token=" + token;
+        a.download = filename;
+        a.click();
+      });
+    } else {
+        const a = document.createElement("a");
+        a.href = relativeUrl;
+        a.download = filename;
+        a.click();
+    }
   }
 
   getCTFStart(): Observable<Date> {
