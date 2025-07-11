@@ -186,7 +186,9 @@ public class ChallengeController(
                 var repo = await registry.GetRepositoryAsync(reference.Repository, cancellationToken);
                 var (_, manifestStream) = await repo.Manifests.FetchAsync(reference.ContentReference, cancellationToken);
                 var manifest = JsonSerializer.Deserialize<Manifest>(manifestStream);
-                var stream = await repo.Blobs.FetchAsync(manifest.Layers.Single(), cancellationToken);
+                var layer = manifest.Layers.Single();
+                Response.ContentLength = layer.Size;
+                var stream = await repo.Blobs.FetchAsync(layer, cancellationToken);
                 return new FileStreamResult(stream, "application/octet-stream");
             }
             catch (Exception ex)
