@@ -36,6 +36,11 @@ spec:
                   type: string
                 flagFormat:
                   type: string
+                dynamicFlagMode:
+                  type: string
+                  enum:
+                    - "suffix"
+                    - "leetify"
                 hideUntil:
                   type: string
                   format: date-time

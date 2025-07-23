@@ -13,6 +13,7 @@ using k8s.Autorest;
 using k8s.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace Berg.Api.Services;
 
@@ -295,8 +296,58 @@ public class ChallengeService(
         string? dynamicFlag;
         if (challenge.Spec.SupportsDynamicFlags)
         {
-            var entropy = RandomNumberGenerator.GetHexString(12, true);
-            dynamicFlag = challenge.Spec.Flag.TrimEnd('}') + '_' + entropy + '}';
+            if (challenge.Spec.DynamicFlagMode == V1DynamicFlagMode.Suffix)
+            {
+                var entropy = RandomNumberGenerator.GetHexString(12, true);
+                dynamicFlag = challenge.Spec.Flag.TrimEnd('}') + '_' + entropy + '}';
+            }
+            else 
+            {
+                // We want to avoid changing the flag to not comply with the format if possible.
+                // This requires the challenge authors to use {} for the flag contents though, if not we just do the entire flag as a fallback.
+                // We could *maybe* parse V1Challenge.FlagFormat, however the suffix mode does not do this either and this sounds like a pain to implement.
+                var flagBodyStartIndex = challenge.Spec.Flag.IndexOf("{");
+                if (flagBodyStartIndex == -1) {
+                    flagBodyStartIndex = 0;
+                }
+                var flagBodyEndIndex = challenge.Spec.Flag.IndexOf("}", flagBodyStartIndex);
+                if (flagBodyEndIndex == -1)
+                {
+                    flagBodyEndIndex = challenge.Spec.Flag.Length;
+                }
+
+                var substitionCharacters = new Dictionary<char, char>
+                {
+                    { 'a', '4' },
+                    { 'e', '3' },
+                    { 'g', '6' },
+                    { 'i', '1' },
+                    { 'l', '1' },
+                    { 'o', '0' },
+                    { 'r', '2' },
+                    { 's', '5' },
+                    { 't', '7' }
+                };
+
+                var flagBody = challenge.Spec.Flag[flagBodyStartIndex..flagBodyEndIndex];
+
+                var leetifiedFlagBody = flagBody.ToCharArray().Select((sourceCharacter, index) =>
+                    {
+                        if (!substitionCharacters.TryGetValue(sourceCharacter, out char leetifiedCharacter))
+                        {
+                            return sourceCharacter;
+                        }
+                        // Yes this doesn't have much entropy compared to the suffix mode
+                        // however this should not really matter here as this dynamic flag mode is just intended for tricking flag sharers to share their flag.
+                        var shouldLeetify = RandomNumberGenerator.GetInt32(2) == 0;
+                        if (!shouldLeetify)
+                        {
+                            return sourceCharacter;
+                        }
+                        return leetifiedCharacter;
+                    });
+                dynamicFlag = challenge.Spec.Flag.Remove(flagBodyStartIndex, flagBodyEndIndex-flagBodyStartIndex).Insert(flagBodyStartIndex, String.Concat(leetifiedFlagBody));
+            }
         }
         else
         {

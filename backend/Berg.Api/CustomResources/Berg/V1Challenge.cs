@@ -30,6 +30,9 @@ public class V1ChallengeSpec
     [JsonPropertyName("flagFormat")]
     public string FlagFormat { get; set; } = "flag{...}";
 
+    [JsonPropertyName("dynamicFlagMode")]
+    public V1DynamicFlagMode DynamicFlagMode { get; set; } = V1DynamicFlagMode.Suffix;
+
     [JsonPropertyName("hideUntil")]
     public DateTime? HideUntil { get; set; }
 
