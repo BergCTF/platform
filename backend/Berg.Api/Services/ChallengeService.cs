@@ -13,7 +13,6 @@ using k8s.Autorest;
 using k8s.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 
 namespace Berg.Api.Services;
 
@@ -301,13 +300,14 @@ public class ChallengeService(
                 var entropy = RandomNumberGenerator.GetHexString(12, true);
                 dynamicFlag = challenge.Spec.Flag.TrimEnd('}') + '_' + entropy + '}';
             }
-            else 
+            else
             {
                 // We want to avoid changing the flag to not comply with the format if possible.
                 // This requires the challenge authors to use {} for the flag contents though, if not we just do the entire flag as a fallback.
                 // We could *maybe* parse V1Challenge.FlagFormat, however the suffix mode does not do this either and this sounds like a pain to implement.
                 var flagBodyStartIndex = challenge.Spec.Flag.IndexOf("{");
-                if (flagBodyStartIndex == -1) {
+                if (flagBodyStartIndex == -1)
+                {
                     flagBodyStartIndex = 0;
                 }
                 var flagBodyEndIndex = challenge.Spec.Flag.IndexOf("}", flagBodyStartIndex);
@@ -346,7 +346,7 @@ public class ChallengeService(
                         }
                         return leetifiedCharacter;
                     });
-                dynamicFlag = challenge.Spec.Flag.Remove(flagBodyStartIndex, flagBodyEndIndex-flagBodyStartIndex).Insert(flagBodyStartIndex, String.Concat(leetifiedFlagBody));
+                dynamicFlag = challenge.Spec.Flag.Remove(flagBodyStartIndex, flagBodyEndIndex - flagBodyStartIndex).Insert(flagBodyStartIndex, string.Concat(leetifiedFlagBody));
             }
         }
         else
@@ -535,7 +535,6 @@ public class ChallengeService(
                         Ports = allPorts.Select(p => new V1ServicePort
                         {
                             Name = $"port-{p.Port}",
-                            AppProtocol = p.AppProtocol,
                             Port = p.Port,
                             TargetPort = p.Port,
                             Protocol = p.Protocol.ToUpperInvariant(),
@@ -581,7 +580,6 @@ public class ChallengeService(
                         Ports = publicPorts.Select(p => new V1ServicePort
                         {
                             Name = $"port-{p.Port}",
-                            AppProtocol = p.AppProtocol,
                             Port = p.Port,
                             TargetPort = p.Port,
                             Protocol = p.Protocol.ToUpperInvariant(),
