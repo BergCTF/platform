@@ -7,6 +7,17 @@ public static class Constants
     public readonly static ActivitySource BergActivitySource = new("Berg.Api");
 
     /// <summary>
+    /// Rate limiting constants
+    /// </summary>
+    public static class RateLimiting
+    {
+        /// <summary>
+        /// The name of the token bucket rate limiting policy
+        /// </summary>
+        public const string TokenBucket = "token-bucket";
+    }
+
+    /// <summary>
     /// Role constants
     /// </summary>
     public static class Roles

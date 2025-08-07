@@ -10,7 +10,6 @@ public class CtfConfig
     public bool Teams { get; set; } = false;
     public bool AllowAnonymousAccess { get; set; } = true;
     public Scoring Scoring { get; set; } = new();
-    public RateLimits RateLimits { get; set; } = new();
     public List<PlayerAttribute>? PlayerAttributes { get; set; }
 }
 

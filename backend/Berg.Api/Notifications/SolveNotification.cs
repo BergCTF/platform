@@ -4,7 +4,6 @@ namespace Berg.Api.Notifications;
 
 public record SolveNotification : INotification
 {
-    public Guid Id { get; set; }
     public Guid PlayerId { get; set; }
     public string PlayerFederatedId { get; set; } = "";
     public string PlayerName { get; set; } = "";

@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json.Serialization;
 using Berg.Api.Configuration;
@@ -8,6 +7,7 @@ using Berg.Api.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using Solve = Berg.Api.Models.Solve;
@@ -16,7 +16,7 @@ using Submission = Berg.Api.Models.Submission;
 namespace Berg.Api.Controllers;
 
 [ApiController]
-[ApiExplorerSettings(GroupName="berg-api")]
+[ApiExplorerSettings(GroupName = "berg-api")]
 public class SolveController(
     ILogger<SolveController> logger,
     CtfConfig ctfConfig,
@@ -25,11 +25,10 @@ public class SolveController(
     BergMetrics metrics,
     IMediator mediator) : ControllerBase
 {
-    private readonly object _submitFlagLock = new();
-
     private static IQueryable<Db.Solve> FilterAdminSolves(IQueryable<Db.Solve> solves, bool isAdmin)
     {
-        if (isAdmin) {
+        if (isAdmin)
+        {
             return solves;
         }
         return solves.Where(s => s.Player.Roles == null || !s.Player.Roles.Contains(Constants.Roles.Admin));
@@ -75,7 +74,6 @@ public class SolveController(
         return [.. solves.Select(s => new Solve
             {
                 ChallengeName = s.ChallengeId,
-                Id = s.Id,
                 PlayerId = s.PlayerId,
                 SolvedAt = s.SolvedAt
             })
@@ -94,8 +92,11 @@ public class SolveController(
     [HttpPost]
     [Route("/api/solves")]
     [Authorize(Policy = Constants.Policies.Player)]
+    [EnableRateLimiting(Constants.RateLimiting.TokenBucket)]
     [ProducesResponseType(typeof(Solve), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
     public ActionResult<Solve> AddSolve([FromBody] AddSolveRequest addSolveRequest)
     {
         var utcNow = DateTime.UtcNow;
@@ -162,156 +163,118 @@ public class SolveController(
             });
         }
 
-        lock (_submitFlagLock)
+        var player = dbContext.Players
+            .Include(p => p.Submissions)
+            .Include(p => p.Solves)
+            .Include(p => p.Team)
+            .Single(p => p.Id == playerId);
+
+        if (player.Solves.Any(s => s.ChallengeId == challengeName))
         {
-            var player = dbContext.Players
-                .Include(p => p.Submissions)
-                .Include(p => p.Solves)
-                .Include(p => p.Team)
-                .Single(p => p.Id == playerId);
-
-            if (player.Solves.Any(s => s.ChallengeId == challengeName))
+            logger.LogWarning("Player {PlayerId} has already solved challenge {ChallengeName}", playerId, challengeName);
+            return BadRequest(new ProblemDetails
             {
-                logger.LogWarning("Player {PlayerId} has already solved challenge {ChallengeName}", playerId, challengeName);
-                return BadRequest(new ProblemDetails
-                {
-                    Title = "Already solved",
-                    Detail = "You have already solved this challenge."
-                });
-            }
+                Title = "Already solved",
+                Detail = "You have already solved this challenge."
+            });
+        }
 
-            var yesterday = utcNow.Subtract(TimeSpan.FromDays(1));
-            var latestFailedSubmissions = player.Submissions
-                .Where(s => yesterday < s.SubmittedAt)
-                .ToList();
-            if (latestFailedSubmissions.Count > ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerDay)
+        var dbChallenge = dbContext.Challenges.Single(c => c.Name == challengeName);
+
+        var trimmedFlag = addSolveRequest.Flag.Trim();
+
+        var flagValid = false;
+        if (challengeConfig.Spec.SupportsDynamicFlags)
+        {
+            if (ctfConfig.Teams)
             {
-                logger.LogWarning("Player {PlayerId} has reached the daily submission limit", playerId);
-                Response.StatusCode = StatusCodes.Status429TooManyRequests;
-                Response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromDays(1)).ToString();
-                metrics.RateLimitedSubmission(challengeName, playerId);
-                return new ObjectResult(new ProblemDetails
-                {
-                    Title = "Too many requests",
-                    Detail = "You have reached the daily submission limit."
-                });
-            }
-
-            var oneHourAgo = utcNow.Subtract(TimeSpan.FromHours(1));
-            var submissionCountHour = latestFailedSubmissions.Count(s => oneHourAgo < s.SubmittedAt);
-            if (submissionCountHour > ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerHour)
-            {
-                logger.LogWarning("Player {PlayerId} has reached the hourly submission limit", playerId);
-                Response.StatusCode = StatusCodes.Status429TooManyRequests;
-                Response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromHours(1)).ToString();
-                metrics.RateLimitedSubmission(challengeName, playerId);
-                return new ObjectResult(new ProblemDetails
-                {
-                    Title = "Too many requests",
-                    Detail = "You have reached the hourly submission limit."
-                });
-            }
-
-            var oneMinuteAgo = utcNow.Subtract(TimeSpan.FromMinutes(1));
-            var submissionCountMinute = latestFailedSubmissions.Count(s => oneMinuteAgo < s.SubmittedAt);
-            if (submissionCountMinute > ctfConfig.RateLimits.MaxInvalidFlagSubmissionsPerMinute)
-            {
-                logger.LogWarning("Player {PlayerId} has reached the minute submission limit", playerId);
-                Response.StatusCode = StatusCodes.Status429TooManyRequests;
-                Response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromMinutes(1)).ToString();
-                metrics.RateLimitedSubmission(challengeName, playerId);
-                return new ObjectResult(new ProblemDetails
-                {
-                    Title = "Too many requests",
-                    Detail = "You have reached the minute submission limit."
-                });
-            }
-
-            var dbChallenge = dbContext.Challenges.Single(c => c.Name == challengeName);
-
-            var trimmedFlag = addSolveRequest.Flag.Trim();
-
-            var flagValid = false;
-            if (challengeConfig.Spec.SupportsDynamicFlags)
-            {
-                if (ctfConfig.Teams)
-                {
-                    // Allow team members to submit a dynamic flag of their teammates
-                    flagValid = dbContext.Instances.Any(i => i.Player.TeamId == player.TeamId &&
-                        i.ChallengeName == challengeName &&
-                        i.DynamicFlag == trimmedFlag);
-                }
-                else
-                {
-                    flagValid = dbContext.Instances.Any(i => i.PlayerId == playerId &&
-                        i.ChallengeName == challengeName &&
-                        i.DynamicFlag == trimmedFlag);
-                }
+                // Allow team members to submit a dynamic flag of their teammates
+                flagValid = dbContext.Instances.Any(i => i.Player.TeamId == player.TeamId &&
+                    i.ChallengeName == challengeName &&
+                    i.DynamicFlag == trimmedFlag);
             }
             else
             {
-                flagValid = challengeConfig.Spec.Flag == trimmedFlag;
+                flagValid = dbContext.Instances.Any(i => i.PlayerId == playerId &&
+                    i.ChallengeName == challengeName &&
+                    i.DynamicFlag == trimmedFlag);
             }
+        }
+        else
+        {
+            flagValid = challengeConfig.Spec.Flag == trimmedFlag;
+        }
 
-            if (!flagValid)
-            {
-                dbContext.Submissions.Add(new Db.Submission
-                {
-                    Id = UUIDNext.Uuid.NewSequential(),
-                    Challenge = dbChallenge,
-                    SubmittedAt = utcNow,
-                    Player = player,
-                    Value = trimmedFlag
-                });
-                dbContext.SaveChanges();
-                logger.LogInformation("Player {PlayerId} submitted an invalid flag for challenge {ChallengeName}", playerId, challengeName);
-                metrics.InvalidSubmission(challengeName, playerId);
-                return BadRequest(new ProblemDetails
-                {
-                    Title = "Invalid flag",
-                    Detail = "The flag you have provided is incorrect."
-                });
-            }
-
-            var dbSolve = new Db.Solve
+        if (!flagValid)
+        {
+            dbContext.Submissions.Add(new Db.Submission
             {
                 Id = UUIDNext.Uuid.NewSequential(),
                 Challenge = dbChallenge,
-                SolvedAt = utcNow,
+                SubmittedAt = utcNow,
                 Player = player,
-            };
-            dbContext.Solves.Add(dbSolve);
-            dbContext.SaveChanges();
-            logger.LogInformation("Player {PlayerId} has solved challenge {ChallengeName}", playerId, challengeName);
-            metrics.ValidSubmission(challengeName, playerId);
-
-            var freezeStart = ctfConfig.Scoring.FreezeStart;
-            var freezeEnd = ctfConfig.Scoring.FreezeStart;
-            var isCurrentlyFrozen = freezeStart < utcNow && utcNow < freezeEnd;
-
-            // Asynchronously let other components react to this solve
-            var _ = mediator.Publish(new SolveNotification
-            {
-                Id = dbSolve.Id,
-                PlayerId = player.Id,
-                PlayerFederatedId = player.FederatedId,
-                PlayerName = player.Name,
-                TeamId = player.TeamId,
-                TeamName = player.Team?.Name,
-                SolvedAt = dbSolve.SolvedAt,
-                Challenge = challengeName,
-                IsFrozen = isCurrentlyFrozen,
-                IsAdmin = isAdmin,
+                Value = trimmedFlag
             });
-
-            return Ok(new Solve
+            dbContext.SaveChanges();
+            logger.LogInformation("Player {PlayerId} submitted an invalid flag for challenge {ChallengeName}", playerId, challengeName);
+            metrics.InvalidSubmission(challengeName, playerId);
+            return BadRequest(new ProblemDetails
             {
-                Id = dbSolve.Id,
-                PlayerId = player.Id,
-                ChallengeName = challengeName,
-                SolvedAt = utcNow
+                Title = "Invalid flag",
+                Detail = "The flag you have provided is incorrect."
             });
         }
+
+        var dbSolve = new Db.Solve
+        {
+            Challenge = dbChallenge,
+            SolvedAt = utcNow,
+            Player = player,
+        };
+        dbContext.Solves.Add(dbSolve);
+
+        try
+        {
+            dbContext.SaveChanges();
+        }
+        catch (DbUpdateException ex)
+        {
+            // Log update exception, most probable cause for this is a unique constraint violation if a player tries to submit
+            // a solve for the same challenge in a very short timeframe.
+            logger.LogError(ex, "Failed to save player {PlayerId} solve for challenge {ChallengeName}", playerId, challengeName);
+            return Conflict(new ProblemDetails
+            {
+                Title = "Saving solve failed",
+                Detail = "Failed to save player solve for this challenge."
+            });
+        }
+        logger.LogInformation("Player {PlayerId} has solved challenge {ChallengeName}", playerId, challengeName);
+        metrics.ValidSubmission(challengeName, playerId);
+
+        var freezeStart = ctfConfig.Scoring.FreezeStart;
+        var freezeEnd = ctfConfig.Scoring.FreezeStart;
+        var isCurrentlyFrozen = freezeStart < utcNow && utcNow < freezeEnd;
+
+        // Asynchronously let other components react to this solve
+        var _ = mediator.Publish(new SolveNotification
+        {
+            PlayerId = player.Id,
+            PlayerFederatedId = player.FederatedId,
+            PlayerName = player.Name,
+            TeamId = player.TeamId,
+            TeamName = player.Team?.Name,
+            SolvedAt = dbSolve.SolvedAt,
+            Challenge = challengeName,
+            IsFrozen = isCurrentlyFrozen,
+            IsAdmin = isAdmin,
+        });
+
+        return Ok(new Solve
+        {
+            PlayerId = player.Id,
+            ChallengeName = challengeName,
+            SolvedAt = utcNow
+        });
     }
 
     [HttpGet]
@@ -321,7 +284,8 @@ public class SolveController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public ActionResult<List<Submission>> ListSubmissions()
     {
-        return dbContext.Submissions.Select(s => new Submission {
+        return dbContext.Submissions.Select(s => new Submission
+        {
             Id = s.Id,
             PlayerId = s.Player.Id,
             Value = s.Value,

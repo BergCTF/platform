@@ -128,6 +128,10 @@ berg:
   # - "https://frontend.example.com/callback"
   corsOrigins: []
   # - "https://frontend.example.com"
+  rateLimiting:
+    replenishmentPeriod: "0.00:00:15"
+    tokensPerPeriod: "1"
+    tokenLimit: "10"
   ctf:
     eventName: "Berg CTF"
     eventOrganiser: "Berg Contributors"

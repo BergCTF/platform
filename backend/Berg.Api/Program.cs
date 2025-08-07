@@ -1,3 +1,6 @@
+using System.Security.Claims;
+using System.Threading.RateLimiting;
+using Berg.Api;
 using Berg.Api.BackgroundServices;
 using Berg.Api.Configuration;
 using Berg.Api.Db;
@@ -6,6 +9,7 @@ using Berg.Api.Services;
 using k8s;
 using Microsoft.AspNetCore.WebSockets;
 using Microsoft.EntityFrameworkCore;
+using OpenIddict.Abstractions;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(o => o.AddServerHeader = false);
@@ -25,6 +29,9 @@ builder.Services.AddSingleton(discordConfig);
 var genericOpenIdConfig = new GenericOpenIdConfig();
 builder.Configuration.GetSection("GenericOpenId").Bind(genericOpenIdConfig);
 builder.Services.AddSingleton(genericOpenIdConfig);
+
+var rateLimitOptions = new TokenBucketRateLimiterOptions();
+builder.Configuration.GetSection("RateLimiting").Bind(rateLimitOptions);
 
 var kubernetesConfig = KubernetesClientConfiguration.BuildDefaultConfig();
 var kubernetes = new Kubernetes(kubernetesConfig);
@@ -55,6 +62,15 @@ builder.Services.AddDbContext<BergDbContext>(options =>
     }
     options.UseNpgsql(connString);
     options.UseOpenIddict();
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(Constants.RateLimiting.TokenBucket, httpContext =>
+        RateLimitPartition.GetTokenBucketLimiter(
+            partitionKey: httpContext.User.FindFirstValue(OpenIddictConstants.Claims.Subject) ?? "anonymous",
+            factory: _ => rateLimitOptions));
 });
 
 builder.Services.AddSingleton<BergMetrics>();
@@ -88,6 +104,7 @@ app.UseForwardedHeaders();
 app.UseHsts();
 
 app.UseCors();
+app.UseRateLimiter();
 
 app.UseWebSockets();
 app.UseSwagger();

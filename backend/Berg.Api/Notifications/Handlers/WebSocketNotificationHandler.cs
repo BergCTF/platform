@@ -30,13 +30,12 @@ public class WebSocketNotificationHandler(
     {
         var dtoSolve = new Models.Solve
         {
-            Id = solve.Id,
             PlayerId = solve.PlayerId,
             ChallengeName = solve.Challenge,
             SolvedAt = solve.SolvedAt
         };
         var adminIds = dbContext.Players.Where(p => p.Roles != null && p.Roles.Contains(Constants.Roles.Admin)).Select(p => p.Id).ToHashSet();
-        if(solve.IsAdmin)
+        if (solve.IsAdmin)
         {
             logger.LogDebug("Messaging only admins about the admin solve.");
             await webSocketService.PushEvent("solve", dtoSolve, adminIds.Contains);
@@ -138,10 +137,13 @@ public class WebSocketNotificationHandler(
             return;
         }
         var dtoChallenge = ChallengeController.ToChallenge(challenge);
-        if (ctfConfig.Start < DateTime.UtcNow) {
+        if (ctfConfig.Start < DateTime.UtcNow)
+        {
             logger.LogDebug("Sending challenge message to all websocket clients.");
             await webSocketService.PushEventAll("challenge", dtoChallenge);
-        } else {
+        }
+        else
+        {
             logger.LogDebug("Sending challenge message only to admin websocket clients.");
             var adminIds = dbContext.Players
                 .Where(p => p.Roles != null && p.Roles.Contains(Constants.Roles.Admin))
@@ -158,7 +160,8 @@ public class WebSocketNotificationHandler(
             .Where(p => p.Roles != null && p.Roles.Contains(Constants.Roles.Admin))
             .Select(p => p.Id)
             .ToHashSet();
-        if (notification.Instance.PlayerId != null) {
+        if (notification.Instance.PlayerId != null)
+        {
             playerIdsToNotify.Add(notification.Instance.PlayerId.Value);
         }
         await webSocketService.PushEvent("instance", notification.Instance, playerIdsToNotify.Contains);

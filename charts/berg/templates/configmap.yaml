@@ -12,6 +12,11 @@ data:
         "LogLevel": {{ .Values.berg.logLevel | toJson }}
       },
       "AllowedHosts": {{ .Values.berg.domain | quote }},
+      "RateLimiting": {
+        "ReplenishmentPeriod": {{ .Values.berg.rateLimiting.replenishmentPeriod | quote }},
+        "TokensPerPeriod": {{ .Values.berg.rateLimiting.tokensPerPeriod }},
+        "TokenLimit": {{ .Values.berg.rateLimiting.tokenLimit }},
+      },
       {{- if .Values.berg.postgresql.existingSecret.name }}
       "ConnectionStrings": {
         "BergDbConnection": ""
