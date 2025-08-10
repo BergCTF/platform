@@ -41,6 +41,7 @@ data:
         "pullSecretName": {{ .Values.berg.pullSecretName | quote }},
         "challengeImagePullPolicy": {{ .Values.berg.challengeImagePullPolicy | quote }},
         "challengeInstanceTimeout": {{ .Values.berg.challengeInstanceTimeout | quote }},
+        "challengeAdditionalHeadlessService": {{ .Values.berg.challengeAdditionalHeadlessService }},
         "challengeCpuLimit": {{ .Values.berg.challengeCpuLimit | quote }},
         "challengeMemoryLimit": {{ .Values.berg.challengeMemoryLimit | quote }},
         {{- if .Values.berg.challengeRuntimeClassName }}

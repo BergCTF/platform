@@ -516,6 +516,36 @@ public class ChallengeService(
 
         foreach (var container in challenge.Spec.Containers ?? [])
         {
+            if (infraConfig.ChallengeAdditionalHeadlessService)
+            {
+                var headlessService = new V1Service
+                {
+                    Metadata = new V1ObjectMeta
+                    {
+                        Name = $"{container.Hostname}-headless",
+                    },
+                    Spec = new V1ServiceSpec
+                    {
+                        Selector = new Dictionary<string, string>
+                        {
+                            { ContainerLabel, container.Hostname }
+                        },
+                        Type = "ClusterIP",
+                        ClusterIP = "None"
+                    }
+                };
+                try
+                {
+                    await kubernetes.CreateNamespacedServiceAsync(headlessService, ns.Name(), cancellationToken: cancellationToken);
+                }
+                catch (HttpOperationException ex)
+                {
+                    logger.LogError("Got exception while creating headless Service: {}", ex);
+                    logger.LogError("Response.Content: {}", ex.Response.Content);
+                    logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(headlessService));
+                }
+            }
+            
             var allPorts = container.Ports ?? [];
             if (allPorts.Any())
             {

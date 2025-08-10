@@ -63,6 +63,7 @@ berg:
   challengeEgressBandwidth: "1M"
   challengeCpuLimit: "1"
   challengeMemoryLimit: "0.5Gi"
+  challengeAdditionalHeadlessService: false
   logLevel:
     Default: Information
     Microsoft.AspNetCore: Warning
