@@ -60,6 +60,7 @@ berg:
   # By default, all challenges will be terminated after 2h
   challengeInstanceTimeout: "0.02:00:00"
   challengeRuntimeClassName: null
+  challengeIngressBandwidth: "1M"
   challengeEgressBandwidth: "1M"
   challengeCpuLimit: "1"
   challengeMemoryLimit: "0.5Gi"

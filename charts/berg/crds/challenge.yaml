@@ -144,6 +144,9 @@ spec:
                       egressBandwidth:
                         type: string
                         nullable: true
+                      ingressBandwidth:
+                        type: string
+                        nullable: true
                 attachments:
                   type: array
                   items:

@@ -86,6 +86,7 @@ Configuration for optional handout service. Structure mirrors the one for the `f
 * `berg.challengeImagePullPolicy`: Image pull policy for challenges.
 * `berg.challengeInstanceTimeout`: Timeout for challenge instances (`HH:MM:SS` format).
 * `berg.challengeRuntimeClassName`: Optional runtime class name.
+* `berg.challengeIngressBandwidth`: Ingress bandwidth for challenges.
 * `berg.challengeEgressBandwidth`: Egress bandwidth for challenges.
 * `berg.challengeCpuLimit`, `challengeMemoryLimit`: Default resource limits for challenge containers.
 * `berg.domain`: The main domain to run berg on

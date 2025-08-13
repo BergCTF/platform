@@ -545,7 +545,7 @@ public class ChallengeService(
                     logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(headlessService));
                 }
             }
-            
+
             var allPorts = container.Ports ?? [];
             if (allPorts.Any())
             {
@@ -1000,7 +1000,8 @@ public class ChallengeService(
                             Name = container.Hostname,
                             Labels = labels,
                             Annotations = new Dictionary<string, string>() {
-                                { "kubernetes.io/egress-bandwidth", container.EgressBandwidth ?? infraConfig.ChallengeEgressBandwidth }
+                                { "kubernetes.io/egress-bandwidth", container.EgressBandwidth ?? infraConfig.ChallengeEgressBandwidth },
+                                { "kubernetes.io/ingress-bandwidth", container.IngressBandwidth ?? infraConfig.ChallengeIngressBandwidth }
                             }
                         },
                         Spec = podSpec

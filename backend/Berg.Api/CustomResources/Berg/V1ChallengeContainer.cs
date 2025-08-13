@@ -29,6 +29,9 @@ public class V1ChallengeContainer
     [JsonPropertyName("egressBandwidth")]
     public string? EgressBandwidth { get; set; }
 
+    [JsonPropertyName("ingressBandwidth")]
+    public string? IngressBandwidth { get; set; }
+
     [JsonPropertyName("ports")]
     public List<V1ChallengePort>? Ports { get; set; }
 

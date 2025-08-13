@@ -47,6 +47,7 @@ data:
         {{- if .Values.berg.challengeRuntimeClassName }}
         "challengeRuntimeClassName": {{ .Values.berg.challengeRuntimeClassName | quote }},
         {{- end }}
+        "challengeIngressBandwidth": {{ .Values.berg.challengeIngressBandwidth | quote }},
         "challengeEgressBandwidth": {{ .Values.berg.challengeEgressBandwidth | quote }},
         {{- if .Values.handout.enabled }}
         "handoutServiceUrl": "http://{{ include "berg.fullname" . }}-handout",
