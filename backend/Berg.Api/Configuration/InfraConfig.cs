@@ -14,6 +14,7 @@ public class InfraConfig
     public string ChallengeTlsListenerName { get; set; } = "";
     public Guid PlayerIdNamespace { get; set; } = Guid.Empty;
     public List<string>? RedirectUris { get; set; }
+    public List<string>? PostLogoutRedirectUris { get; set; }
     public List<string>? CorsOrigins { get; set; }
     public bool ChallengeAdditionalHeadlessService { get; set; } = false;
     public TimeSpan ChallengeInstanceTimeout { get; set; } = TimeSpan.FromHours(2);

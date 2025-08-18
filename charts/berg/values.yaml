@@ -128,6 +128,8 @@ berg:
       loggingEndpoint: null
   redirectUris: []
   # - "https://frontend.example.com/callback"
+  postLogoutRedirectUris: []
+  # - "https://frontend.example.com"
   corsOrigins: []
   # - "https://frontend.example.com"
   rateLimiting:

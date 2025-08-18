@@ -342,12 +342,18 @@ public static class OpenIddictBuilder
             },
             PostLogoutRedirectUris = {
                 new Uri($"https://{infraConfig.PlatformDomain}")
-            }
+            },
         };
         var redirectUris = infraConfig.RedirectUris ?? [];
         foreach (var redirectUri in redirectUris)
         {
             bergApp.RedirectUris.Add(new Uri(redirectUri));
+        }
+        
+        var postLogoutRedirectUris = infraConfig.PostLogoutRedirectUris ?? [];
+        foreach (var redirectUri in postLogoutRedirectUris)
+        {
+            bergApp.PostLogoutRedirectUris.Add(new Uri(redirectUri));
         }
 
         var existingBergApp = await appManager.FindByClientIdAsync(bergApp.ClientId);

@@ -23,12 +23,12 @@ gateway:
 
 Settings for the Kubernetes gateway API used to expose services.
 
-* `gateway.domain`: Base domain used for routing.
-* `gateway.name`: Name of the gateway resource.
-* `gateway.namespace`: Namespace in which the gateway resides.
-* `gateway.httpListenerName`, `httpsListenerName`: Names for HTTP/HTTPS listeners.
-* `gateway.httpsPort`, `httpRoutePort`, `tlsRoutePort`: Ports for various protocols.
-* `gateway.httpRouteListenerName`, `httpRouteRedirectListenerName`, `tlsRouteListenerName`: Route-specific listener references.
+- `gateway.domain`: Base domain used for routing.
+- `gateway.name`: Name of the gateway resource.
+- `gateway.namespace`: Namespace in which the gateway resides.
+- `gateway.httpListenerName`, `httpsListenerName`: Names for HTTP/HTTPS listeners.
+- `gateway.httpsPort`, `httpRoutePort`, `tlsRoutePort`: Ports for various protocols.
+- `gateway.httpRouteListenerName`, `httpRouteRedirectListenerName`, `tlsRouteListenerName`: Route-specific listener references.
 
 ---
 
@@ -53,10 +53,10 @@ frontend:
 
 Settings for the web frontend.
 
-* `frontend.enabled`: Whether to deploy the frontend.
-* `frontend.pullSecretName`: Name of secret for pulling private frontend image.
-* `frontend.image`: Image configuration for the frontend.
-* `frontend.resources`: Resource requests and limits.
+- `frontend.enabled`: Whether to deploy the frontend.
+- `frontend.pullSecretName`: Name of secret for pulling private frontend image.
+- `frontend.image`: Image configuration for the frontend.
+- `frontend.resources`: Resource requests and limits.
 
 ---
 
@@ -76,20 +76,20 @@ Configuration for optional handout service. Structure mirrors the one for the `f
 
 ### Image Settings
 
-* `berg.image`: Container image for the Berg API.
-* `berg.pullSecretName`: Pull secret name for pulling backend image
-* `berg.extraEnv`: Define extra environment variables
-* `berg.extraEnvFrom`: Read extra environment variables from Secret or ConfigMap ressource
+- `berg.image`: Container image for the Berg API.
+- `berg.pullSecretName`: Pull secret name for pulling backend image
+- `berg.extraEnv`: Define extra environment variables
+- `berg.extraEnvFrom`: Read extra environment variables from Secret or ConfigMap ressource
 
 ### Configuration
 
-* `berg.challengeImagePullPolicy`: Image pull policy for challenges.
-* `berg.challengeInstanceTimeout`: Timeout for challenge instances (`HH:MM:SS` format).
-* `berg.challengeRuntimeClassName`: Optional runtime class name.
-* `berg.challengeIngressBandwidth`: Ingress bandwidth for challenges.
-* `berg.challengeEgressBandwidth`: Egress bandwidth for challenges.
-* `berg.challengeCpuLimit`, `challengeMemoryLimit`: Default resource limits for challenge containers.
-* `berg.domain`: The main domain to run berg on
+- `berg.challengeImagePullPolicy`: Image pull policy for challenges.
+- `berg.challengeInstanceTimeout`: Timeout for challenge instances (`HH:MM:SS` format).
+- `berg.challengeRuntimeClassName`: Optional runtime class name.
+- `berg.challengeIngressBandwidth`: Ingress bandwidth for challenges.
+- `berg.challengeEgressBandwidth`: Egress bandwidth for challenges.
+- `berg.challengeCpuLimit`, `challengeMemoryLimit`: Default resource limits for challenge containers.
+- `berg.domain`: The main domain to run berg on
 
 ### Logging
 
@@ -106,6 +106,7 @@ logLevel:
 Fine-grained logging levels per namespace.
 
 ### Resources
+
 ```yaml
 resources:
 limits:
@@ -132,7 +133,7 @@ postgresql:
 
 ### Player Identification
 
-* `berg.playerIdNamespace`: Namespace UUID to use for player IDs
+- `berg.playerIdNamespace`: Namespace UUID to use for player IDs
 
 ---
 
@@ -162,10 +163,10 @@ genericOpenId:
 
 Settings for generic OpenID Connect provider integration:
 
-* `berg.genericOpenId.issuer`, `internalIssuer`: External/internal URLs for issuer.
-* `berg.genericOpenId.clientId`, `clientSecret`: OAuth credentials.
-* `berg.genericOpenId.scopes`: Requested OAuth scopes.
-* `berg.genericOpenId.claims`: Mapping of OpenID claims to internal roles and fields.
+- `berg.genericOpenId.issuer`, `internalIssuer`: External/internal URLs for issuer.
+- `berg.genericOpenId.clientId`, `clientSecret`: OAuth credentials.
+- `berg.genericOpenId.scopes`: Requested OAuth scopes.
+- `berg.genericOpenId.claims`: Mapping of OpenID claims to internal roles and fields.
 
 For an example configuration, see [OIDC with Authentik](OIDC-Authentik.md)
 
@@ -196,22 +197,23 @@ ctf:
 
 Defines event branding and metadata:
 
-* `berg.ctf.eventName`: CTF name
-* `berg.ctf.eventOrganizer`: CTF Organizer
-* `berg.ctf.eventLogoUrl`: Brand logo URL
-* `berg.ctf.start`: CTF start time
-* `berg.ctf.end` Logos and scheduling.
-* `berg.ctf.allowAnonymousAccess`: Enables access without login.
-* `berg.ctf.teams`: Whether team mode is enabled.
-* `berg.ctf.playerAttributes`: Customizable player profile fields.
-* `berg.ctf.scoring`: Scoring behavior and thresholds.
+- `berg.ctf.eventName`: CTF name
+- `berg.ctf.eventOrganizer`: CTF Organizer
+- `berg.ctf.eventLogoUrl`: Brand logo URL
+- `berg.ctf.start`: CTF start time
+- `berg.ctf.end` Logos and scheduling.
+- `berg.ctf.allowAnonymousAccess`: Enables access without login.
+- `berg.ctf.teams`: Whether team mode is enabled.
+- `berg.ctf.playerAttributes`: Customizable player profile fields.
+- `berg.ctf.scoring`: Scoring behavior and thresholds.
 
 ---
 
 ### Redirect URIs and CORS
 
-* `berg.redirectUris`: URIs allowed for OAuth2 redirection.
-* `berg.corsOrigins`: Allowed CORS origins.
+- `berg.redirectUris`: URIs allowed for OAuth2 redirection.
+- `berg.postLogoutRedirectUris` URIs allowed for OIDC end session redirect
+- `berg.corsOrigins`: Allowed CORS origins.
 
 ---
 

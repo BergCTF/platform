@@ -37,6 +37,7 @@ data:
         "challengeTlsListenerName": {{ .Values.gateway.tlsRouteListenerName | quote }},
         "playerIdNamespace": {{ .Values.berg.playerIdNamespace | quote }},
         "redirectUris": {{ .Values.berg.redirectUris | toJson }},
+        "postLogoutRedirectUris": {{ .Values.berg.postLogoutRedirectUris | toJson }},
         "corsOrigins": {{ .Values.berg.corsOrigins | toJson }},
         "pullSecretName": {{ .Values.berg.pullSecretName | quote }},
         "challengeImagePullPolicy": {{ .Values.berg.challengeImagePullPolicy | quote }},
