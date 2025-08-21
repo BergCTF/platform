@@ -105,7 +105,7 @@ public partial class TeamController(
         public string? Name { get; set; }
     }
 
-    [GeneratedRegex("^[\\w\\d]{1,32}$")]
+    [GeneratedRegex(@"^[\w\d\p{P}\p{S} ]{1,32}$")]
     private static partial Regex TeamNameRegex();
 
     [HttpPost]
