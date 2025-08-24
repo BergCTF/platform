@@ -198,7 +198,12 @@ public class ChallengeService(
         var challenge = await _challengeClient.ReadNamespacedAsync<V1Challenge>(kubernetesConfig.Namespace, challengeName, cancellationToken);
 
         var podList = await kubernetes.ListNamespacedPodAsync(ns.Name(), cancellationToken: cancellationToken);
-        if (podList.Items.Any(p => p.Status.Phase != "Running") || podList.Items.Count == 0)
+        if (
+            podList.Items.Any(
+                p => p.Status.Phase != "Running"
+                    || p.Status.Conditions.FirstOrDefault(condition => condition.Type == "Ready")?.Status != "True"
+            ) || podList.Items.Count == 0
+        )
         {
             return new Instance
             {
