@@ -1,0 +1,30 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "berg.fullname" . }}-api-pdb
+  labels:
+    {{- include "berg.labels" . | nindent 4 }}
+    component: api
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "berg.selectorLabels" . | nindent 6 }}
+      component: api
+{{ if .Values.frontend.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "berg.fullname" . }}-frontend-pdb
+  labels:
+    {{- include "berg.labels" . | nindent 4 }}
+    component: frontend
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "berg.selectorLabels" . | nindent 6 }}
+      component: frontend
+{{- end }}

@@ -22,6 +22,8 @@ frontend:
     repository: "ghcr.io/norelect/berg/frontend"
     imagePullPolicy: IfNotPresent
     tag: ""
+  replicas: 1
+  priorityClassName: ""
   resources:
     limits:
       cpu: "1"
@@ -37,6 +39,8 @@ handout:
     repository: "ghcr.io/norelect/berg/handouts"
     imagePullPolicy: IfNotPresent
     tag: ""
+  replicas: 1
+  priorityClassName: ""
   resources:
     limits:
       cpu: "1"
@@ -72,6 +76,7 @@ berg:
     OpenIddict: Warning
     Quartz: Warning
     System.Net.Http.HttpClient.OpenIddict: Warning
+  priorityClassName: ""
   resources:
     limits:
       cpu: "2"

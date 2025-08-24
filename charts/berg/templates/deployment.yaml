@@ -82,6 +82,9 @@ spec:
         - name: appsettings
           configMap:
             name: {{ include "berg.fullname" . }}-appsettings
+      {{- if .Values.berg.priorityClassName }}
+      priorityClassName: {{ .Values.berg.priorityClassName }}
+      {{- end }}
 {{ if .Values.frontend.enabled }}
 ---
 apiVersion: apps/v1
@@ -94,7 +97,7 @@ metadata:
 spec:
   strategy:
     type: RollingUpdate
-  replicas: 1
+  replicas: {{ .Values.frontend.replicas }}
   selector:
     matchLabels:
       {{- include "berg.selectorLabels" . | nindent 6 }}
@@ -117,6 +120,9 @@ spec:
             - containerPort: 80
           resources:
             {{- toYaml .Values.frontend.resources | nindent 12 }}
+      {{- if .Values.frontend.priorityClassName }}
+      priorityClassName: {{ .Values.frontend.priorityClassName }}
+      {{- end }}
 {{ end }}
 {{ if .Values.handout.enabled }}
 ---
@@ -130,7 +136,7 @@ metadata:
 spec:
   strategy:
     type: RollingUpdate
-  replicas: 1
+  replicas: {{ .Values.handout.replicas }}
   selector:
     matchLabels:
       {{- include "berg.selectorLabels" . | nindent 6 }}
@@ -153,4 +159,7 @@ spec:
             - containerPort: 80
           resources:
             {{- toYaml .Values.handout.resources | nindent 12 }}
+      {{- if .Values.handout.priorityClassName }}
+      priorityClassName: {{ .Values.handout.priorityClassName }}
+      {{- end }}
 {{ end }}
