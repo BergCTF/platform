@@ -985,6 +985,34 @@ public class ChallengeService(
                 { PlayerIdLabel, playerId.ToString() },
                 { ContainerLabel, container.Hostname }
             };
+
+            var podDisruptionBudget = new V1PodDisruptionBudget()
+            {
+                Metadata = new V1ObjectMeta
+                {
+                    Name = $"{container.Hostname}-pdb"
+                },
+                Spec = new V1PodDisruptionBudgetSpec
+                {
+                    MinAvailable = 1,
+                    Selector = new V1LabelSelector
+                    {
+                        MatchLabels = labels
+                    }
+                }
+            };
+
+            try
+            {
+                await kubernetes.CreateNamespacedPodDisruptionBudgetAsync(podDisruptionBudget, ns.Name(), cancellationToken: cancellationToken);
+            }
+            catch (HttpOperationException ex)
+            {
+                logger.LogError("Got exception while creating PodDisruptionBudget: {}", ex);
+                logger.LogError("Response.Content: {}", ex.Response.Content);
+                logger.LogError("Object Details: \n{}", KubernetesYaml.Serialize(podDisruptionBudget));
+            }
+
             var deployment = new V1Deployment
             {
                 Metadata = new V1ObjectMeta
@@ -1006,7 +1034,8 @@ public class ChallengeService(
                             Labels = labels,
                             Annotations = new Dictionary<string, string>() {
                                 { "kubernetes.io/egress-bandwidth", container.EgressBandwidth ?? infraConfig.ChallengeEgressBandwidth },
-                                { "kubernetes.io/ingress-bandwidth", container.IngressBandwidth ?? infraConfig.ChallengeIngressBandwidth }
+                                { "kubernetes.io/ingress-bandwidth", container.IngressBandwidth ?? infraConfig.ChallengeIngressBandwidth },
+                                { "cluster-autoscaler.kubernetes.io/safe-to-evict", "false" }
                             }
                         },
                         Spec = podSpec
