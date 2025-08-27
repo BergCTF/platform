@@ -21,8 +21,10 @@ public class InfraConfig
     public string? ChallengeRuntimeClassName { get; set; }
     public string ChallengeEgressBandwidth { get; set; } = "1M";
     public string ChallengeIngressBandwidth { get; set; } = "1M";
-    public string ChallengeCpuLimit { get; set; } = "2";
-    public string ChallengeMemoryLimit { get; set; } = "1Gi";
+    public string ChallengeCpuRequest { get; set; } = "0";
+    public string ChallengeMemoryRequest { get; set; } = "1Mi";
+    public string ChallengeCpuLimit { get; set; } = "1";
+    public string ChallengeMemoryLimit { get; set; } = "0.5Gi";
     public string? HandoutServiceUrl { get; set; }
     public string? OpenTelemetryGrpcTracingEndpoint { get; set; }
     public string? OpenTelemetryGrpcMetricsEndpoint { get; set; }

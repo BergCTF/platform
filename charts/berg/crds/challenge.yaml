@@ -76,8 +76,17 @@ spec:
                       readinessProbe:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
+                      resourceRequests:
+                        type: object
+                        nullable: true
+                        properties:
+                          cpu:
+                            type: string
+                          memory:
+                            type: string
                       resourceLimits:
                         type: object
+                        nullable: true
                         properties:
                           cpu:
                             type: string

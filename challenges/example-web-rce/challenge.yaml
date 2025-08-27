@@ -25,6 +25,9 @@ spec:
       dynamicFlag:
         executable:
           path: /printflag
+      resourceRequests:
+        cpu: "1"
+        memory: "0.5Gi"
       readinessProbe:
         httpGet:
           port: 5000

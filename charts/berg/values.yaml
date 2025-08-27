@@ -66,6 +66,8 @@ berg:
   challengeRuntimeClassName: null
   challengeIngressBandwidth: "1M"
   challengeEgressBandwidth: "1M"
+  challengeCpuRequest: "0"
+  challengeMemoryRequest: "1Mi"
   challengeCpuLimit: "1"
   challengeMemoryLimit: "0.5Gi"
   challengeAdditionalHeadlessService: false

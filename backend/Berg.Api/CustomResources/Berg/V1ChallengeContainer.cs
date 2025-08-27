@@ -20,6 +20,9 @@ public class V1ChallengeContainer
     [JsonPropertyName("resourceLimits")]
     public Dictionary<string, string>? ResourceLimits { get; set; }
 
+    [JsonPropertyName("resourceRequests")]
+    public Dictionary<string, string>? ResourceRequests { get; set; }
+
     [JsonPropertyName("readinessProbe")]
     public V1Probe? ReadinessProbe { get; set; }
 

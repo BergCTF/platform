@@ -864,6 +864,11 @@ public class ChallengeService(
                 { "cpu", infraConfig.ChallengeCpuLimit },
                 { "memory", infraConfig.ChallengeMemoryLimit },
             };
+            var resourceRequests = container.ResourceRequests ?? [];
+
+            // Add default resource requests if not defined by the challenge
+            resourceRequests.TryAdd("cpu", infraConfig.ChallengeCpuRequest);
+            resourceRequests.TryAdd("memory", infraConfig.ChallengeMemoryRequest);
 
             var podSpec = new V1PodSpec
             {
@@ -898,13 +903,8 @@ public class ChallengeService(
                         ImagePullPolicy = infraConfig.ChallengeImagePullPolicy,
                         Resources = new V1ResourceRequirements
                         {
-                            Limits = resourceLimits
-                                .ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value)),
-                            Requests = new Dictionary<string, ResourceQuantity>()
-                            {
-                                { "cpu", new ResourceQuantity("0") },
-                                { "memory", new ResourceQuantity("1Mi") }
-                            }
+                            Limits = resourceLimits.ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value)),
+                            Requests = resourceRequests.ToDictionary(l => l.Key, l => new ResourceQuantity(l.Value)),
                         },
                         Env = env,
                         Ports = container.Ports?
