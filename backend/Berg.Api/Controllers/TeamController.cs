@@ -17,7 +17,7 @@ using Berg.Api.Services;
 namespace Berg.Api.Controllers;
 
 [ApiController]
-[ApiExplorerSettings(GroupName="berg-api")]
+[ApiExplorerSettings(GroupName = "berg-api")]
 public partial class TeamController(
     ILogger<TeamController> logger,
     BergDbContext dbContext,
@@ -70,7 +70,7 @@ public partial class TeamController(
         var player = await dbContext.Players
             .Include(p => p.Team)
             .SingleAsync(p => p.Id == playerId, cancel);
-        if(!ctfConfig.Teams)
+        if (!ctfConfig.Teams)
         {
             return BadRequest(new ProblemDetails
             {
@@ -116,7 +116,7 @@ public partial class TeamController(
     public async Task<ActionResult<CurrentTeam>> CreateTeam([FromBody] TeamCreateRequest teamCreateRequest, CancellationToken cancel)
     {
         var teamName = teamCreateRequest.Name;
-        if(!ctfConfig.Teams)
+        if (!ctfConfig.Teams)
         {
             return BadRequest(new ProblemDetails
             {
@@ -124,7 +124,7 @@ public partial class TeamController(
                 Detail = "Teams are disabled"
             });
         }
-        if(string.IsNullOrEmpty(teamName))
+        if (string.IsNullOrEmpty(teamName))
         {
             return BadRequest(new ProblemDetails
             {
@@ -132,7 +132,7 @@ public partial class TeamController(
                 Detail = "A name must be set"
             });
         }
-        if(!TeamNameRegex().IsMatch(teamName))
+        if (!TeamNameRegex().IsMatch(teamName))
         {
             return BadRequest(new ProblemDetails
             {
@@ -155,7 +155,7 @@ public partial class TeamController(
             });
         }
 
-        if(dbContext.Teams.Any(t => t.Name == teamName))
+        if (dbContext.Teams.Any(t => t.Name == teamName))
         {
             return BadRequest(new ProblemDetails
             {
@@ -211,7 +211,7 @@ public partial class TeamController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CurrentTeam>> JoinTeam([FromBody] JoinTeamRequest req, CancellationToken cancel)
     {
-        if(!ctfConfig.Teams)
+        if (!ctfConfig.Teams)
         {
             return BadRequest(new ProblemDetails
             {
@@ -219,7 +219,7 @@ public partial class TeamController(
                 Detail = "Teams are disabled"
             });
         }
-        if(string.IsNullOrEmpty(req.JoinToken))
+        if (string.IsNullOrEmpty(req.JoinToken))
         {
             return BadRequest(new ProblemDetails
             {
@@ -253,6 +253,16 @@ public partial class TeamController(
             {
                 Title = "Bad Request",
                 Detail = "Invalid join token"
+            });
+        }
+
+        var isAdmin = User.HasClaim(OpenIddictConstants.Claims.Role, Constants.Roles.Admin);
+        if (ctfConfig.End < DateTime.UtcNow && !isAdmin)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Bad Request",
+                Detail = "You can't join a team after the ctf has finished"
             });
         }
 
@@ -293,7 +303,7 @@ public partial class TeamController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> LeaveCurrentTeam()
     {
-        if(!ctfConfig.Teams)
+        if (!ctfConfig.Teams)
         {
             return BadRequest(new ProblemDetails
             {
@@ -316,6 +326,16 @@ public partial class TeamController(
             });
         }
 
+        var isAdmin = User.HasClaim(OpenIddictConstants.Claims.Role, Constants.Roles.Admin);
+        if (ctfConfig.End < DateTime.UtcNow && !isAdmin)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Bad Request",
+                Detail = "You can't leave a team after the ctf has finished"
+            });
+        }
+
         var previousTeam = player.Team;
         player.Team = null;
         await dbContext.SaveChangesAsync();
@@ -334,12 +354,15 @@ public partial class TeamController(
         }
         await dbContext.SaveChangesAsync();
 
-        if (newTeamPlayerIds.Count == 0) {
+        if (newTeamPlayerIds.Count == 0)
+        {
             var _ = mediator.Publish(new TeamDeleteNotification
             {
                 TeamId = previousTeam.Id,
             });
-        } else {
+        }
+        else
+        {
             var _ = mediator.Publish(new TeamUpdateNotification
             {
                 Team = new Team
