@@ -24,7 +24,7 @@ spec:
           type: publicHttpRoute
       dynamicFlag:
         executable:
-          path: /printflag
+          path: /printflag_{entropy}
       resourceRequests:
         cpu: "1"
         memory: "0.5Gi"

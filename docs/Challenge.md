@@ -21,6 +21,8 @@ dynamicFlag:
     mode: 0o444 # r--r--r--
 ```
 
+Any occurence of `{entropy}` in the `path` variable will be replaced with a random hex string that changes on each challenge start.
+
 ### Executable Binary
 
 ```yaml
@@ -29,6 +31,8 @@ dynamicFlag:
     path: /folder/runme
     mode: 0o111 # --x--x--x
 ```
+
+Any occurence of `{entropy}` in the `path` variable will be replaced with a random hex string that changes on each challenge start.
 
 > [!NOTE]
 > Using this will drop `CAP_DAC_OVERRIDE`, which may break some container images

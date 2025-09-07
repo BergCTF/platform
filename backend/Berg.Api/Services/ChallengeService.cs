@@ -918,12 +918,13 @@ public class ChallengeService(
             if (container.DynamicFlag?.Content != null)
             {
                 var dynContent = container.DynamicFlag.Content;
+                var path = dynContent.Path.Replace("{entropy}", RandomNumberGenerator.GetHexString(12, true));
                 podSpec.Containers[0].VolumeMounts = [
                     new V1VolumeMount
                     {
                         Name = "content",
-                        MountPath = dynContent.Path,
-                        SubPath = Path.GetFileName(dynContent.Path),
+                        MountPath = path,
+                        SubPath = Path.GetFileName(path),
                         ReadOnlyProperty = true,
                     }
                 ];
@@ -939,7 +940,7 @@ public class ChallengeService(
                                 {
                                     Key = "content",
                                     Mode = dynContent.Mode,
-                                    Path = Path.GetFileName(dynContent.Path)
+                                    Path = Path.GetFileName(path)
                                 }
                             ],
                         }
@@ -950,12 +951,13 @@ public class ChallengeService(
             if (container.DynamicFlag?.Executable != null)
             {
                 var dynExecutable = container.DynamicFlag.Executable;
+                var path = dynExecutable.Path.Replace("{entropy}", RandomNumberGenerator.GetHexString(12, true));
                 podSpec.Containers[0].VolumeMounts = [
                     new V1VolumeMount
                     {
                         Name = "executable",
-                        MountPath = dynExecutable.Path,
-                        SubPath = Path.GetFileName(dynExecutable.Path),
+                        MountPath = path,
+                        SubPath = Path.GetFileName(path),
                         ReadOnlyProperty = true,
                     }
                 ];
@@ -971,7 +973,7 @@ public class ChallengeService(
                                 {
                                     Key = "executable",
                                     Mode = dynExecutable.Mode,
-                                    Path = Path.GetFileName(dynExecutable.Path)
+                                    Path = Path.GetFileName(path)
                                 }
                             ],
                         }
