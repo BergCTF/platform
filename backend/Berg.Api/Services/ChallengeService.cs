@@ -911,6 +911,7 @@ public class ChallengeService(
                             .Select(p => new V1ContainerPort(p.Port, protocol: p.Protocol.ToUpperInvariant()))
                             .ToList(),
                         ReadinessProbe = container.ReadinessProbe,
+                        LivenessProbe = container.LivenessProbe,
                     }
                 ],
             };

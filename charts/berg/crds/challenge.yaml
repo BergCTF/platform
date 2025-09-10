@@ -76,6 +76,9 @@ spec:
                       readinessProbe:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
+                      livenessProbe:
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
                       resourceRequests:
                         type: object
                         nullable: true

@@ -26,6 +26,9 @@ public class V1ChallengeContainer
     [JsonPropertyName("readinessProbe")]
     public V1Probe? ReadinessProbe { get; set; }
 
+    [JsonPropertyName("livenessProbe")]
+    public V1Probe? LivenessProbe { get; set; }
+
     [JsonPropertyName("runtimeClassName")]
     public string? RuntimeClassName { get; set; }
 
