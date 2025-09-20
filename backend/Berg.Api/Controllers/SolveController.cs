@@ -42,8 +42,8 @@ public class SolveController(
     public ActionResult<List<Solve>> ListSolves()
     {
         var utcNow = DateTime.UtcNow;
-        var freezeStart = ctfConfig.Scoring.FreezeStart;
-        var freezeEnd = ctfConfig.Scoring.FreezeEnd;
+        var freezeStart = ctfConfig.Scoring.FreezeStart?.ToUniversalTime();
+        var freezeEnd = ctfConfig.Scoring.FreezeEnd?.ToUniversalTime();
         var isCurrentlyFrozen = freezeStart < utcNow && utcNow < freezeEnd;
         var isUserLoggedIn = User.Identity?.IsAuthenticated ?? false;
         var isAdmin = User.HasClaim(OpenIddictConstants.Claims.Role, Constants.Roles.Admin);
@@ -251,8 +251,8 @@ public class SolveController(
         logger.LogInformation("Player {PlayerId} has solved challenge {ChallengeName}", playerId, challengeName);
         metrics.ValidSubmission(challengeName, playerId);
 
-        var freezeStart = ctfConfig.Scoring.FreezeStart;
-        var freezeEnd = ctfConfig.Scoring.FreezeStart;
+        var freezeStart = ctfConfig.Scoring.FreezeStart?.ToUniversalTime();
+        var freezeEnd = ctfConfig.Scoring.FreezeEnd?.ToUniversalTime();
         var isCurrentlyFrozen = freezeStart < utcNow && utcNow < freezeEnd;
 
         // Asynchronously let other components react to this solve
