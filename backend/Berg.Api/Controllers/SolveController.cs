@@ -43,7 +43,7 @@ public class SolveController(
     {
         var utcNow = DateTime.UtcNow;
         var freezeStart = ctfConfig.Scoring.FreezeStart;
-        var freezeEnd = ctfConfig.Scoring.FreezeStart;
+        var freezeEnd = ctfConfig.Scoring.FreezeEnd;
         var isCurrentlyFrozen = freezeStart < utcNow && utcNow < freezeEnd;
         var isUserLoggedIn = User.Identity?.IsAuthenticated ?? false;
         var isAdmin = User.HasClaim(OpenIddictConstants.Claims.Role, Constants.Roles.Admin);
