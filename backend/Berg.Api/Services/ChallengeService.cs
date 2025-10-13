@@ -841,14 +841,30 @@ public class ChallengeService(
         foreach (var container in challenge.Spec.Containers ?? [])
         {
             var env = (container.Environment ?? [])
-                .Select(e => new V1EnvVar(e.Key, e.Value.ToString()))
-                .Concat(serviceEndpoints.Select(e => new V1EnvVar($"{e.Key.ToUpperInvariant()}_ENDPOINT", e.Value)))
+                .Select(e => new V1EnvVar
+                {
+                    Name = e.Key,
+                    Value = e.Value.ToString()
+                })
+                .Concat(serviceEndpoints.Select(e => new V1EnvVar
+                {
+                    Name = $"{e.Key.ToUpperInvariant()}_ENDPOINT",
+                    Value = e.Value,
+                }))
                 .ToList();
-            env.Add(new V1EnvVar("CHALLENGE_NAMESPACE", ns.Name()));
+            env.Add(new V1EnvVar
+            {
+                Name = "CHALLENGE_NAMESPACE",
+                Value = ns.Name(),
+            });
             if (container.DynamicFlag?.Env != null)
             {
                 var dynEnv = container.DynamicFlag.Env;
-                env.Add(new V1EnvVar(dynEnv.Name, dynamicFlag ?? "invalid{env-flag-error}"));
+                env.Add(new V1EnvVar
+                {
+                    Name = dynEnv.Name,
+                    Value = dynamicFlag ?? "invalid{env-flag-error}"
+                });
             }
 
             var dropCapabilities = new HashSet<string>();
@@ -877,7 +893,7 @@ public class ChallengeService(
                 EnableServiceLinks = false,
                 AutomountServiceAccountToken = false,
                 TerminationGracePeriodSeconds = 0,
-                ImagePullSecrets = [new(infraConfig.PullSecretName)],
+                ImagePullSecrets = [new() { Name = infraConfig.PullSecretName }],
                 RuntimeClassName = container.RuntimeClassName ?? infraConfig.ChallengeRuntimeClassName,
                 Containers =
                 [
@@ -908,7 +924,10 @@ public class ChallengeService(
                         },
                         Env = env,
                         Ports = container.Ports?
-                            .Select(p => new V1ContainerPort(p.Port, protocol: p.Protocol.ToUpperInvariant()))
+                            .Select(p => new V1ContainerPort {
+                                ContainerPort = p.Port,
+                                Protocol = p.Protocol.ToUpperInvariant()
+                            })
                             .ToList(),
                         ReadinessProbe = container.ReadinessProbe,
                         LivenessProbe = container.LivenessProbe,
