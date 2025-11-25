@@ -1,6 +1,6 @@
 using Berg.Api.Configuration;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Berg.Api.Extensions;
@@ -19,11 +19,12 @@ public static class SwaggerExtensions
                 In = ParameterLocation.Header,
                 Type = SecuritySchemeType.OpenIdConnect,
                 OpenIdConnectUrl = new Uri($"https://{infraConfig.ChallengeDomain}/.well-known/openid-configuration"),
-                Reference = new OpenApiReference { Id = "oidc", Type = ReferenceType.SecurityScheme }
+                Name = "oidc",
             };
             options.AddSecurityDefinition("oidc", securityScheme);
             options.AddOperationFilterInstance(new AuthorizationOperationFilter());
-            options.SwaggerDoc("berg-api", new OpenApiInfo {
+            options.SwaggerDoc("berg-api", new OpenApiInfo
+            {
                 Title = "Berg.API",
                 Version = Environment.GetEnvironmentVariable("BERG_VERSION") ?? "0.0.0"
             });
@@ -68,28 +69,11 @@ public static class SwaggerExtensions
                 .ToList();
 
             if (authorizeAttributes.Count == 0 || allowAnonymousAttributes.Count != 0)
-               return;
+                return;
 
-            operation.Responses.TryAdd("200", new OpenApiResponse { Description = "OK" });
-            operation.Responses.TryAdd("401", new OpenApiResponse { Description = "Unauthorized" });
-            operation.Responses.TryAdd("403", new OpenApiResponse { Description = "Forbidden" });
-
-            operation.Security =
-            [
-                new()
-                {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Id = "oidc",
-                                Type = ReferenceType.SecurityScheme,
-                            }
-                        }, ["openid"]
-                    }
-                }
-            ];
+            operation.Responses?.TryAdd("200", new OpenApiResponse { Description = "OK" });
+            operation.Responses?.TryAdd("401", new OpenApiResponse { Description = "Unauthorized" });
+            operation.Responses?.TryAdd("403", new OpenApiResponse { Description = "Forbidden" });
         }
     }
 }
