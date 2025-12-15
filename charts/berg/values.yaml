@@ -147,8 +147,8 @@ berg:
     eventName: "Berg CTF"
     eventOrganiser: "Berg Contributors"
     eventLogoUrl: ""
-    start: "1970-01-01T00:00:00+00:00"
-    end: "2099-01-01T00:00:00+00:00"
+    start: "1970-01-01T00:00:00Z"
+    end: "2099-01-01T00:00:00Z"
     allowAnonymousAccess: true
     teams: false
     playerAttributes: []
@@ -168,8 +168,8 @@ berg:
     #       title: Open
     #       description: People over the age of 25.
     scoring:
-      freezeStart: "2099-01-01T00:00:00+00:00"
-      freezeEnd: "2099-01-01T00:00:00+00:00"
+      freezeStart: "2099-01-01T00:00:00Z"
+      freezeEnd: "2099-01-01T00:00:00Z"
       numSolvesBeforeMinimum: 50
 
 pages:
