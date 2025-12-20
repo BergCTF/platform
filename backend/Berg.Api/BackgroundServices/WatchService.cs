@@ -1,5 +1,6 @@
 using Berg.Api.CustomResources;
 using Berg.Api.CustomResources.Berg;
+using Berg.Api.Models;
 using Berg.Api.Notifications;
 using Berg.Api.Services;
 using k8s;
@@ -23,8 +24,7 @@ public class WatchService(
             WithRetry(() => WatchConfig(cancellationToken), cancellationToken),
             WithRetry(() => WatchChallenges(cancellationToken), cancellationToken),
             WithRetry(() => WatchPages(cancellationToken), cancellationToken),
-            WithRetry(() => WatchInstanceNamespaces(cancellationToken), cancellationToken),
-            WithRetry(() => WatchInstancePods(cancellationToken), cancellationToken),
+            WithRetry(() => WatchInstances(cancellationToken), cancellationToken),
         ]);
 
         logger.LogInformation("WatchService stopped");
@@ -92,43 +92,45 @@ public class WatchService(
         logger.LogInformation("WatchPages stopped");
     }
 
-    private async Task WatchInstanceNamespaces(CancellationToken cancellationToken)
-    {
-        logger.LogInformation("WatchInstanceNamespaces started");
-        using var scope = serviceScopeFactory.CreateScope();
-        var challengeService = scope.ServiceProvider.GetRequiredService<IChallengeService>();
-        await foreach (var (type, item) in  kubernetes.CoreV1.WatchListNamespaceAsync(labelSelector: ChallengeService.ToLabelSelector(ChallengeService.ChallengeNamespaceLabelSelector), cancellationToken: cancellationToken))
-        {
-            logger.LogDebug("{} was {}", item.Name(), type);
-            var playerId = Guid.Parse(item.GetLabel(ChallengeService.PlayerIdLabel));
-            var instance = await challengeService.GetChallengeInstance(playerId, cancellationToken);
-            await mediator.Publish(new InstanceChangeNotification
-            {
-                Instance = instance,
-            }, cancellationToken);
-        }
-        logger.LogInformation("WatchInstanceNamespaces stopped");
-    }
-
-    private async Task WatchInstancePods(CancellationToken cancellationToken)
+    private async Task WatchInstances(CancellationToken cancellationToken)
     {
         logger.LogInformation("WatchInstances started");
         using var scope = serviceScopeFactory.CreateScope();
         var challengeService = scope.ServiceProvider.GetRequiredService<IChallengeService>();
-        var labelSelector = ChallengeService.ChallengePodLabelSelector;
-        await foreach (var (type, item) in kubernetes.CoreV1.WatchListPodForAllNamespacesAsync(labelSelector: ChallengeService.ToLabelSelector(labelSelector), cancellationToken: cancellationToken))
+
+        var challengeInstance = new V1ChallengeInstance();
+        using var challengeInstanceListResponse = kubernetes.CustomObjects.ListCustomObjectForAllNamespacesWithHttpMessagesAsync<CustomResourceList<V1ChallengeInstance>>(challengeInstance.Group, challengeInstance.Version, challengeInstance.Plural, watch: true, cancellationToken: cancellationToken);
+        await foreach (var (type, item) in challengeInstanceListResponse.WatchAsync<V1ChallengeInstance, CustomResourceList<V1ChallengeInstance>>(cancellationToken: cancellationToken))
         {
+
+            logger.LogDebug("ChallengeInstance {} was {}", item.Name(), type);
             if (type == WatchEventType.Added)
-                continue;
-            logger.LogDebug("{} was {}", item.Name(), type);
-            var playerId = Guid.Parse(item.GetLabel(ChallengeService.PlayerIdLabel));
-            var instance = await challengeService.GetChallengeInstance(playerId, cancellationToken);
-            await mediator.Publish(new InstanceChangeNotification
             {
-                Instance = instance,
-            }, cancellationToken);
+                await mediator.Publish(new InstanceChangeNotification
+                {
+                    Player = item.Spec.OwnerId,
+                    Instance = Instance.FromCR(item)
+                }, cancellationToken);
+            }
+            else if (type == WatchEventType.Modified)
+            {
+                await mediator.Publish(new InstanceChangeNotification
+                {
+                    Player = item.Spec.OwnerId,
+                    Instance = Instance.FromCR(item)
+                }, cancellationToken);
+            }
+            else if (type == WatchEventType.Deleted)
+            {
+                await mediator.Publish(new InstanceChangeNotification
+                {
+                    Player = item.Spec.OwnerId,
+                    Instance = null
+                }, cancellationToken);
+            }
+
         }
-        logger.LogInformation("WatchInstances stopped");
+        logger.LogInformation("WatchInstanceNamespaces stopped");
     }
 
     private async Task WithRetry(Func<Task> action, CancellationToken cancellationToken)

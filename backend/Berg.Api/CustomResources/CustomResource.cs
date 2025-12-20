@@ -43,3 +43,16 @@ public abstract class CustomResource<T> : CustomResource
     [JsonPropertyName("spec")]
     public T Spec { get; set; } = default!;
 }
+
+// CustomResource overload with a custom status field
+public abstract class CustomResource<T, S> : CustomResource
+{
+    protected CustomResource(string kind, string plural, string group, string version) : base(kind, plural, group, version)
+    {
+    }
+
+    [JsonPropertyName("spec")]
+    public T Spec { get; set; } = default!;
+
+    public S Status { get; set; } = default!;
+}

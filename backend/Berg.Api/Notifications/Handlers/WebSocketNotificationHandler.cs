@@ -160,10 +160,7 @@ public class WebSocketNotificationHandler(
             .Where(p => p.Roles != null && p.Roles.Contains(Constants.Roles.Admin))
             .Select(p => p.Id)
             .ToHashSet();
-        if (notification.Instance.PlayerId != null)
-        {
-            playerIdsToNotify.Add(notification.Instance.PlayerId.Value);
-        }
+        playerIdsToNotify.Add(notification.Player);
         await webSocketService.PushEvent("instance", notification.Instance, playerIdsToNotify.Contains);
     }
 }
