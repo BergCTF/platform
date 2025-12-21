@@ -101,11 +101,13 @@ module "authentik" {
   authentik = var.authentik
 
   bootstrap = {
+    default_group = "berg-players"
     groups = {
       "berg-admins" : {
         is_superuser = true
       },
-      "challenge-authors" : {}
+      "challenge-authors" : {},
+      "berg-players" : {}
     }
     oidc_clients = merge({
       "argocd" : {
@@ -113,9 +115,9 @@ module "authentik" {
         slug            = "argocd"
         client_id       = "argocd"
         client_secret   = module.cluster_bootstrap.argocd_client_secret
-        launch_url      = "https://${var.argocd.domain}"
+        launch_url      = "https://argocd.${var.cluster.domain}"
         limit_to_groups = ["berg-admins", "challenge-authors"]
-        redirect_uris   = ["https://${var.argocd.domain}/auth/callback"]
+        redirect_uris   = ["https://argocd.${var.cluster.domain}/auth/callback"]
       },
       "kubernetes" : {
         name            = "Kubernetes API"

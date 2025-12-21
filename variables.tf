@@ -75,6 +75,7 @@ variable "authentik" {
       title               = string
       favicon             = string
       logo                = string
+      background_image    = string
       default_application = string
     })
     backups = object({

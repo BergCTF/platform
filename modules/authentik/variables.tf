@@ -10,6 +10,7 @@ variable "authentik" {
       title               = string
       favicon             = string
       logo                = string
+      background_image    = string
       default_application = string
     })
     backups = object({
@@ -21,6 +22,7 @@ variable "authentik" {
 }
 variable "bootstrap" {
   type = object({
+    default_group = string
     groups = optional(map(object({
       is_superuser = optional(bool, false)
     })), {})
@@ -35,7 +37,7 @@ variable "bootstrap" {
       extra_scope_mappings = optional(map(object({
         scope_name = string
         expression = string
-      })), [])
+      })), {})
     })), {})
     authentication = optional(object({
       # enable discord federated authentication
@@ -60,7 +62,11 @@ variable "bootstrap" {
     }), {})
     # cloudflare turnstile captcha
     captcha = optional(object({
-      enabled = optional(bool, false)
+      enabled     = optional(bool, false)
+      private_key = optional(string, "")
+      public_key  = optional(string, "")
+      api_url     = optional(string, "")
+      js_url      = optional(string, "")
     }), {})
   })
 }

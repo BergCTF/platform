@@ -54,7 +54,7 @@ resource "authentik_flow" "settings_flow" {
   slug           = "settings"
   designation    = "stage_configuration"
   authentication = "require_authenticated"
-  background     = var.background_image
+  background     = var.authentik.branding.background_image
 }
 
 resource "authentik_flow_stage_binding" "settings_prompt" {
@@ -79,12 +79,6 @@ resource "authentik_flow_stage_binding" "settings_write" {
 
 resource "authentik_policy_binding" "settings_access_player" {
   target = authentik_flow.settings_flow.uuid
-  group  = authentik_group.berg_players.id
-  order  = 0
-}
-
-resource "authentik_policy_binding" "settings_access_admin" {
-  target = authentik_flow.settings_flow.uuid
-  group  = authentik_group.berg_admins.id
+  group  = authentik_group.groups[var.bootstrap.default_group].id
   order  = 0
 }

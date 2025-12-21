@@ -4,7 +4,7 @@ resource "authentik_flow" "berg_authentication_flow" {
   slug           = "berg-authentication"
   designation    = "authentication"
   authentication = "require_unauthenticated"
-  background     = var.background_image
+  background     = var.authentik.branding.background_image
 }
 
 resource "authentik_policy_expression" "berg_authentication_password_stage" {
@@ -31,7 +31,7 @@ resource "authentik_stage_identification" "user_identification" {
   pretend_user_exists       = true
   show_matched_user         = true
   enrollment_flow           = var.bootstrap.authentication.password.enabled ? authentik_flow.berg_enrollment_flow.uuid : null
-  recovery_flow             = authentik_flow.berg_recovery_flow.uuid
+  recovery_flow             = var.bootstrap.authentication.password.enabled ? authentik_flow.berg_recovery_flow.uuid : null
   captcha_stage             = authentik_stage_captcha.cloudflare_captcha.id
   user_fields = var.bootstrap.authentication.password.enabled ? [
     "username",
