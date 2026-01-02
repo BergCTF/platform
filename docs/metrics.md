@@ -1,3 +1,6 @@
+---
+icon: lucide/chart-spline
+---
 # Metrics
 
 When onfiguring an OTEL endpoint in the berg chart values, the following

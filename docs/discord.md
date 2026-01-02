@@ -1,3 +1,6 @@
+---
+icon: simple/discord
+---
 # Discord Integration
 
 Go to the [Discord Developer Portal](https://discord.com/developers/applications/) and create a new application, name it whatever you like.
@@ -14,4 +17,4 @@ Afterwards do the following:
 
  * Hit "Reset Token" and copy the **Bot Token**
 
-See the [Configuration](configuration.md/#discord-integration) documentation on how to configure Berg to use those values.
+See the [Configuration](helm.md/#discord-integration) documentation on how to configure Berg to use those values.

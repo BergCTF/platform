@@ -1,3 +1,6 @@
+---
+icon: lucide/monitor-cloud
+---
 # Production
 
 ## VM

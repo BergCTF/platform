@@ -355,3 +355,6 @@ MigrationBackup/
 charts/berg/charts
 appsettings.Development.json
 kubeconfig.yaml
+
+# Zensical
+site

@@ -1,37 +1,77 @@
 ---
 site_name: Berg CTF Platform
+site_url: https://berg.norelect.ch
+
+repo_name: norelect/berg
+repo_url: https://github.com/norelect/berg
+edit_uri: https://github.com/norelect/berg/edit/main/docs
+
+copyright: "&copy; 2026 NoRelect"
+
 theme:
   name: material
+  logo: "logo.png"
+  favicon: logo.png
+  logo: logo.png
+  icon:
+    tag:
+      default: lucide/hash
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: indigo
       accent: indigo
       toggle:
-        icon: material/brightness-7
+        icon: lucide/moon
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: indigo
       accent: indigo
       toggle:
-        icon: material/brightness-4
+        icon: lucide/sun
         name: Switch to light mode
   features:
     - content.code.copy
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.code.select
+    - content.footnote.tooltips
+    - content.tabs.link
+    - content.tooltips
+    - navigation.footer
+    - navigation.indexes
+    - navigation.path
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - search.highlight
+plugins:
+  - search
 markdown_extensions:
+  - admonition
   - pymdownx.superfences
   - pymdownx.highlight:
       anchor_linenums: true
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:zensical.extensions.emoji.twemoji # (1)!
+      emoji_generator: !!python/name:zensical.extensions.emoji.to_svg
 
 
 nav:
   - Home: index.md
-  - Configuration: configuration.md
-  - Integrations:
-    - Discord: Discord.md
   - Guides:
-      - Developing Challenges: Challenge.md
-      - Metrics Support: Metrics.md
-      - OIDC with Authentik: OIDC-Authentik.md
-      - Production Deployment: Production.md
+      - Getting started: getting-started.md
+      - Developing Challenges: challenge.md
+      - Adding attachments: attachments.md
+      - OIDC Configuration: oidc.md
+      - Production Deployment: production.md
+  - Configuration: 
+    - Helm chart: helm.md
+  - Integrations:
+    - Discord: discord.md
+  - Observability:
+    - Metrics Support: metrics.md

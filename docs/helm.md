@@ -1,3 +1,6 @@
+---
+icon: simple/helm
+---
 # Helm Chart Configuration Reference
 
 This document provides a complete reference for configuring the `berg` Helm chart. Each section below corresponds to values you can set in your `values.yaml` file.
@@ -148,7 +151,7 @@ discord:
   ...
 ```
 
-Credentials and settings for Discord-based notifications and authentication. See [Discord](Discord.md)
+Credentials and settings for Discord-based notifications and authentication. See [Discord](discord.md)
 
 ---
 
@@ -168,7 +171,7 @@ Settings for generic OpenID Connect provider integration:
 - `berg.genericOpenId.scopes`: Requested OAuth scopes.
 - `berg.genericOpenId.claims`: Mapping of OpenID claims to internal roles and fields.
 
-For an example configuration, see [OIDC with Authentik](OIDC-Authentik.md)
+For an example configuration, see [OIDC](oidc.md)
 
 ---
 
@@ -182,7 +185,7 @@ openTelemetry:
     loggingEndpoint: null
 ```
 
-OpenTelemetry endpoints for tracing, metrics, and logs, see [Metrics](Metrics.md)
+OpenTelemetry endpoints for tracing, metrics, and logs, see [Metrics](metrics.md)
 
 ---
 
