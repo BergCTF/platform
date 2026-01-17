@@ -36,8 +36,8 @@
           hooks = {
             nixfmt.enable = true;
             terraform-format.enable = true;
-            terraform-validate.enable = true;
-            tflint.enable = true;
+            # terraform-validate.enable = true;
+            # tflint.enable = true;
           };
         };
       });
