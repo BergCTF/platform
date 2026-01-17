@@ -78,6 +78,8 @@ spec:
         routingMode: native
         ipam:
           mode: kubernetes
+        bandwidthManager:
+          enabled: true
         ipv4NativeRoutingCIDR: "10.0.0.0/16"
         k8s:
           requireIPv4PodCIDR: true
