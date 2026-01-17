@@ -1,0 +1,27 @@
+---
+# Source: cluster-template/templates/appprojects/infra-cilium.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: infra-cilium
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-cilium
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  description: Cilium CNI
+  clusterResourceWhitelist:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: ""
+      kind: Namespace
+  destinations:
+    - namespace: kube-system
+      server: https://kubernetes.default.svc
+    - namespace: infra-cilium-secrets
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - https://helm.cilium.io

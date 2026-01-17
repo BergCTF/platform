@@ -1,0 +1,53 @@
+---
+{{- if .Values.observability.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vector-berg
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: vector-berg
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  project: infra-monitoring
+  destination:
+    namespace: infra-monitoring
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - ServerSideApply=true
+  source:
+    repoURL: https://helm.vector.dev
+    chart: vector
+    targetRevision: 0.50.0
+    helm:
+      valuesObject:
+        role: Stateless-Aggregator
+        podMonitor:
+          enabled: true
+        customConfig:
+          sources:
+            otlp:
+              type: opentelemetry
+              grpc:
+                address: 0.0.0.0:4317
+          sinks:
+            tempo:
+              type: opentelemetry
+              inputs: [otlp.traces]
+              protocol:
+                encoding:
+                  codec: otlp
+                type: http
+                uri: http://infra-tempo-ingester.infra-tracing:9095
+            loki:
+              type: loki
+              inputs: [otlp.logs]
+              endpoint: http://loki-write.infra.logging:9095
+            prometheus:
+              type: prometheus_remote_write
+              inputs: [otlp.metrics]
+              endpoint: http://monitoring-prometheus.infra-monitoring:9090/
+{{- end }}

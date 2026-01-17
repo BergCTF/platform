@@ -1,0 +1,10 @@
+apiVersion: v2
+name: cluster-template
+description: cluster-template for berg ctf platform
+
+type: application
+
+version: 0.1.0
+
+# appVersion tracks the berg release targeted by this version of the chart.
+appVersion: "v5.13.1"

@@ -1,0 +1,18 @@
+---
+# Source: cluster-template/templates/appprojects/databases.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: databases
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: databases
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  description: deploy databases cluster wide
+  destinations:
+    - namespace: "*"
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - https://cloudnative-pg.github.io/charts

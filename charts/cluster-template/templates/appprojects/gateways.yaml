@@ -1,0 +1,28 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: gateways
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: gateways
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  description: deploy gateways
+  namespaceResourceWhitelist:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+    - group: gateway.kgateway.dev
+      kind: GatewayParameters
+    - group: monitoring.coreos.com
+      kind: PodMonitor
+    - group: gateway.kgateway.dev
+      kind: HTTPListenerPolicy
+    - group: gateway.networking.k8s.io
+      kind: ReferenceGrant
+  destinations:
+    - namespace: "*"
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - {{ .Values.infra.repo }}

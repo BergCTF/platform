@@ -1,0 +1,21 @@
+---
+# Source: cluster-template/templates/appprojects/namespaces.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: namespaces
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: namespaces
+    app.kubernetes.io/component: infra-argocd
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  description: deploy Namespaces from Argo CD
+  destinations:
+    - namespace: infra-argocd
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  sourceRepos:
+    - {{ .Values.infra.repo }}

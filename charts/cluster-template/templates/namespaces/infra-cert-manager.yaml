@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infra-cert-manager
+  labels:
+    app.kubernetes.io/component: infra
+    app.kubernetes.io/part-of: infra
+    app.kubernetes.io/name: infra-cert-manager
+    prometheus.io/monitor: "true"

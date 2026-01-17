@@ -1,0 +1,27 @@
+---
+# Source: cluster-template/templates/appprojects/infra-kyverno.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: infra-kyverno
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-kyverno
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  description: Kyverno and its policies
+  clusterResourceWhitelist:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: kyverno.io
+      kind: ClusterPolicy
+  destinations:
+    - namespace: infra-kyverno
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - https://kyverno.github.io/kyverno/

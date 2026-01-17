@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infra-kyverno
+  labels:
+    app.kubernetes.io/name: infra-kyverno
+    app.kubernetes.io/part-of: infra
+    app.kubernetes.io/component: infra
+    prometheus.io/monitor: "true"

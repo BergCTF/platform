@@ -1,0 +1,29 @@
+---
+# Source: cluster-template/templates/appprojects/berg.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: raw-manifests
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: raw-manifests
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  clusterResourceWhitelist:
+    - group: rbac.authorization.k8s.io
+      kind: Role
+    - group: rbac.authorization.k8s.io
+      kind: RoleBinding
+    - group: rbac.authorization.k8s.io
+      kind: ServiceAccount
+  description: deploy raw manifests
+  destinations:
+    - namespace: discord-bot
+      server: https://kubernetes.default.svc
+    - namespace: infra-argocd
+      server: https://kubernetes.default.svc
+    - namespace: berg
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - {{ .Values.infra.repo }}

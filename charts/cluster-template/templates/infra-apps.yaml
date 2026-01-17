@@ -1,0 +1,763 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-apps
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-apps
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  destination:
+    namespace: infra-argocd
+    server: https://kubernetes.default.svc
+  project: argocd-apps
+  syncPolicy:
+    automated: {}
+  source:
+    chart: infra-apps
+    repoURL: https://charts.adfinis.com
+    targetRevision: 0.240.0
+    helm:
+      valuesObject:
+        fullnameOverride: app
+        argocd:
+          enabled: true
+          project: infra-argocd
+          destination:
+            server: https://kubernetes.default.svc
+            namespace: infra-argocd
+          syncPolicy:
+            automated: {}
+            syncOptions:
+              - ServerSideApply=true
+          values:
+            global:
+              domain: argocd.{{ .Values.domains.cluster }}
+            createAggregateRoles: true
+            createAggregateClusterRoles: true
+            configs:
+              params:
+                application.namespaces: "infra-argocd"
+                server.insecure: true
+              cm:
+                url: "https://argocd.{{ .Values.domains.cluster }}"
+                admin.enabled: false
+                users.anonymous.enabled: false
+                statusbadge.enabled: false
+                exec.enabled: false
+                resource.exclusions: |
+                  - apiGroups:
+                      - velero.io
+                    kinds:
+                      - Backup
+                    clusters:
+                      - "*"
+                oidc.config: |
+                  name: Authentik
+                  issuer: https://idp.{{ .Values.domains.cluster }}/application/o/argocd/
+                  clientID: argocd
+                  clientSecret: $argocd-authentik-secret:oidc.authentik.clientSecret
+                  requestedScopes:
+                    - openid
+                    - profile
+                    - email
+                    - groups
+              rbac:
+                policy.csv: |
+                  # default deny all role
+                  p, role:deny, *, *, *, deny
+                  g, berg-admins, role:admin
+                policy.default: role:deny
+                scopes: "[email,groups]"
+            controller:
+              resources:
+                requests:
+                  cpu: 250m
+                  memory: 256Mi
+                limits:
+                  cpu: 1
+                  memory: 2Gi
+              {{- if .Values.observability.enabled }}
+              metrics:
+                enabled: true
+                serviceMonitor:
+                  enabled: true
+                  selector:
+                    k8s.adfinis.com/prometheus: kube-prometheus
+                rules:
+                  enabled: true
+                  selector:
+                    k8s.adfinis.com/prometheus: kube-prometheus
+                  spec:
+                    - alert: ArgoAppMissing
+                      expr: |
+                        absent(argocd_app_info)
+                      for: 15m
+                      labels:
+                        severity: critical
+                        group: ccs
+                      annotations:
+                        summary: "[ArgoCD] No reported applications"
+                        description: >
+                          ArgoCD has not reported any applications data for the past 15 minutes which means that it must be down or not functioning properly.  This needs to be resolved for this cloud to continue to maintain state.
+
+                    - alert: ArgoAppNotSynced
+                      expr: |
+                        argocd_app_info{sync_status!="Synced"} == 1
+                      for: 2h
+                      labels:
+                        severity: warning
+                      annotations:
+                        summary: "[{{"{{"}}$labels.name{{"}}"}}] Application not synchronized"
+                        description: >
+                          The application "{{"{{"}}$labels.name{{"}}"}}" has not been synchronized for over 2 hours which means that the state of this cloud has drifted away from the state inside Git.
+
+                    - alert: ArgoAppUnhealthy
+                      expr: |
+                        argocd_app_info{health_status!="Healthy"} == 1
+                      for: 15m
+                      labels:
+                        severity: critical
+                      annotations:
+                        summary: "[{{"{{"}}$labels.name{{"}}"}}] Application unhealthy"
+                        description: >
+                          The application "{{"{{"}}$labels.name{{"}}"}}" has been unhealthy for over 15 minutes.
+              {{- end }}
+            repoServer:
+              clusterRoleRules:
+                enabled: true
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 256Mi
+                limits:
+                  cpu: 400m
+                  memory: 1Gi
+              {{- if .Values.observability.enabled }}
+              metrics:
+                enabled: true
+                serviceMonitor:
+                  enabled: true
+                  selector:
+                    k8s.adfinis.com/prometheus: kube-prometheus
+              {{- end }}
+            applicationSet:
+              enabled: false
+            notifications:
+              enabled: false
+            dex:
+              enabled: false
+            server:
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 500m
+                  memory: 1Gi
+              staticAssets:
+                enabled: true
+              certificate:
+                enabled: false
+              ingress:
+                enabled: true
+                ingressClassName: traefik
+                hostname: argocd.{{ .Values.domains.cluster }}
+                pathType: ImplementationSpecific
+                tls: true
+              {{- if .Values.observability.enabled }}
+              metrics:
+                enabled: true
+                serviceMonitor:
+                  enabled: true
+                  selector:
+                    k8s.adfinis.com/prometheus: kube-prometheus
+              {{- end }}
+            redis:
+              exporter:
+                enabled: true
+                repository: ghcr.io/oliver006/redis_exporter
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 128Mi
+              {{- if .Values.observability.enabled }}
+              metrics:
+                enabled: true
+                serviceMonitor:
+                  enabled: true
+                  selector:
+                    k8s.adfinis.com/prometheus: kube-prometheus
+              {{- end }}
+        rbacManager:
+          enabled: false
+        certManager:
+          enabled: true
+          project: infra-cert-manager
+          destination:
+            server: https://kubernetes.default.svc
+            namespace: infra-cert-manager
+          syncPolicy:
+            automated: {}
+          values:
+            installCRDs: true
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                cpu: 50m
+                memory: 128Mi
+            {{- if .Values.observability.enabled }}
+            prometheus:
+              servicemonitor:
+                enabled: true
+                labels:
+                  k8s.adfinis.com/prometheus: kube-prometheus
+            {{- end }}
+        certManagerIssuers:
+          enabled: true
+          project: infra-cert-manager
+          destination:
+            server: https://kubernetes.default.svc
+            namespace: infra-cert-manager
+          syncPolicy:
+            automated: {}
+          values:
+            clusterIssuers:
+              - name: letsencrypt-prod-dns
+                spec:
+                  acme:
+                    email: carlo.field@swisscyberstorm.com
+                    privateKeySecretRef:
+                      name: letsencrypt-prod-dns
+                    server: https://acme-v02.api.letsencrypt.org/directory
+                    solvers:
+                      - dns01:
+                          cloudflare:
+                            apiTokenSecretRef:
+                              name: cloudflare-api-token-secret
+                              key: api-token
+        certManagerMonitoring:
+          enabled: {{ .Values.observability.enabled }}
+          project: infra-cert-manager
+          destination:
+            server: https://kubernetes.default.svc
+            namespace: infra-cert-manager
+          syncPolicy:
+            automated: {}
+          values:
+            prometheus:
+              rule:
+                additionalLabels:
+                  k8s.adfinis.com/prometheus: kube-prometheus
+                alertConfigs:
+                  absent:
+                    job: certmgr
+            grafana:
+              enabled: true
+        velero:
+          enabled: false
+        kubePrometheusStack:
+          enabled: {{ .Values.observability.enabled }}
+          project: infra-monitoring
+          destination:
+            server: https://kubernetes.default.svc
+            namespace: infra-monitoring
+          syncPolicy:
+            automated: {}
+            syncOptions:
+              # enable server-side-apply for kps since it get's rid of having to manually sync/replace resources
+              - ServerSideApply=true
+          values:
+            global:
+              rbac:
+                createAggregateClusterRoles: true
+            kubeEtcd:
+              enabled: true
+              service:
+                selector:
+                  k8s-app: kube-controller-manager # Fix selector for kube-etcd for Talos (set itentionally to kube-controller-manager because all master nodes has the same roles)
+              serviceMonitor:
+                relabelings:   # Add nodename label
+                  - sourceLabels: [__meta_kubernetes_pod_node_name]
+                    separator: ;
+                    regex: ^(.*)$
+                    targetLabel: nodename
+                    replacement: $1
+                    action: replace
+                metricRelabelings:   # Remove pod label
+                  - action: labeldrop
+                    regex: pod
+            kube-state-metrics:
+              prometheus:
+                monitor:
+                  additionalLabels:
+                    k8s.adfinis.com/prometheus: kube-prometheus
+            prometheus-node-exporter:
+              prometheus:
+                monitor:
+                  additionalLabels:
+                    k8s.adfinis.com/prometheus: kube-prometheus
+            # disable kubeProxy since we're using the cilium replacement
+            kubeProxy:
+              enabled: false
+            alertmanager:
+              enabled: true
+              ingress:
+                enabled: false
+              alertmanagerSpec:
+                storage:
+                  volumeClaimTemplate:
+                    spec:
+                      accessModes:
+                        - ReadWriteOnce
+                      resources:
+                        requests:
+                          storage: 1Gi
+              config:
+                receivers:
+                  - name: "null"
+                route:
+                  receiver: "null"
+                  routes:
+                    - matchers:
+                        - alertname =~ "Watchdog|InfoInhibitor"
+                      receiver: "null"
+                    - matchers:
+                        - severity =~ "^(info|none)$"
+                      receiver: "null"
+                # Any alerts not matched yet will be sent to the default receiver
+            commonLabels:
+              k8s.adfinis.com/prometheus: kube-prometheus
+            grafana:
+              enabled: true
+              defaultDashboardsTimezone: browser
+              sidecar:
+                datasources:
+                  # Disabling the default datasource as we need to additionally configure it with jsonData - see additionalDatasources
+                  defaultDatasourceEnabled: false
+                dashboards:
+                  searchNamespace: ALL
+                  provider:
+                    # This allows us to create Grafana folders by replicating
+                    # the folder structure from the filesystem into Grafana
+                    # using the k8s-sidecar-target-directory annotation:
+                    # k8s-sidecar-target-directory: /tmp/dashboards/Custom Dashboards
+                    foldersFromFilesStructure: true
+                alerts:
+                  enabled: true
+                  label: grafana_alert
+                  labelValue: "1"
+                  searchNamespace: ALL
+              additionalDataSources:
+                - name: Mimir
+                  type: prometheus
+                  access: proxy
+                  url: http://mimir-nginx.infra-monitoring.svc.cluster.local/prometheus
+                  # we set Mimir as default datasource
+                  isDefault: true
+                  jsonData:
+                    timeInterval: 30s
+                    prometheusType: mimir
+                    # we do not manage Alerts with Mimir for now, as rules is not enabled
+                    manageAlerts: false
+                # we configure an additional Prometheus datasource for reading the prometheus alerts from grafana
+                - name: Prometheus
+                  type: prometheus
+                  access: proxy
+                  url: http://monitoring-prometheus.infra-monitoring.svc.cluster.local:9090
+                  jsonData:
+                    timeInterval: 30s
+                    prometheusType: prometheus
+                    alertmanagerUid: alertmanager
+                # we configure alertmanager
+                - name: Alertmanager
+                  type: alertmanager
+                  access: proxy
+                  url: http://monitoring-alertmanager.infra-monitoring.svc.cluster.local:9093
+                  jsonData:
+                    implementation: prometheus
+                    handleGrafanaManagedAlerts: true
+                - name: Loki
+                  type: loki
+                  uid: loki
+                  isDefault: false
+                  access: proxy
+                  url: http://loki-read.infra-logging.svc.cluster.local:3100
+                  version: 1
+                  orgId: 1
+                  editable: false
+                  jsonData:
+                    # No alerts set in Loki
+                    manageAlerts: false
+              dashboardProviders:
+                # Enables loading dashboards from /var/lib/grafana/dashboards/default in addition to
+                # loading them from the sidecar that grabs them from ConfigMaps. This makes the
+                # dashboards key below work so we can load additional dashboards from grafana cloud.
+                dashboardproviders.yaml:
+                  apiVersion: 1
+                  providers:
+                    - name: "default"
+                      orgId: 1
+                      folder: ""
+                      type: file
+                      disableDeletion: false
+                      editable: true
+                      options:
+                        path: /var/lib/grafana/dashboards/default
+              dashboards:
+                default:
+                  argocd-dashboard:
+                    # argocd: https://github.com/argoproj/argo-cd/blob/v2.8.4/examples/dashboard.json
+                    url: https://raw.githubusercontent.com/argoproj/argo-cd/v2.8.4/examples/dashboard.json
+                  authentik:
+                    gnetId: 14837
+              grafana.ini:
+                server:
+                  domain: grafana.{{ .Values.domains.cluster }}
+                  root_url: https://%(domain)s/
+                auth:
+                  disable_login_form: true
+                  oauth_auto_login: true
+                auth.generic_oauth:
+                  enabled: true
+                  name: Authentik
+                  client_id: "$__file{/etc/secrets/auth_generic_oauth/client_id}"
+                  client_secret: "$__file{/etc/secrets/auth_generic_oauth/client_secret}"
+                  scopes: "openid profile email groups"
+                  auth_url: "https://idp.{{ .Values.domains.cluster }}/application/o/authorize/"
+                  token_url: "https://idp.{{ .Values.domains.cluster }}/application/o/token/"
+                  api_url: "https://idp.{{ .Values.domains.cluster }}/application/o/userinfo/"
+                  role_attribute_path: contains(groups, 'berg-admins') && 'Admin' || 'None'
+                security:
+                  cookie_secure: true
+                  cookie_samesite: strict
+              extraSecretMounts:
+                - name: auth-generic-oauth-secret-mount
+                  secretName: auth-generic-oauth-secret
+                  defaultMode: 0440
+                  mountPath: /etc/secrets/auth_generic_oauth
+                  readOnly: true
+              ingress:
+                enabled: true
+                ingressClassName: traefik
+                extraPaths:
+                  # Send /metrics to a non-existent service to not expose them to the internet
+                  - path: /metrics
+                    pathType: Exact
+                    backend:
+                      service:
+                        name: blackhole
+                        port:
+                          name: blackhole
+                pathType: Prefix
+                hosts:
+                  - grafana.{{ .Values.domains.cluster }}
+                tls:
+                  - hosts:
+                      - grafana.{{ .Values.domains.cluster }}
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+              serviceMonitor:
+                enabled: true
+                labels:
+                  k8s.adfinis.com/prometheus: kube-prometheus
+            prometheus:
+              enabled: true
+              monitor:
+                additionalLabels:
+                  k8s.adfinis.com/prometheus: kube-prometheus
+              ingress:
+                enabled: false
+              prometheusSpec:
+                retention: 5d
+                resources:
+                  requests:
+                    cpu: 100m
+                    memory: 512Mi
+                  limits:
+                    cpu: 500m
+                    memory: 3Gi
+                nameValidationScheme: Legacy
+                remoteWrite:
+                  - url: http://mimir-nginx.infra-monitoring.svc.cluster.local/api/v1/push
+                    queueConfig:
+                      # Retry upon receiving a 429 status code from Mimir
+                      retryOnRateLimit: true
+                storageSpec:
+                  volumeClaimTemplate:
+                    spec:
+                      accessModes:
+                        - "ReadWriteOnce"
+                      resources:
+                        requests:
+                          storage: 10Gi
+                enableRemoteWriteReceiver: true
+                podMonitorSelectorNilUsesHelmValues: false
+                podMonitorNamespaceSelector: {}
+                serviceMonitorSelectorNilUsesHelmValues: false
+                serviceMonitorNamespaceSelector: {}
+                podMonitorSelector: {}
+                serviceMonitorSelector: {}
+                ruleSelector: {}
+            prometheusOperator:
+              admissionWebhooks:
+                enabled: true
+              tlsProxy:
+                enabled: false
+            nodeExporter:
+              operatingSystems:
+                aix:
+                  enabled: false
+                darwin:
+                  enabled: false
+            additionalPrometheusRulesMap:
+              prometheus-scraping-rules:
+                groups:
+                  - name: scraping
+                    # The following PrometheusMissing* rules check if the prometheus
+                    # config contains a sensible amount of scrape jobs for some services
+                    # to ensure that we are always scraping the endpoints and they
+                    # don't go missing in the long run.
+                    rules:
+                      - alert: PrometheusMissingScrapeJob
+                        expr: |-
+                          max by (scrape_job) (prometheus_target_scrape_pool_targets{}) < 1
+                        for: 15m
+                        labels:
+                          # The job names configured by prometheus-operator have
+                          # the following structure:
+                          # ${monitorType}/${namespace}/${monitorName}/${counter}
+                          # The following label configuration replaces the
+                          # namespace label with a value built by extracting the
+                          # namespace from the job name to allow us to send the
+                          # alert to the team responsible for the namespace,
+                          # instead of having it show up in the alerts for
+                          # infra-monitoring.
+                          namespace: '{{"{{"}} $labels.scrape_job | reReplaceAll "[^/]*/([^/]*)/.*" "$1" {{"}}"}}'
+                          severity: warning
+                        annotations:
+                          message: >
+                            There are no scrape_pool_targets for {{"{{"}} $labels.scrape_job {{"}}"}}.
+                            Please check if scraping is properly configured.
+                      - alert: PrometheusMissingNodeExporterScrapeJob
+                        expr: |-
+                          count(kubelet_node_name) - (max(prometheus_target_scrape_pool_targets{scrape_job=~"serviceMonitor/infra-monitoring/monitoring-prometheus-node-exporter/.*"}) or vector(0)) > 0
+                        for: 15m
+                        labels:
+                          severity: critical
+                        annotations:
+                          message: >
+                            The amount of node-exporter scrape_jobs does not match
+                            the amount of nodes in the cluster. Please check if
+                            node-exporter scraping is properly configured.
+                      - alert: PrometheusMissingKubeletScrapeJob
+                        expr: |-
+                          count(kubelet_node_name) - (max(prometheus_target_scrape_pool_targets{scrape_job=~"serviceMonitor/infra-monitoring/monitoring-kubelet/.*"}) or vector(0)) > 0
+                        for: 15m
+                        labels:
+                          severity: critical
+                        annotations:
+                          message: >
+                            The amount of kubelet scrape_jobs does not match
+                            the amount of nodes in the cluster. Please check if
+                            kubelet scraping is properly configured.
+              custom-host-rules:
+                groups:
+                  - name: custom_kube_node
+                    rules:
+                      - alert: CustomKubeNodeNotReady
+                        expr: kube_node_status_condition{condition="Ready",job="kube-state-metrics",status="true"} == 0
+                        for: 5m
+                        labels:
+                          severity: critical
+                        annotations:
+                          description: "{{"{{"}} $labels.node {{"}}"}} has been unready for more than 5 minutes."
+                          runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubenodenotready
+                          summary: Node is not ready.
+                      - alert: CustomKubeNodeUnreachable
+                        expr: (kube_node_spec_taint{effect="NoSchedule",job="kube-state-metrics",key="node.kubernetes.io/unreachable"} unless ignoring(key, value) kube_node_spec_taint{job="kube-state-metrics",key=~"ToBeDeletedByClusterAutoscaler|cloud.google.com/impending-node-termination|aws-node-termination-handler/spot-itn"}) == 1
+                        for: 5m
+                        labels:
+                          severity: critical
+                        annotations:
+                          description: "{{"{{"}} $labels.node {{"}}"}} is unreachable and some workloads may be rescheduled."
+                          runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubenodeunreachable
+                          summary: Node is unreachable.
+                  - name: host
+                    rules:
+                      - alert: WarningHostOutOfMemory
+                        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10
+                        for: 10m
+                        labels:
+                          severity: warning
+                        annotations:
+                          summary: Host out of memory (instance {{"{{"}} $labels.instance {{"}}"}})
+                          description: "Node memory is filling up (< 10% left)\n  VALUE = {{"{{"}} $value {{"}}"}}\n  LABELS = {{"{{"}} $labels {{"}}"}}"
+                      - alert: CriticalHostOutOfMemory
+                        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 5
+                        for: 5m
+                        labels:
+                          severity: critical
+                        annotations:
+                          summary: Host out of memory (instance {{"{{"}} $labels.instance {{"}}"}})
+                          description: "Node memory is filling up (< 5% left)\n  VALUE = {{"{{"}} $value {{"}}"}}\n  LABELS = {{"{{"}} $labels {{"}}"}}"
+                      - alert: WarningHostMemoryUnderMemoryPressure
+                        expr: rate(node_vmstat_pgmajfault[1m]) > 1000
+                        for: 10m
+                        labels:
+                          severity: warning
+                        annotations:
+                          summary: Host memory under memory pressure (instance {{"{{"}} $labels.instance {{"}}"}})
+                          description: "The node is under heavy memory pressure. High rate of major page faults\n  VALUE = {{"{{"}} $value {{"}}"}}\n  LABELS = {{"{{"}} $labels {{"}}"}}"
+                      - alert: CriticalHostMemoryUnderMemoryPressure
+                        expr: rate(node_vmstat_pgmajfault[1m]) > 1500
+                        for: 5m
+                        labels:
+                          severity: critical
+                        annotations:
+                          summary: Host memory under memory pressure (instance {{"{{"}} $labels.instance {{"}}"}})
+                          description: "The node is under heavy memory pressure. High rate of major page faults\n  VALUE = {{"{{"}} $value {{"}}"}}\n  LABELS = {{"{{"}} $labels {{"}}"}}"
+                      - alert: WarningHostHighCpuLoad
+                        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 75
+                        for: 10m
+                        labels:
+                          severity: warning
+                        annotations:
+                          summary: Host high CPU load (instance {{"{{"}} $labels.instance {{"}}"}})
+                          description: "CPU load is > 75%\n  VALUE = {{"{{"}} $value {{"}}"}}\n  LABELS = {{"{{"}} $labels {{"}}"}}"
+                      - alert: CriticalHostHighCpuLoad
+                        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 90
+                        for: 5m
+                        labels:
+                          severity: critical
+                        annotations:
+                          summary: Host high CPU load (instance {{"{{"}} $labels.instance {{"}}"}})
+                          description: "CPU load is > 90%\n  VALUE = {{"{{"}} $value {{"}}"}}\n  LABELS = {{"{{"}} $labels {{"}}"}}"
+                      - alert: WarningHostCpuStealNoisyNeighbor
+                        expr: avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10
+                        for: 10m
+                        labels:
+                          severity: warning
+                        annotations:
+                          summary: Host CPU steal noisy neighbor (instance {{"{{"}} $labels.instance {{"}}"}})
+                          description: "CPU steal is > 10%. A noisy neighbor is killing VM performances.\n  VALUE = {{"{{"}} $value {{"}}"}}\n  LABELS = {{"{{"}} $labels {{"}}"}}"
+                      - alert: CriticalHostCpuStealNoisyNeighbor
+                        expr: avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 20
+                        for: 5m
+                        labels:
+                          severity: critical
+                        annotations:
+                          summary: Host CPU steal noisy neighbor (instance {{"{{"}} $labels.instance {{"}}"}})
+                          description: "CPU steal is > 10%. A noisy neighbor is killing VM performances.\n  VALUE = {{"{{"}} $value {{"}}"}}\n  LABELS = {{"{{"}} $labels {{"}}"}}"
+                  - name: cpu
+                    rules:
+                      - alert: CustomContainerCpuUsage
+                        expr: sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate) by (node,container,namespace,pod) / sum(cluster:namespace:pod_cpu:active:kube_pod_container_resource_limits) by (node,container,namespace,pod) > 1
+                        for: 5m
+                        labels:
+                          severity: warning
+                        annotations:
+                          summary: Container CPU usage (instance {{"{{"}} $labels.instance {{"}}"}})
+                          description: "Container CPU usage is above 100%\n  VALUE = {{"{{"}} $value {{"}}"}}\n  LABELS = {{"{{"}} $labels {{"}}"}}"
+                  - name: memory
+                    rules:
+                      - alert: CustomContainerMemoryUsage
+                        expr: sum(node_namespace_pod_container:container_memory_working_set_bytes) by (node,pod,container,namespace) / sum(cluster:namespace:pod_memory:active:kube_pod_container_resource_limits) by (node,pod,container,namespace) > 1
+                        for: 5m
+                        labels:
+                          severity: warning
+                        annotations:
+                          summary: Container Memory usage (instance {{"{{"}} $labels.instance {{"}}"}})
+                          description: "Container Memory usage is above 100%\n  VALUE = {{"{{"}} $value {{"}}"}}\n  LABELS = {{"{{"}} $labels {{"}}"}}"
+        kured:
+          enabled: false
+        {{- if .Values.observability.enabled }}
+        mimir:
+          enabled: {{ .Values.observability.enabled }}
+          project: infra-monitoring
+          destination:
+            server: https://kubernetes.default.svc
+            namespace: infra-monitoring
+          syncPolicy:
+            automated: {}
+            syncOptions:
+              - ServerSideApply=true
+          values:
+            global:
+              extraEnvFrom:
+                - secretRef:
+                    name: mimir-objectstorage-credentials
+            mimir:
+              structuredConfig:
+                common:
+                  storage:
+                    backend: s3
+                    s3:
+                      bucket_name: {{ .Values.observability.mimir.s3.bucketName }}
+                      endpoint: {{ .Values.observability.mimir.s3.endpoint }}
+                      region: {{ .Values.observability.mimir.s3.region }}
+                      access_key_id: ${S3_ACCESS_KEY_ID}
+                      secret_access_key: ${S3_SECRET_ACCESS_KEY}
+                limits:
+                  ingestion_burst_size: 400000
+                  ingestion_rate: 20000
+                  compactor_blocks_retention_period: 30d
+                  max_global_series_per_user: 0
+            # ServiceMonitor configuration
+            metaMonitoring:
+              dashboards:
+                enabled: true
+              serviceMonitor:
+                # -- If enabled, ServiceMonitor resources for Prometheus Operator are created
+                enabled: true
+                labels:
+                  k8s.adfinis.com/prometheus: kube-prometheus
+              prometheusRule:
+                enabled: true
+                mimirAlerts: true
+                mimirRules: true
+                labels:
+                  k8s.adfinis.com/prometheus: kube-prometheus
+            # Disable component which are not required
+            alertmanager:
+              enabled: false
+            distributor:
+              replicas: 1
+            rollout_operator:
+              enabled: false
+            ingester:
+              zoneAwareReplication:
+                enabled: false
+              replicas: 2
+              persistentVolume:
+                size: 4Gi
+              resources:
+                requests:
+                  memory: 500Mi
+            querier:
+              replicas: 1
+            store_gateway:
+              zoneAwareReplication:
+                enabled: false
+            minio:
+              enabled: false
+            ruler:
+              enabled: false
+            overrides_exporter:
+              enabled: false
+            compactor:
+              persistentVolume:
+                size: 4Gi
+        {{- end }}

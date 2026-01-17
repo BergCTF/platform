@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infra-monitoring
+  labels:
+    app.kubernetes.io/name: infra-monitoring
+    app.kubernetes.io/part-of: infra
+    app.kubernetes.io/component: infra
+    pod-security.kubernetes.io/enforce: privileged
+    prometheus.io/monitor: "true"

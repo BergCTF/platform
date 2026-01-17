@@ -1,0 +1,168 @@
+---
+{{- if .Values.observability.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: logging-apps
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: logging-apps
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  destination:
+    namespace: infra-argocd
+    server: https://kubernetes.default.svc
+  project: argocd-apps
+  syncPolicy:
+    automated: {}
+  source:
+    repoURL: https://charts.adfinis.com
+    chart: logging-apps
+    targetRevision: 0.38.1
+    helm:
+      valuesObject:
+        fullnameOverride: app
+        loki:
+          enabled: true
+          project: infra-logging
+          destination:
+            server: https://kubernetes.default.svc
+            namespace: infra-logging
+          syncPolicy:
+            automated: {}
+          values:
+            deploymentMode: "SimpleScalable"
+            test:
+              enabled: false
+            monitoring:
+              dashboards:
+                enabled: true
+              rules:
+                enabled: true
+              selfMonitoring:
+                enabled: false
+                grafanaAgent:
+                  installOperator: false
+              serviceMonitor:
+                enabled: true
+            loki:
+              auth_enabled: false
+              # Increase the max_outstanding values to avoid "too many outstanding requests"
+              # error when querying data in a multi-day range
+              frontend:
+                max_outstanding_per_tenant: 4096
+              query_scheduler:
+                max_outstanding_requests_per_tenant: 4096
+              schemaConfig:
+                configs:
+                  - from: "2024-04-01"
+                    store: tsdb
+                    object_store: s3
+                    schema: v13
+                    index:
+                      prefix: loki_index_
+                      period: 24h
+              storage:
+                bucketNames:
+                  chunks: {{ .Values.observability.loki.s3.bucketName }}
+                  ruler: {{ .Values.observability.loki.s3.bucketName }}
+                  admin: {{ .Values.observability.loki.s3.bucketName }}
+                type: s3
+                s3:
+                  region: {{ .Values.observability.loki.s3.region }}
+                  endpoint: {{ .Values.observability.loki.s3.endpoint }}
+                  insecure: false
+                  s3ForcePathStyle: true
+                  accessKeyId: ${S3_ACCESS_KEY_ID}
+                  secretAccessKey: ${S3_SECRET_ACCESS_KEY}
+              compactor:
+                retention_enabled: true
+                delete_request_store: s3
+              limits_config:
+                allow_structured_metadata: true
+                retention_period: 30d
+            write:
+              replicas: 2
+              extraArgs:
+                - "-config.expand-env=true"
+              extraEnvFrom:
+                - secretRef:
+                    name: loki-objectstorage-credentials
+              persistence:
+                size: 1Gi
+            read:
+              replicas: 1
+              extraArgs:
+                - "-config.expand-env=true"
+              extraEnvFrom:
+                - secretRef:
+                    name: loki-objectstorage-credentials
+              persistence:
+                size: 1Gi
+            backend:
+              replicas: 2
+              extraArgs:
+                - "-config.expand-env=true"
+              extraEnvFrom:
+                - secretRef:
+                    name: loki-objectstorage-credentials
+              persistence:
+                size: 1Gi
+            chunksCache:
+              # disable chunks cache to prevent 9Gi of memory being reserved for a memchached server
+              enabled: false
+            resultsCache:
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 1Gi
+                limits:
+                  cpu: "1"
+                  memory: 1300Mi
+            singleBinary:
+              replicas: 0
+            serviceMonitor:
+              enabled: true
+              additionalLabels:
+                k8s.adfinis.com/prometheus: kube-prometheus
+              prometheusRule:
+                enabled: true
+                additionalLabels:
+                  k8s.adfinis.com/prometheus: kube-prometheus
+                rules:
+                  - alert: LokiProcessTooManyRestarts
+                    expr: changes(process_start_time_seconds{job=~"loki"}[15m]) > 2
+                    for: 0m
+                    labels:
+                      severity: warning
+                    annotations:
+                      summary: Loki process too many restarts (instance {{"{{" }} $labels.instance {{"}}" }})
+                      description: "A loki process had too many restarts (target {{"{{" }} $labels.instance {{"}}" }})\n  VALUE = {{"{{" }} $value {{"}}" }}\n  LABELS = {{"{{" }} $labels {{"}}" }}"
+                  - alert: LokiRequestErrors
+                    expr: 100 * sum(rate(loki_request_duration_seconds_count{status_code=~"5.."}[1m])) by (namespace, job, route) / sum(rate(loki_request_duration_seconds_count[1m])) by (namespace, job, route) > 10
+                    for: 15m
+                    labels:
+                      severity: critical
+                    annotations:
+                      summary: Loki request errors (instance {{"{{" }} $labels.instance {{"}}" }})
+                      description: "The {{"{{" }} $labels.job {{"}}" }} and {{"{{" }} $labels.route {{"}}" }} are experiencing errors\n  VALUE = {{"{{" }} $value {{"}}" }}\n  LABELS = {{"{{" }} $labels {{"}}" }}"
+                  - alert: LokiRequestPanic
+                    expr: sum(increase(loki_panic_total[10m])) by (namespace, job) > 0
+                    for: 5m
+                    labels:
+                      severity: critical
+                    annotations:
+                      summary: Loki request panic (instance {{"{{" }} $labels.instance {{"}}" }})
+                      description: "The {{"{{" }} $labels.job {{"}}" }} is experiencing {{"{{" }} printf \"%.2f\" $value {{"}}" }}% increase of panics\n  VALUE = {{"{{" }} $value {{"}}" }}\n  LABELS = {{"{{" }} $labels {{"}}" }}"
+                  - alert: LokiRequestLatency
+                    expr: (histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{route!~"(?i).*tail.*"}[5m])) by (le)))  > 1
+                    for: 5m
+                    labels:
+                      severity: critical
+                    annotations:
+                      summary: Loki request latency (instance {{"{{" }} $labels.instance {{"}}" }})
+                      description: "The {{"{{" }} $labels.job {{"}}" }} {{"{{" }} $labels.route {{"}}" }} is experiencing {{"{{" }} printf \"%.2f\" $value {{"}}" }}s 99th percentile latency\n  VALUE = {{"{{" }} $value {{"}}" }}\n  LABELS = {{"{{" }} $labels {{"}}" }}"
+        promtail:
+          enabled: false
+{{- end }}

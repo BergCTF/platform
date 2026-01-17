@@ -1,0 +1,26 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: infra-kgateway
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-kgateway
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  description: Kgateway controller
+  clusterResourceWhitelist:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+  destinations:
+    - namespace: infra-kgateway
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - oci://cr.kgateway.dev/kgateway-dev/charts
+    - oci://cr.kgateway.dev/kgateway-dev/charts/kgateway
+    - oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds

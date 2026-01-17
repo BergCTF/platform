@@ -1,0 +1,38 @@
+---
+# Source: cluster-template/templates/appprojects/infra-logging.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: infra-logging
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-logging
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  description: deploy logging infrastructure to the infra-logging namespace
+  clusterResourceWhitelist:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: policy
+      kind: PodSecurityPolicy
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+    - group: monitoring.coreos.com
+      kind: ServiceMonitor
+    - group: monitoring.coreos.com
+      kind: PrometheusRule
+  destinations:
+    - namespace: infra-logging
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - https://grafana.github.io/helm-charts
+    - https://charts.adfinis.com
+    - https://open-telemetry.github.io/opentelemetry-helm-charts
+    - {{ .Values.infra.repo }}

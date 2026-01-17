@@ -1,0 +1,36 @@
+---
+# Source: cluster-template/templates/appprojects/infra-cert-manager.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: infra-cert-manager
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-cert-manager
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  description: deploy cert-manager to the infra-cert-manager namespace
+  clusterResourceWhitelist:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+    - group: cert-manager.io
+      kind: ClusterIssuer
+    - group: apiregistration.k8s.io
+      kind: APIService
+  destinations:
+    - namespace: infra-cert-manager
+      server: https://kubernetes.default.svc
+    - namespace: kube-system
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - https://charts.jetstack.io
+    - https://charts.adfinis.com

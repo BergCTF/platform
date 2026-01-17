@@ -1,0 +1,22 @@
+---
+# Source: cluster-template/templates/appprojects/argocd-apps.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: argocd-apps
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: argocd-apps
+    app.kubernetes.io/component: infra-argocd
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  description: deploy app-of-apps and apps to the infra-argocd namespace
+  destinations:
+    - namespace: infra-argocd
+      server: https://kubernetes.default.svc
+  namespaceResourceWhitelist:
+    - group: argoproj.io
+      kind: Application
+  sourceRepos:
+    - https://charts.adfinis.com
+    - {{ .Values.infra.repo }}

@@ -1,0 +1,18 @@
+---
+# Source: cluster-template/templates/appprojects/infra-etcd-defrag.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: infra-etcd-defrag
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-etcd-defrag
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  description: deploy etcd defragmentation cronjob
+  destinations:
+    - namespace: infra-etcd-defrag
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - https://charts.christianhuth.de

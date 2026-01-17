@@ -1,0 +1,21 @@
+---
+# we create a regular certificate instead of using the gateway API annotation
+# to gain more control over the certificate SANs and avoid multiple cert requests
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: berg-gateway-tls
+  namespace: berg
+  labels:
+    app.kubernetes.io/name: certificates
+    app.kubernetes.io/component: berg-gateway-tls
+    app.kubernetes.io/managed-by: argocd
+spec:
+  secretName: berg-gateway-tls
+  issuerRef:
+    name: {{ .Values.certManager.defaultClusterIssuer }}
+    kind: ClusterIssuer
+  dnsNames:
+    - {{ .Values.domains.cluster }}
+    - "*.{{ .Values.domains.cluster }}"
+    - "*.chall.{{ .Values.domains.cluster }}"

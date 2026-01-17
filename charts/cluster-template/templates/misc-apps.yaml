@@ -1,0 +1,153 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: misc-apps
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: misc-apps
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  destination:
+    namespace: infra-argocd
+    server: https://kubernetes.default.svc
+  project: argocd-apps
+  syncPolicy:
+    automated: {}
+  source:
+    repoURL: https://charts.adfinis.com
+    chart: misc-apps
+    targetRevision: 0.57.0
+    helm:
+      valuesObject:
+        fullnameOverride: infra
+        argocdApps:
+          enabled: true
+          project: misc-argocd-apps
+          destination:
+            server: https://kubernetes.default.svc
+            namespace: infra-argocd
+          syncPolicy:
+            automated: {}
+          values:
+            applications:
+              argocd-configs:
+                namespace: infra-argocd
+                additionalAnnotations:
+                  argocd.argoproj.io/sync-wave: "-1"
+                additionalLabels:
+                  app.kubernetes.io/component: argocd-configs
+                  app.kubernetes.io/name: helm-infra-argocd
+                  app.kubernetes.io/managed-by: helm-infra-argocd
+                project: argocd-apps
+                destination:
+                  namespace: infra-argocd
+                  server: https://kubernetes.default.svc
+                source:
+                  path: {{ .Values.infra.path }}
+                  repoURL: {{ .Values.infra.repo }}
+                  targetRevision: HEAD
+                syncPolicy:
+                  automated: {}
+              namespaces:
+                namespace: infra-argocd
+                additionalAnnotations:
+                  argocd.argoproj.io/sync-wave: "-2"
+                additionalLabels:
+                  app.kubernetes.io/component: namespaces
+                  app.kubernetes.io/managed-by: helm-infra-argocd
+                  app.kubernetes.io/name: helm-infra-argocd
+                project: namespaces
+                destination:
+                  namespace: infra-argocd
+                  server: https://kubernetes.default.svc
+                source:
+                  path: {{ .Values.infra.path }}/namespaces
+                  repoURL: {{ .Values.infra.repo }}
+                  targetRevision: HEAD
+                syncPolicy:
+                  automated: {}
+              appprojects:
+                namespace: infra-argocd
+                additionalAnnotations:
+                  argocd.argoproj.io/sync-wave: "-2"
+                additionalLabels:
+                  app.kubernetes.io/component: appprojects
+                  app.kubernetes.io/managed-by: helm-infra-argocd
+                  app.kubernetes.io/name: helm-infra-argocd
+                project: appprojects
+                destination:
+                  namespace: infra-argocd
+                  server: https://kubernetes.default.svc
+                source:
+                  path: {{ .Values.infra.path }}/appprojects
+                  repoURL: {{ .Values.infra.repo }}
+                  targetRevision: HEAD
+                syncPolicy:
+                  automated: {}
+              custom-apps:
+                namespace: infra-argocd
+                project: argocd-apps
+                additionalLabels:
+                  app.kubernetes.io/component: custom-apps
+                  app.kubernetes.io/name: helm-infra-argocd
+                  app.kubernetes.io/managed-by: helm-infra-argocd
+                destination:
+                  namespace: infra-argocd
+                  server: https://kubernetes.default.svc
+                source:
+                  path: {{ .Values.infra.path }}/custom-apps
+                  repoURL: {{ .Values.infra.repo }}
+                  targetRevision: HEAD
+                syncPolicy:
+                  automated: {}
+              databases:
+                namespace: infra-argocd
+                project: argocd-apps
+                additionalLabels:
+                  app.kubernetes.io/component: databases
+                  app.kubernetes.io/name: helm-infra-argocd
+                destination:
+                  namespace: infra-argocd
+                  server: https://kubernetes.default.svc
+                source:
+                  path: {{ .Values.infra.path }}/databases
+                  repoURL: {{ .Values.infra.repo }}
+                  targetRevision: HEAD
+                syncPolicy:
+                  automated: {}
+              certificates:
+                namespace: infra-argocd
+                project: certificates
+                additionalLabels:
+                  app.kubernetes.io/component: certificates
+                  app.kubernetes.io/name: helm-infra-argocd
+                  app.kubernetes.io/managed-by: helm-infra-argocd
+                destination:
+                  namespace: infra-argocd
+                  server: https://kubernetes.default.svc
+                source:
+                  path: {{ .Values.infra.path }}/certificates
+                  repoURL: {{ .Values.infra.repo }}
+                  targetRevision: HEAD
+                syncPolicy:
+                  automated: {}
+              {{- if .Values.observability.enabled }}
+              vector:
+                namespace: infra-argocd
+                project: argocd-apps
+                additionalLabels:
+                  app.kubernetes.io/component: vector
+                  app.kubernetes.io/name: helm-infra-argocd
+                  app.kubernetes.io/managed-by: helm-infra-argocd
+                destination:
+                  namespace: infra-argocd
+                  server: https://kubernetes.default.svc
+                source:
+                  path: {{ .Values.infra.path }}/vector
+                  repoURL: {{ .Values.infra.repo }}
+                  targetRevision: HEAD
+                syncPolicy:
+                  automated: {}
+              {{- end }}

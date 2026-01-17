@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infra-tracing
+  labels:
+    app.kubernetes.io/name: infra-tracing
+    app.kubernetes.io/part-of: infra
+    app.kubernetes.io/component: infra
+    prometheus.io/monitor: "true"

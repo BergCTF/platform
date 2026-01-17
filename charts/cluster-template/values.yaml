@@ -1,0 +1,102 @@
+# domains:
+  # cluster domain is used to derive infrastructure component domains
+  # cluster: env.example.com
+  # mail: example.com
+  # berg: example.com
+# env: prod
+
+# self referential infrastructure link
+infra:
+  # repo: git@github.com:example/infrastructure.git
+  # path: manifests/<environment>
+
+ctf:
+  name: My CTF
+  description: |
+    flags
+  organiser: berg
+
+challenges:
+  # whether to deploy the configured challenge repository
+  enabled: false
+  # repo: git@github.com:<YOUR-ORG>/challenges.git
+
+berg:
+  anonymousAccess: false
+  # chart version - defaults to Chart.AppVersion
+  # version: 
+  database:
+    replicas: 1
+    size: 10Gi
+    backups:
+      enabled: false
+      s3:
+        # bucketName: 
+        # region: 
+        # endpoint
+  # raw pages
+  pages: {}
+
+challengeInstanceController:
+  enabled: true
+  clusterWide: true
+
+# configuration for gateways to deploy
+# note: each gateway will provision a LoadBalancer IP
+gateways:
+  # gateway for berg
+  berg:
+    # this should always be enabled for now
+    # disabling this will likely break bindings
+    enabled: true
+
+authentik:
+  database:
+    replicas: 1
+    size: 10Gi
+    backups:
+      enabled: false
+      s3:
+        # bucketName: 
+        # region: 
+        # endpoint
+
+observability:
+  enabled: false
+  loki:
+    s3:
+      # bucketName: 
+      # region: 
+      # endpoint
+  mimir:
+    s3:
+      # bucketName: 
+      # region: 
+      # endpoint
+  tempo:
+    s3:
+      # bucketName: 
+      # region: 
+      # endpoint
+
+certManager:
+  defaultClusterIssuer: letsencrypt-prod-dns
+  clusterIssuers:
+    - name: letsencrypt-prod-dns
+      spec:
+        acme:
+          # email: admin@bergctf.io
+          privateKeySecretRef:
+            name: letsencrypt-prod-dns
+          server: https://acme-v02.api.letsencrypt.org/directory
+          solvers:
+            - dns01:
+                cloudflare:
+                  apiTokenSecretRef:
+                    # deployed by cluster-bootstrap
+                    name: cloudflare-api-token-secret
+                    key: api-token
+
+cilium:
+  enabled: true
+

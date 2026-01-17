@@ -1,0 +1,65 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: database-berg
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: database-berg
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  project: databases
+  destination:
+    namespace: berg
+    server: https://kubernetes.default.svc
+  source:
+    repoURL: https://cloudnative-pg.github.io/charts
+    chart: cluster
+    targetRevision: 0.2.0
+    helm:
+      valuesObject:
+        cluster:
+          instances: {{ .Values.berg.database.replicas }}
+          storage:
+            size: {{ .Values.berg.database.size }}
+          {{- if .Values.observability.enabled }}
+          monitoring:
+            enabled: true
+            podMonitor:
+              enabled: true
+            prometheusRule:
+              enabled: true
+          {{- end }}
+        poolers:
+          - name: rw
+            type: rw
+            poolMode: transaction
+            instances: {{ .Values.berg.database.replicas }}
+            {{- if .Values.observability.enabled }}
+            monitoring:
+              enabled: true
+              podMonitor:
+                enabled: true
+            {{- end }}
+        {{- if .Values.berg.database.backups.enabled }}
+        backups:
+          enabled: true
+          endpointURL: {{ .Values.berg.database.backups.s3.endpoint }}
+          s3:
+            region: {{ .Values.berg.database.backups.s3.region }}
+            bucket: {{ .Values.berg.database.backups.s3.bucketName }}
+            path: "/{{ .Values.env }}/berg"
+          wal:
+            encryption: ""
+          data:
+            encryption: ""
+          secret:
+            create: false
+            name: "database-berg-cluster-backup-s3-creds"
+          scheduledBackups:
+            - name: hourly-backup
+              schedule: "0 0 * * * *"
+              backupOwnerReference: self
+              method: barmanObjectStore
+        {{- end }}

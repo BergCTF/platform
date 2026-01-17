@@ -1,0 +1,27 @@
+---
+# Source: cluster-template/templates/appprojects/infra-velero.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: infra-velero
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-velero
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  description: deploy velero for backup and restore Kubernetes cluster resources
+  clusterResourceWhitelist:
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: snapshot.storage.k8s.io
+      kind: VolumeSnapshotClass
+  destinations:
+    - namespace: infra-velero
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - https://vmware-tanzu.github.io/helm-charts

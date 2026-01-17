@@ -1,0 +1,29 @@
+---
+# Source: cluster-template/templates/appprojects/infra-cnpg.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: infra-cnpg
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-cnpg
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  description: deploy cloud native pg to the infra-cnpg namespace
+  destinations:
+    - namespace: infra-cnpg
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+  sourceRepos:
+    - https://cloudnative-pg.github.io/charts

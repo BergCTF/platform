@@ -1,0 +1,128 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: berg
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: berg
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  project: berg
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - ServerSideApply=true
+  sources:
+    - repoURL: ghcr.io/norelect/charts
+      targetRevision: {{ .Values.berg.version | default .Chart.AppVersion }}
+      helm:
+        valuesObject:
+          pages:
+            {{- if .Values.berg.pages }}
+            {{ .Values.berg.pages }}
+            {{- else }}
+            home:
+              path: /
+              title: Home
+              index: 0
+              content: |
+                  <main class="home-main">
+                  <a href="/"><img src="/assets/logo.svg" height="250" class="ctf-logo" alt="Logo"></a>
+                  <h1>{{ .Values.ctf.name }}</h1>
+                  <section>
+                      <p>
+                        {{ .Values.ctf.description }}
+                      </p>
+                      <p></p>
+                  </section>
+            {{- end }}
+          gateway:
+            domain: {{ .Values.domains.berg | default .Values.domains.cluster }}
+            name: "traefik-gateway"
+            namespace: "infra-traefik"
+            httpListenerName: "web"
+            httpsListenerName: "websecure"
+            httpRouteRedirectListenerName: "http-chall"
+            httpRouteListenerName: "https-chall"
+            tlsRouteListenerName: "tls-chall"
+          handout:
+            enabled: false
+          {{- with .Values.berg.frontend }}
+          frontend:
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          berg:
+            challengeInstanceTimeout: "0.01:00:00"
+            extraEnv:
+              - name: "genericOpenId__clientSecret"
+                valueFrom:
+                  secretKeyRef:
+                    name: berg-client-secret
+                    key: clientSecret
+              - name: "AllowedHosts"
+                value: "{{ .Values.domains.berg | default .Values.domains.cluster }}"
+            domain: {{ .Values.domains.berg | default .Values.domains.cluster }}
+            pullSecretName: "berg-pull-secret"
+            postgresql:
+              existingSecret:
+                name: "database-berg-cluster-app"
+            genericOpenId:
+              clientId: "berg"
+              issuer: "https://idp.{{ .Values.domains.cluster }}/application/o/berg/"
+              internalIssuer: "https://idp.{{ .Values.domains.cluster }}/application/o/berg/"
+              clientSecret: ""
+              scopes:
+                - "openid"
+                - "profile"
+                - "email"
+                - "role"
+                - "groups"
+              claims:
+                name: nickname
+              #roles:
+              #  player: berg-players
+              #  admin: berg-admins
+              #  author: berg-authors
+            discord:
+              botToken: ""
+              notificationGuildId: "0"
+              notificationChannelId: "0"
+              playerGuildId: "0"
+              playerRoleId: "0"
+              authorGuildId: "0"
+              authorRoleId: "0"
+              adminGuildId: "0"
+              adminRoleId: "0"
+            redirectUris:
+              - "https://{{ .Values.domains.berg | default .Values.domains.cluster }}/frontend/oidc-callback"
+            ctf:
+              eventName: {{ .Values.ctf.name | quote }}
+              eventOrganiser: {{ .Values.ctf.organiser | quote }}
+              eventLogoUrl: {{ .Values.ctf.logoUrl | quote }}
+              challengeDomain: "challs.{{ .Values.domains.cluster }}"
+              start: "2025-09-29T18:00:00+02:00"
+              end: "2025-10-05T23:59:59+02:00"
+              teams: false
+              allowAnonymousAccess: {{ .Values.berg.anonymousAccess }}
+              playerAttributes:
+                - name: author
+                  title: Author
+                  description: Challenge Author
+                  public: true
+                  required: false
+                  values: ["true", "false"]
+              # scoring:
+                # numSolvesBeforeMinimum: 100
+            {{- if .Values.observability.enabled }}
+            openTelemetry:
+              grpc:
+                metricsEndpoint: "http://vector-berg.infra-monitoring.svc.cluster.local:4317"
+                loggingEndpoint: "http://vector-berg.infra-monitoring.svc.cluster.local:4317"
+                tracingEndpoint: "http://vector-berg.infra-monitoring.svc.cluster.local:4317"
+            {{- end }}
+      chart: berg
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: berg
