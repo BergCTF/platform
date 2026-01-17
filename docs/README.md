@@ -1,0 +1,3 @@
+# docs
+
+berg-platform documentation
