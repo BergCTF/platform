@@ -1,0 +1,37 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-kgateway
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-kgateway
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  project: infra-kgateway
+  destination:
+    namespace: infra-kgateway
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - ServerSideApply=true
+  sources:
+    - repoURL: oci://cr.kgateway.dev/kgateway-dev/charts/kgateway
+      chart: "kgateway"
+      targetRevision: v2.2.0-beta.6
+      helm:
+        values: |
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+    - repoURL: oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds
+      chart: kgateway-crds
+      targetRevision: v2.2.0-beta.6
+      helm: {}
