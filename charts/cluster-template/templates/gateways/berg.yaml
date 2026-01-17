@@ -6,6 +6,14 @@ metadata:
   namespace: berg
 spec:
   gatewayClassName: kgateway
+  infrastructure:
+    annotations:
+      load-balancer.hetzner.cloud/uses-proxyprotocol: "true"
+      load-balancer.hetzner.cloud/name: "traefik.{{ .Values.domains.cluster }}"
+    parametersRef:
+      name: berg
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
   listeners:
   - allowedRoutes:
       namespaces:
