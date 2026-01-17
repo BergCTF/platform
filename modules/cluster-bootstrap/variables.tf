@@ -123,13 +123,31 @@ variable "monitoring" {
   })
 }
 
+variable "dns_api_token" {
+  type     = string
+  default  = null
+  nullable = true
+}
+
+check "dns_api_token_set" {
+  assert {
+    condition     = (var.cert_manager.enabled || var.external_dns.enabled) && var.dns_api_token != null
+    error_message = "dns_api_token should be set if cert-manager or external-dns are enabled"
+  }
+}
+
 variable "cert_manager" {
   type = object({
     enabled = optional(bool, true)
     dns_resolver = object({
-      enabled   = optional(bool, false)
-      api_token = optional(string)
+      enabled = optional(bool, false)
     })
+  })
+}
+
+variable "external_dns" {
+  type = object({
+    enabled = optional(bool, true)
   })
 }
 

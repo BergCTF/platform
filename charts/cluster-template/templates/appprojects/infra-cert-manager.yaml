@@ -34,3 +34,4 @@ spec:
   sourceRepos:
     - https://charts.jetstack.io
     - https://charts.adfinis.com
+    - https://charts.hetzner.cloud

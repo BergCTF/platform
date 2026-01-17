@@ -94,8 +94,19 @@ certManager:
                 cloudflare:
                   apiTokenSecretRef:
                     # deployed by cluster-bootstrap
-                    name: cloudflare-api-token-secret
+                    name: dns-api-key
                     key: api-token
+                # webhook:
+                #   solverName: hetzner
+                #   groupName: acme.hetzner.com
+                #   config:
+                #     tokenSecretKeyRef:
+                #       name: dns-api-key
+                #       key: api-token
+
+dns:
+  # cloudflare or hetzner, used for external-dns and cert-manager
+  provider: cloudflare
 
 cilium:
   enabled: true

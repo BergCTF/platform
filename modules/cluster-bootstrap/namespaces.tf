@@ -39,6 +39,13 @@ resource "kubernetes_namespace_v1" "infra_cert_manager" {
   }
 }
 
+resource "kubernetes_namespace_v1" "infra_external_dns" {
+  lifecycle { enabled = var.external_dns.enabled }
+  metadata {
+    name = "infra-external-dns"
+  }
+}
+
 resource "kubernetes_namespace_v1" "infra_tracing" {
   lifecycle { enabled = var.monitoring.enabled }
   metadata {

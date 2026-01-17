@@ -239,19 +239,7 @@ spec:
             automated: {}
           values:
             clusterIssuers:
-              - name: letsencrypt-prod-dns
-                spec:
-                  acme:
-                    email: carlo.field@swisscyberstorm.com
-                    privateKeySecretRef:
-                      name: letsencrypt-prod-dns
-                    server: https://acme-v02.api.letsencrypt.org/directory
-                    solvers:
-                      - dns01:
-                          cloudflare:
-                            apiTokenSecretRef:
-                              name: cloudflare-api-token-secret
-                              key: api-token
+              {{ .Values.certManager.clusterIssuers | toYaml | nindent 14 }}
         certManagerMonitoring:
           enabled: {{ .Values.observability.enabled }}
           project: infra-cert-manager

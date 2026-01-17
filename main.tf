@@ -98,6 +98,9 @@ module "cluster_bootstrap" {
   monitoring   = var.monitoring
   authentik    = var.authentik
   cert_manager = var.cert_manager
+  external_dns = var.external_dns
+
+  dns_api_token = var.dns_api_token
 }
 
 module "authentik" {

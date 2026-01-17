@@ -1,0 +1,27 @@
+{{- if eq .Values.dns.provider "hetzner" }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-cert-manager-webhook-hetzner
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-cert-manager-webhook-hetzner
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  project: infra-cert-manager
+  destination:
+    namespace: infra-cert-manager
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - ServerSideApply=true
+  source:
+    repoURL: https://charts.hetzner.cloud/
+    chart: cert-manager-webhook-hetzner
+    targetRevision: 0.6.5
+    helm:
+      valuesObject:
+{{- end }}

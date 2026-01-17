@@ -1,0 +1,24 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: infra-external-dns
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-external-dns
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  description: External DNS controller
+  clusterResourceWhitelist:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+  destinations:
+    - namespace: infra-external-dns
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - https://kubernetes-sigs.github.io/external-dns/

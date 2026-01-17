@@ -1,0 +1,83 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-external-dns
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-external-dns
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  project: infra-external-dns
+  destination:
+    namespace: infra-external-dns
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - ServerSideApply=true
+  source:
+    repoURL: https://kubernetes-sigs.github.io/external-dns/
+    chart: external-dns
+    targetRevision: 1.20.0
+    helm:
+      valuesObject:
+        image:
+          tag: v0.20.0
+        fullnameOverride: external-dns-cloudflare
+        logFormat: json
+        interval: 5s
+        sources: ["ingress", "service", "crd", "gateway-tlsroute", "gateway-httproute", "gateway-tcproute"]
+        policy: sync
+        provider:
+          name: {{ ternary "cloudflare" "webhook" (eq .Values.dns.provider "cloudflare") }}
+          {{- if eq .Values.dns.provider "hetzner" }}
+          webhook:
+            image:
+              repository: ghcr.io/mconfalonieri/external-dns-hetzner-webhook
+              tag: v0.9.0
+            env:
+              - name: HETZNER_API_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: dns-api-key
+                    key: api-token
+              - name: USE_CLOUD_API
+                value: "true"
+            livenessProbe:
+              httpGet:
+                path: /health
+                port: http-webhook
+              initialDelaySeconds: 10
+              timeoutSeconds: 5
+            readinessProbe:
+              httpGet:
+                path: /ready
+                port: http-webhook
+              initialDelaySeconds: 10
+              timeoutSeconds: 5
+          {{- end }}
+        env:
+          {{- if eq .Values.dns.provider "cloudflare" }}
+          - name: CF_API_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: dns-api-key
+                key: api-token
+          {{- else }}
+          []
+          {{- end }}
+        extraArgs:
+          {{- if eq .Values.dns.provider "cloudflare" }}
+          - --cloudflare-dns-records-per-page=5000
+          {{- end }}
+          - --txt-owner-id={{ .Values.env }}-{{ .Values.domains.cluster }}
+          - --ignore-ingress-tls-spec
+          - --managed-record-types=A
+          - --managed-record-types=AAAA
+          - --managed-record-types=CNAME
+          - --managed-record-types=TXT
+          - --managed-record-types=MX
+          - --managed-record-types=SRV
+          - --managed-record-types=NS

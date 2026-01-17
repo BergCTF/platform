@@ -133,12 +133,24 @@ variable "monitoring" {
   })
 }
 
+variable "dns_api_token" {
+  type     = string
+  default  = null
+  nullable = true
+}
+
 variable "cert_manager" {
   type = object({
     enabled = optional(bool, false)
     dns_resolver = object({
-      enabled   = optional(bool, false)
-      api_token = optional(string)
+      enabled = optional(bool, false)
     })
   })
 }
+
+variable "external_dns" {
+  type = object({
+    enabled = optional(bool, true)
+  })
+}
+
