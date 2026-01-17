@@ -98,14 +98,22 @@ spec:
               allowPrivilegeEscalation: false
               seccompProfile:
                 type: RuntimeDefault
-            ingress:
-              enabled: true
-              hosts:
-                - idp.{{ .Values.domains.cluster }}
-              ingressClassName: traefik
-              tls:
-                - hosts:
-                    - idp.{{ .Values.domains.cluster }}
+            route:
+              main:
+                enabled: true
+                parentRefs:
+                  - group: gateway.networking.k8s.io
+                    kind: Gateway
+                    name: berg
+                    namespace: berg
+                    sectionName: https
+                  - group: gateway.networking.k8s.io
+                    kind: Gateway
+                    name: berg
+                    namespace: berg
+                    sectionName: http
+                hostnames:
+                  - idp.{{ .Values.domains.cluster }}
           worker:
             containerSecurityContext:
               capabilities:

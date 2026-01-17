@@ -161,12 +161,15 @@ spec:
                 enabled: true
               certificate:
                 enabled: false
-              ingress:
+              httproute:
                 enabled: true
-                ingressClassName: traefik
-                hostname: argocd.{{ .Values.domains.cluster }}
-                pathType: ImplementationSpecific
-                tls: true
+                parentRefs:
+                  - group: gateway.networking.k8s.io
+                    kind: Gateway
+                    name: berg
+                    namespace: berg
+                hostnames:
+                  - argocd.{{ .Values.domains.cluster }}
               {{- if .Values.observability.enabled }}
               metrics:
                 enabled: true
@@ -444,24 +447,16 @@ spec:
                   defaultMode: 0440
                   mountPath: /etc/secrets/auth_generic_oauth
                   readOnly: true
-              ingress:
-                enabled: true
-                ingressClassName: traefik
-                extraPaths:
-                  # Send /metrics to a non-existent service to not expose them to the internet
-                  - path: /metrics
-                    pathType: Exact
-                    backend:
-                      service:
-                        name: blackhole
-                        port:
-                          name: blackhole
-                pathType: Prefix
-                hosts:
-                  - grafana.{{ .Values.domains.cluster }}
-                tls:
-                  - hosts:
-                      - grafana.{{ .Values.domains.cluster }}
+              route:
+                main:
+                  enabled: true
+                  parentRefs:
+                    - group: gateway.networking.k8s.io
+                      kind: Gateway
+                      name: berg
+                      namespace: berg
+                  hostnames:
+                    - grafana.{{ .Values.domains.cluster }}
               resources:
                 requests:
                   cpu: 100m

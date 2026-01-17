@@ -40,11 +40,11 @@ spec:
             {{- end }}
           gateway:
             domain: {{ .Values.domains.berg | default .Values.domains.cluster }}
-            name: "traefik-gateway"
-            namespace: "infra-traefik"
-            httpListenerName: "web"
-            httpsListenerName: "websecure"
-            httpRouteRedirectListenerName: "http-chall"
+            name: "berg"
+            namespace: "berg"
+            httpListenerName: "http"
+            httpsListenerName: "https"
+            httpRouteRedirectListenerName: "http"
             httpRouteListenerName: "https-chall"
             tlsRouteListenerName: "tls-chall"
           handout:
