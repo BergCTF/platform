@@ -1,6 +1,13 @@
 terraform {
   # required for "enabled" blocks
   required_version = ">= 1.11.0"
+
+  required_providers {
+    github = {
+      source  = "integrations/github"
+      version = ">= 6.0"
+    }
+  }
 }
 
 locals {
@@ -17,6 +24,10 @@ locals {
 
 module "github" {
   source = "./modules/github"
+
+  providers = {
+    github = github
+  }
 
   generate_deploy_keys = var.berg.enabled ? [
     {
