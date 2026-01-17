@@ -15,6 +15,7 @@ spec:
     server: https://kubernetes.default.svc
   project: infra-cilium
   syncPolicy:
+    automated: {}
     syncOptions:
       - ServerSideApply=true
   ignoreDifferences:
