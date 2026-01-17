@@ -10,6 +10,10 @@ metadata:
     app.kubernetes.io/managed-by: helm-infra-argocd
 spec:
   project: databases
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - ServerSideApply=true
   destination:
     namespace: infra-authentik
     server: https://kubernetes.default.svc
