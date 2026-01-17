@@ -1,0 +1,133 @@
+---
+{{- if .Values.cilium.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-cilium
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-cilium
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  destination:
+    namespace: kube-system
+    server: https://kubernetes.default.svc
+  project: infra-cilium
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true
+  ignoreDifferences:
+    - kind: Secret
+      name: cilium-ca
+      namespace: kube-system
+      jsonPointers:
+        - /data/ca.crt
+        - /data/ca.key
+    - kind: Secret
+      name: hubble-ca-secret
+      namespace: kube-system
+      jsonPointers:
+        - /data/ca.crt
+        - /data/ca.key
+    - kind: Secret
+      name: hubble-relay-client-certs
+      namespace: kube-system
+      jsonPointers:
+        - /data/ca.crt
+        - /data/tls.crt
+        - /data/tls.key
+    - kind: Secret
+      name: hubble-server-certs
+      namespace: kube-system
+      jsonPointers:
+        - /data/ca.crt
+        - /data/tls.crt
+        - /data/tls.key
+  source:
+    chart: cilium
+    repoURL: https://helm.cilium.io
+    targetRevision: "1.18.2"
+    helm:
+      valuesObject:
+        hubble:
+          enabled: true
+          ui:
+            enabled: true
+          relay:
+            enabled: true
+          peerService:
+            clusterDomain: "cluster.local"
+          {{- if .Values.observability.enabled }}
+          metrics:
+            serviceMonitor:
+              enabled: true
+              trustCRDsExist: false
+            enabled:
+              - dns
+              - drop
+              - tcp
+              - flow
+              - port-distribution
+              - icmp
+              - httpV2:exemplars=true;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction
+            enableOpenMetrics: true
+            dashboards:
+              enabled: true
+          {{- end }}
+        routingMode: native
+        ipam:
+          mode: kubernetes
+        ipv4NativeRoutingCIDR: "10.0.0.0/16"
+        k8s:
+          requireIPv4PodCIDR: true
+        k8sServiceHost: "127.0.0.1"
+        k8sServicePort: 7445
+        kubeProxyReplacement: true
+        kubeProxyReplacementHealthzBindAddr: "0.0.0.0:10256"
+        bpf:
+          masquerade: true
+        cgroup:
+          autoMount:
+            enabled: false
+          hostRoot: "/sys/fs/cgroup"
+        loadBalancer:
+          acceleration: native
+        encryption:
+          enabled: true
+          type: "wireguard"
+        ingressController:
+          enabled: false
+          loadbalancerMode: "shared"
+        egressGateway:
+          enabled: false
+        operator:
+          replicas: 1
+          {{- if .Values.observability.enabled }}
+          prometheus:
+            enabled: true
+            serviceMonitor:
+              enabled: true
+              interval: "15s"
+          dashboards:
+            enabled: true
+          {{- end }}
+        {{- if .Values.observability.enabled }}
+        prometheus:
+          enabled: true
+          serviceMonitor:
+            enabled: true
+            interval: "15s"
+            trustCRDsExist: false
+        dashboards:
+          enabled: true
+        {{- end }}
+        securityContext:
+          capabilities:
+            ciliumAgent: [CHOWN,KILL,NET_ADMIN,NET_RAW,IPC_LOCK,SYS_ADMIN,SYS_RESOURCE,DAC_OVERRIDE,FOWNER,SETGID,SETUID]
+            cleanCiliumState: [NET_ADMIN,SYS_ADMIN,SYS_RESOURCE]
+        installNoConntrackIptablesRules: true
+        tls:
+          secretsNamespace:
+            name: infra-cilium-secrets
+{{- end }}

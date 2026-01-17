@@ -1,0 +1,126 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-authentik
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-authentik
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  project: infra-authentik
+  destination:
+    namespace: infra-authentik
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - ServerSideApply=true
+  sources:
+    - repoURL: https://charts.goauthentik.io
+      chart: authentik
+      targetRevision: 2025.10.2
+      helm:
+        valuesObject:
+          global:
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              fsGroup: 1000
+            volumes:
+              - name: email-templates
+                configMap:
+                  name: authentik-templates
+            volumeMounts:
+              - name: email-templates
+                mountPath: /templates
+            env:
+              - name: AUTHENTIK_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: authentik-extra-secret
+                    key: secret_key
+              - name: AUTHENTIK_POSTGRESQL__PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: database-authentik-cluster-app
+                    key: password
+              - name: AUTHENTIK_POSTGRESQL__USER
+                valueFrom:
+                  secretKeyRef:
+                    name: database-authentik-cluster-app
+                    key: username
+              - name: AUTHENTIK_POSTGRESQL__NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: database-authentik-cluster-app
+                    key: dbname
+              - name: AUTHENTIK_EMAIL__USERNAME
+                valueFrom:
+                  secretKeyRef:
+                    name: authentik-extra-secret
+                    key: email_username
+              - name: AUTHENTIK_EMAIL__PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: authentik-extra-secret
+                    key: email_password
+              - name: AUTHENTIK_BOOTSTRAP_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: authentik-bootstrap-token
+                    key: token
+          authentik:
+            error_reporting:
+              enabled: false
+            email:
+              # TODO: abstract email configuration
+              host: "email-smtp.us-east-1.amazonaws.com"
+              port: 2587
+              use_tls: true
+              use_ssl: false
+              from: {{ .Values.authentik.fromEmail | quote }}
+            postgresql:
+              host: database-authentik-cluster-pooler-rw
+          server:
+            {{- if .Values.observability.enabled }}
+            metrics:
+              enabled: true
+              serviceMonitor:
+                enabled: true
+            {{- end }}
+            containerSecurityContext:
+              capabilities:
+                drop:
+                  - ALL
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              seccompProfile:
+                type: RuntimeDefault
+            ingress:
+              enabled: true
+              hosts:
+                - idp.{{ .Values.domains.cluster }}
+              ingressClassName: traefik
+              tls:
+                - hosts:
+                    - idp.{{ .Values.domains.cluster }}
+          worker:
+            containerSecurityContext:
+              capabilities:
+                drop:
+                  - ALL
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              seccompProfile:
+                type: RuntimeDefault
+          {{- if .Values.observability.enabled }}
+          prometheus:
+            rules:
+              enabled: true
+          {{- end }}
+          postgresql:
+            enabled: false
+    - repoURL: {{ .Values.infra.repo }}
+      path: {{ .Values.infra.path}}/authentik-extra

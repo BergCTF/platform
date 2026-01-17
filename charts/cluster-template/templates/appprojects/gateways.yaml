@@ -18,7 +18,7 @@ spec:
     - group: monitoring.coreos.com
       kind: PodMonitor
     - group: gateway.kgateway.dev
-      kind: HTTPListenerPolicy
+      kind: ListenerPolicy
     - group: gateway.networking.k8s.io
       kind: ReferenceGrant
   destinations:

@@ -1,0 +1,28 @@
+{{- if .Values.challenges.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: challenges
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: challenges
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  project: berg
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - ServerSideApply=true
+  source:
+    repoURL: {{ .Values.challenges.repo }}
+    targetRevision: HEAD
+    path: .
+    directory:
+      recurse: true
+      include: '**/challenge.yaml'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: berg
+{{- end }}

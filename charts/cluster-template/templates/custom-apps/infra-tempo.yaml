@@ -1,0 +1,49 @@
+---
+{{- if .Values.observability.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-tempo
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-tempo
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  destination:
+    namespace: infra-tracing
+    server: https://kubernetes.default.svc
+  project: infra-tracing
+  syncPolicy:
+    automated: {}
+  source:
+    chart: tempo-distributed
+    repoURL: https://grafana.github.io/helm-charts
+    targetRevision: 1.48.0
+    helm:
+      valuesObject:
+        global:
+          extraEnvFrom:
+            - secretRef:
+                name: tracing-objectstorage-credentials
+        ingester:
+          replicas: 2
+        traces:
+          otlp:
+            grpc:
+              enabled: true
+        storage:
+          trace:
+            backend: s3
+            s3:
+              bucket: {{ .Values.observability.tempo.s3.bucketName }}
+              region: {{ .Values.observability.tempo.s3.region }}
+              endpoint: {{ .Values.observability.tempo.s3.endpoint }}
+              insecure: false
+              forcepathstyle: true
+        metaMonitoring:
+          serviceMonitor:
+            enabled: true
+        prometheusRule:
+          enabled: true
+{{- end }}

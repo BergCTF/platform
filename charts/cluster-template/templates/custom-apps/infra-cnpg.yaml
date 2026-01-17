@@ -1,0 +1,33 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-cnpg
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-cnpg
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  project: infra-cnpg
+  destination:
+    namespace: infra-cnpg
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - ServerSideApply=true
+  source:
+    repoURL: https://cloudnative-pg.github.io/charts
+    chart: cloudnative-pg
+    targetRevision: 0.26.0
+    helm:
+      valuesObject:
+        config:
+          clusterWide: true 
+        {{- if .Values.observability.enabled }}
+        monitoring:
+          podMonitorEnabled: true
+          grafanaDashboard:
+            create: true
+        {{- end }}
