@@ -19,7 +19,7 @@ spec:
       - ServerSideApply=true
   sources:
     - repoURL: oci://cr.kgateway.dev/kgateway-dev/charts/kgateway
-      chart: "kgateway"
+      path: "."
       targetRevision: v2.2.0-beta.6
       helm:
         values: |
@@ -32,6 +32,6 @@ spec:
               drop:
                 - ALL
     - repoURL: oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds
-      chart: kgateway-crds
+      path: "."
       targetRevision: v2.2.0-beta.6
       helm: {}
