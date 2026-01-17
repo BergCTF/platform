@@ -13,8 +13,6 @@ jobs:
         uses: actions/checkout@v5
       - name: Install Nix
         uses: cachix/install-nix-action@v31
-      - name: Configure Cachix
-        uses: cachix/cachix-action@v16
       - name: Run tests
         run: nix flake check
 
