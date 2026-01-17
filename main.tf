@@ -14,12 +14,12 @@ locals {
   infra_repository_name  = trimsuffix(reverse(split("/", var.cluster.infra_repo.url))[0], ".git")
   infra_deploy_key_title = "${var.governance_name}-${var.env}-argocd-credential"
   infra_deploy_key_slug  = "${local.infra_repository_name}-${local.infra_deploy_key_title}"
-  infra_deploy_key       = module.github.generated_deploy_keys[local.infra_deploy_key_slug].private_key_pem
+  infra_deploy_key       = module.github.generated_deploy_keys[local.infra_deploy_key_slug].private_key_openssh
 
   challenge_repository_name  = var.berg.enabled ? trimsuffix(reverse(split("/", var.berg.challenge_repo))[0], ".git") : null
   challenge_deploy_key_title = "${var.governance_name}-${var.env}-argocd-credential"
   challenge_deploy_key_slug  = "${local.challenge_repository_name}-${local.challenge_deploy_key_title}"
-  challenge_deploy_key       = module.github.generated_deploy_keys[local.challenge_deploy_key_slug].private_key_pem
+  challenge_deploy_key       = module.github.generated_deploy_keys[local.challenge_deploy_key_slug].private_key_openssh
 }
 
 module "github" {
