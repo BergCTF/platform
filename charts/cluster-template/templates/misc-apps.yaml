@@ -133,6 +133,24 @@ spec:
                   targetRevision: HEAD
                 syncPolicy:
                   automated: {}
+              gateways:
+                namespace: infra-argocd
+                project: gateways
+                additionalAnnotations:
+                  argocd.argoproj.io/manifest-generate-paths: .
+                additionalLabels:
+                  app.kubernetes.io/component: gateways
+                  app.kubernetes.io/name: helm-infra-argocd
+                  app.kubernetes.io/managed-by: helm-infra-argocd
+                destination:
+                  namespace: infra-argocd
+                  server: https://kubernetes.default.svc
+                source:
+                  path: {{ .Values.infra.path }}/gateways
+                  repoURL: {{ .Values.infra.repo }}
+                  targetRevision: HEAD
+                syncPolicy:
+                  automated: {}
               {{- if .Values.observability.enabled }}
               vector:
                 namespace: infra-argocd
