@@ -37,6 +37,12 @@ spec:
               domain: argocd.{{ .Values.domains.cluster }}
             createAggregateRoles: true
             createAggregateClusterRoles: true
+            applicationSet:
+              # don't need this
+              replicas: 0
+            notifications:
+              # don't need this either
+              enabled: false
             configs:
               params:
                 application.namespaces: "infra-argocd"
