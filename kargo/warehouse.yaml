@@ -1,0 +1,17 @@
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Warehouse
+metadata:
+  name: berg-platform
+  namespace: kargo-berg-platform
+spec:
+  subscriptions:
+  - git:
+      repoURL: https://github.com/bergctf/cluster-template.git
+      branch: main
+      includePaths:
+        - charts/cluster-template
+  - git:
+      repoURL: git@github.com:<YOUR-ORG-HERE>/infrastructure.git
+      branch: main
+      includePaths:
+        - values

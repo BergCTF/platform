@@ -1,0 +1,74 @@
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: prod
+  namespace: kargo-berg-platform
+  annotations:
+    kargo.akuity.io/color: "#FF0000"
+spec:
+  vars:
+    - name: gitopsRepo
+      value: git@github.com:<YOUR-ORG-HERE>/infrastructure.git
+  requestedFreight:
+    - origin:
+        kind: Warehouse
+        name: infra-repo
+      sources:
+        # change this to a different stage if you depend on it
+        direct: true
+  promotionTemplate:
+    spec:
+      vars:
+        - name: platformRepo
+          value: https://github.com/bergctf/platform.git
+        - name: srcPath
+          value: ./platform/charts/cluster-template
+        - name: outPath
+          value: ./repo/manifests/${{ ctx.stage }}
+        - name: tmpPath
+          value: ./out
+      steps:
+        - uses: git-clone
+          config:
+            repoURL: ${{ vars.platformRepo }}
+            checkout:
+              - branch: main
+                path: ./platform
+        - uses: git-clone
+          config:
+            repoURL: ${{ vars.gitopsRepo }}
+            checkout:
+              - branch: main
+                path: ./repo
+        - uses: delete
+          config:
+            path: ${{ vars.outPath }}
+        - uses: helm-template
+          config:
+            path: ${{ vars.srcPath }}
+            outPath: ${{ vars.tmpPath }}
+            outLayout: helm
+            releaseName: ${{ ctx.stage }}
+            setValues:
+              - key: env
+                value: ${{ ctx.stage }}
+              - key: domains.cluster
+                value: openec.sc
+              - key: domains.mail
+                value: openec.sc
+              - key: challenges.enabled
+                value: "true"
+        - uses: copy
+          config:
+            inPath: ${{ vars.tmpPath }}/cluster-template/templates
+            outPath: ${{ vars.outPath }}
+        - uses: delete
+          config:
+            path: ${{ vars.tmpPath }}
+        - uses: git-commit
+          config:
+            path: ./repo
+            message: "chore(${{ ctx.stage }}): update manifests"
+        - uses: git-push
+          config:
+            path: ./repo

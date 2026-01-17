@@ -1,0 +1,17 @@
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Project
+metadata:
+  # this creates and manages a namespace with the same name
+  # we prefix it with kargo to avoid clashing with an existing namespace
+  name: kargo-berg-platform
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: ProjectConfig
+metadata:
+  name: berg-platform
+  namespace: kargo-berg-platform
+spec:
+  promotionPolicies:
+  - stageSelector:
+      name: prod
+    autoPromotionEnabled: false
