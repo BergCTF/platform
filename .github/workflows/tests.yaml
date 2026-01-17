@@ -11,8 +11,10 @@ jobs:
     steps:    
       - name: Checkout
         uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
-
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+      - name: Configure Cachix
+        uses: cachix/cachix-action@v16
       - name: Run tests
-        run: devenv test
+        run: nix flake check
 
