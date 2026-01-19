@@ -4,5 +4,4 @@ kind: Namespace
 metadata:
   labels:
     pod-security.kubernetes.io/enforce: baseline
-    prometheus.io/monitor: "true"
   name: berg

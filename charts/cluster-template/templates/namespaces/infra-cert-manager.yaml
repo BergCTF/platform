@@ -7,4 +7,3 @@ metadata:
     app.kubernetes.io/component: infra
     app.kubernetes.io/part-of: infra
     app.kubernetes.io/name: infra-cert-manager
-    prometheus.io/monitor: "true"

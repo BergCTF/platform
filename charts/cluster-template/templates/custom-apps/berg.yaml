@@ -40,7 +40,7 @@ spec:
             {{- end }}
           gateway:
             domain: {{ .Values.domains.berg | default .Values.domains.cluster }}
-            name: "berg"
+            name: "gw-berg"
             namespace: "berg"
             httpListenerName: "http"
             httpsListenerName: "https"

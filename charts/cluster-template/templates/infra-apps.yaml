@@ -172,7 +172,7 @@ spec:
                 parentRefs:
                   - group: gateway.networking.k8s.io
                     kind: Gateway
-                    name: berg
+                    name: gw-berg
                     namespace: berg
                 hostnames:
                   - argocd.{{ .Values.domains.cluster }}
@@ -447,7 +447,7 @@ spec:
                   parentRefs:
                     - group: gateway.networking.k8s.io
                       kind: Gateway
-                      name: berg
+                      name: gw-berg
                       namespace: berg
                   hostnames:
                     - grafana.{{ .Values.domains.cluster }}

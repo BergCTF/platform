@@ -28,7 +28,7 @@ spec:
         fullnameOverride: external-dns-cloudflare
         logFormat: json
         interval: 5s
-        sources: ["ingress", "service", "crd", "gateway-tlsroute", "gateway-httproute", "gateway-tcproute"]
+        sources: ["ingress", "service", "crd", "gateway-tlsroute", "gateway-httproute", "gateway-tcproute", "gateway-udproute"]
         policy: sync
         provider:
           name: {{ ternary "cloudflare" "webhook" (eq .Values.dns.provider "cloudflare") }}

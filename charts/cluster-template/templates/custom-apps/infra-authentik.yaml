@@ -104,7 +104,7 @@ spec:
                 parentRefs:
                   - group: gateway.networking.k8s.io
                     kind: Gateway
-                    name: berg
+                    name: gw-berg
                     namespace: berg
                     sectionName: https
                   - group: gateway.networking.k8s.io
