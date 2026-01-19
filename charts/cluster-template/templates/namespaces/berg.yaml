@@ -5,6 +5,6 @@ metadata:
   labels:
     app.kubernetes.io/name: berg
     app.kubernetes.io/component: berg
-    app.kubernetes.io/part-of: berg
+    app.kubernetes.io/part-of: infra
     pod-security.kubernetes.io/enforce: baseline
   name: berg

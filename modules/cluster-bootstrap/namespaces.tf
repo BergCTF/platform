@@ -35,7 +35,7 @@ resource "kubernetes_namespace_v1" "berg" {
     labels = {
       "app.kubernetes.io/name"      = "berg"
       "app.kubernetes.io/component" = "berg"
-      "app.kubernetes.io/part-of"   = "berg"
+      "app.kubernetes.io/part-of"   = "infra"
     }
   }
 }

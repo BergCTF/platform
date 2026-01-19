@@ -18,13 +18,19 @@ spec:
   listeners:
   - allowedRoutes:
       namespaces:
-        from: Same
+        from: Selector
+        selector:
+          matchLabels:
+            app.kubernetes.io/part-of: infra
     name: http
     port: 80
     protocol: HTTP
   - allowedRoutes:
       namespaces:
-        from: Same
+        from: Selector
+        selector:
+          matchLabels:
+            app.kubernetes.io/part-of: infra
     name: https
     port: 443
     protocol: HTTPS
