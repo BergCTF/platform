@@ -7,5 +7,4 @@ metadata:
     app.kubernetes.io/component: infra
     app.kubernetes.io/part-of: infra
     pod-security.kubernetes.io/enforce: restricted
-    prometheus.io/monitor: "true"
   name: infra-authentik

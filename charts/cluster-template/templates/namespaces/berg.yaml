@@ -3,5 +3,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
+    app.kubernetes.io/name: berg
+    app.kubernetes.io/component: berg
+    app.kubernetes.io/part-of: berg
     pod-security.kubernetes.io/enforce: baseline
   name: berg
