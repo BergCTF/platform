@@ -56,6 +56,7 @@ spec:
                   secretKeyRef:
                     name: database-authentik-cluster-app
                     key: dbname
+              {{- if .Values.authentik.smtp }}
               - name: AUTHENTIK_EMAIL__USERNAME
                 valueFrom:
                   secretKeyRef:
@@ -66,6 +67,7 @@ spec:
                   secretKeyRef:
                     name: authentik-extra-secret
                     key: email_password
+              {{- end }}
               - name: AUTHENTIK_BOOTSTRAP_TOKEN
                 valueFrom:
                   secretKeyRef:

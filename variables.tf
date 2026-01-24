@@ -102,7 +102,9 @@ variable "authentik" {
     }), {})
     # smtp configuration is required if password authentication is enabled
     smtp = optional(object({
-      enabled = optional(bool, false)
+      enabled  = optional(bool, false)
+      username = optional(string, null)
+      password = optional(string, null)
     }), {})
     # cloudflare turnstile captcha
     captcha = optional(object({

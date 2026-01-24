@@ -51,6 +51,8 @@ gateways:
     enabled: true
 
 authentik:
+  # enable smtp support (expects secrets to be provisioned by cluster-bootstrap)
+  smtp: false
   database:
     replicas: 1
     size: 10Gi

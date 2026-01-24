@@ -101,6 +101,10 @@ module "cluster_bootstrap" {
   external_dns = var.external_dns
 
   dns_api_token = var.dns_api_token
+
+  email_enabled  = var.authentik.smtp.enabled
+  email_username = var.authentik.smtp.username
+  email_password = var.authentik.smtp.password
 }
 
 module "authentik" {
