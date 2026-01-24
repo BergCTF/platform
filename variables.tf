@@ -45,11 +45,12 @@ variable "cluster" {
 
 variable "berg" {
   type = object({
-    enabled          = bool
-    domain           = optional(string)
-    challenge_repo   = optional(string)
-    pull_secret      = optional(string)
-    admin_acess_only = optional(bool, true)
+    enabled           = bool
+    domain            = optional(string)
+    challenge_repo    = optional(string)
+    pull_secret       = optional(string)
+    admin_access_only = optional(bool, true)
+    redirect_uris     = optional(list(string), [])
     backups = object({
       enabled    = optional(bool, false)
       access_key = optional(string)

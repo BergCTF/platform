@@ -153,7 +153,7 @@ variable "external_dns" {
 
 check "dns_resolver_api_token_set" {
   assert {
-    condition     = !var.cert_manager.enabled || !var.cert_manager.dns_resolver.enabled || var.cert_manager.dns_resolver.api_token != null
+    condition     = !var.cert_manager.enabled || !var.cert_manager.dns_resolver.enabled || var.dns_api_token != null
     error_message = "Ensure dns_resolver_api_token is set"
   }
 }

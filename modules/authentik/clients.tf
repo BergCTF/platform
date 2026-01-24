@@ -41,8 +41,8 @@ resource "authentik_provider_oauth2" "oidc_provider" {
   sub_mode = "user_uuid"
   property_mappings = concat(
     [
-      for name in keys(try(each.value.extra_scope_mappings, {})) :
-      authentik_property_mapping_provider_scope.role_scope_mapping[name].id
+      for name, mapping in try(each.value.extra_scope_mappings, {}) :
+      authentik_property_mapping_provider_scope.role_scope_mapping[mapping.scope_name].id
     ],
     [
       data.authentik_property_mapping_provider_scope.openid_email.id,

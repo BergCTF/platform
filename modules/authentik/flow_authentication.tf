@@ -32,7 +32,8 @@ resource "authentik_stage_identification" "user_identification" {
   show_matched_user         = true
   enrollment_flow           = var.bootstrap.authentication.password.enabled ? authentik_flow.berg_enrollment_flow.uuid : null
   recovery_flow             = var.bootstrap.authentication.password.enabled ? authentik_flow.berg_recovery_flow.uuid : null
-  captcha_stage             = authentik_stage_captcha.cloudflare_captcha.id
+
+  captcha_stage = var.bootstrap.captcha.enabled ? authentik_stage_captcha.cloudflare_captcha.id : null
   user_fields = var.bootstrap.authentication.password.enabled ? [
     "username",
     "email"

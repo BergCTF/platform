@@ -17,7 +17,7 @@ resource "kubernetes_secret_v1" "berg_pull_secret" {
     name      = "berg-pull-secret"
     namespace = kubernetes_namespace_v1.berg.metadata[0].name
   }
-  data = {
+  binary_data = {
     ".dockerconfigjson" = var.berg.pull_secret
   }
   type = "kubernetes.io/dockerconfigjson"
