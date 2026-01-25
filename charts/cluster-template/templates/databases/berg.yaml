@@ -20,7 +20,7 @@ spec:
   source:
     repoURL: https://cloudnative-pg.github.io/charts
     chart: cluster
-    targetRevision: 0.4.0
+    targetRevision: 0.5.0
     helm:
       valuesObject:
         cluster:
