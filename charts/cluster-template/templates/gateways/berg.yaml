@@ -94,3 +94,17 @@ spec:
       kind: Gateway
       name: gw-berg
 {{- end }}
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: berg
+  namespace: berg
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw-berg
+  upgradeConfig:
+    enabledUpgrades:
+      - websocket
