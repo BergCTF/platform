@@ -50,6 +50,12 @@ module "github" {
       read_only  = true
     },
   ]
+
+  argocd_url = "https://argocd.${var.cluster.domain}"
+  argocd_webhooks = var.berg.enabled ? [
+    local.infra_repository_name,
+    local.challenge_repository_name
+  ] : [local.infra_repository_name]
 }
 
 module "cluster" {
@@ -93,6 +99,7 @@ module "cluster_bootstrap" {
   infra_repo            = var.cluster.infra_repo.url
   infra_repo_path       = var.cluster.infra_repo.path
   infra_repo_deploy_key = local.infra_deploy_key
+  argocd_webhook_secret = module.github.argocd_webhook_secret
 
   berg         = merge({ challenge_repo_deploy_key = local.challenge_deploy_key }, var.berg)
   monitoring   = var.monitoring

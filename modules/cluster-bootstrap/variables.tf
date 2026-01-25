@@ -25,6 +25,11 @@ variable "infra_repo_path" {
   description = "path in argocd infra repo"
 }
 
+variable "argocd_webhook_secret" {
+  type        = string
+  description = "argocd webhook secret"
+}
+
 # email is required for password login -otherwise only discord is supported
 variable "email_enabled" {
   type    = bool

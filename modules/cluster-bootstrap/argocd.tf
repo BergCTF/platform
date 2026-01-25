@@ -73,3 +73,19 @@ resource "kubernetes_secret_v1" "argocd_challenge_repo" {
 
   type = "Opaque"
 }
+
+resource "kubernetes_secret_v1" "argocd_webhook_secret" {
+  metadata {
+    name      = "argocd-webhook-secret"
+    namespace = kubernetes_namespace_v1.infra_argocd.metadata[0].name
+    labels = {
+      "app.kubernetes.io/part-of" = "argocd"
+    }
+  }
+
+  data = {
+    secret = var.argocd_webhook_secret
+  }
+
+  type = "Opaque"
+}

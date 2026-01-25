@@ -6,3 +6,13 @@ variable "generate_deploy_keys" {
   }))
   default = []
 }
+
+variable "argocd_webhooks" {
+  type    = list(string)
+  default = []
+}
+
+variable "argocd_url" {
+  type        = string
+  description = "Base URL to the argocd server"
+}

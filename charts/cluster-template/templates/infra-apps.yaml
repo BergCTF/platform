@@ -53,6 +53,7 @@ spec:
                 users.anonymous.enabled: false
                 statusbadge.enabled: false
                 exec.enabled: false
+                webhook.github.secret: "$argocd-webhook-secret:secret"
                 resource.exclusions: |
                   - apiGroups:
                       - velero.io
