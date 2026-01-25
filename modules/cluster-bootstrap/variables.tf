@@ -65,6 +65,11 @@ variable "discord_client_secret" {
   default = null
 }
 
+variable "discord_bot_token" {
+  type    = string
+  default = null
+}
+
 variable "berg" {
   type = object({
     enabled                   = bool

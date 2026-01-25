@@ -56,6 +56,7 @@ variable "berg" {
       access_key = optional(string)
       secret_key = optional(string)
     })
+    discord_bot_token = optional(string, null)
   })
 }
 

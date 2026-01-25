@@ -108,6 +108,7 @@ module "cluster_bootstrap" {
 
   discord_client_id     = var.discord_client_id
   discord_client_secret = var.discord_client_secret
+  discord_bot_token     = var.berg.discord_bot_token
 }
 
 module "authentik" {

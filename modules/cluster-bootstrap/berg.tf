@@ -29,10 +29,21 @@ resource "kubernetes_secret_v1" "berg_discord_client" {
     name      = "berg-discord-client"
     namespace = kubernetes_namespace_v1.berg.metadata[0].name
   }
-  binary_data = {
-    "clientId"     = var.berg_client_id
-    "clientSecret" = var.berg_client_secret
+  data = {
+    "clientId"     = var.discord_client_id
+    "clientSecret" = var.discord_client_secret
   }
   type = "Opaque"
 }
 
+resource "kubernetes_secret_v1" "berg_discord_bot_token" {
+  lifecycle { enabled = var.berg.enabled }
+  metadata {
+    name      = "berg-discord-bot-token"
+    namespace = kubernetes_namespace_v1.berg.metadata[0].name
+  }
+  data = {
+    "token" = var.discord_bot_token
+  }
+  type = "Opaque"
+}
