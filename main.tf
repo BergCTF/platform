@@ -105,6 +105,9 @@ module "cluster_bootstrap" {
   email_enabled  = var.authentik.smtp.enabled
   email_username = var.authentik.smtp.username
   email_password = var.authentik.smtp.password
+
+  discord_client_id     = var.discord_client_id
+  discord_client_secret = var.discord_client_secret
 }
 
 module "authentik" {

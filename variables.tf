@@ -136,6 +136,17 @@ variable "monitoring" {
   })
 }
 
+variable "discord_client_id" {
+  type     = string
+  default  = null
+  nullable = true
+}
+variable "discord_client_secret" {
+  type     = string
+  default  = null
+  nullable = true
+}
+
 variable "dns_api_token" {
   type     = string
   default  = null

@@ -55,6 +55,16 @@ check "email_password_set" {
   }
 }
 
+variable "discord_client_id" {
+  type    = string
+  default = null
+}
+
+variable "discord_client_secret" {
+  type    = string
+  default = null
+}
+
 variable "berg" {
   type = object({
     enabled                   = bool

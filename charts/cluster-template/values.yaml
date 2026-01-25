@@ -25,6 +25,16 @@ berg:
   anonymousAccess: false
   # chart version - defaults to Chart.AppVersion
   # version: 
+  oidc:
+    enabled: true
+  discordAuth:
+    enabled: false
+    playerGuildId: "0"
+    playerRoleId: "0"
+    authorGuildId: "0"
+    authorRoleId: "0"
+    adminGuildId: "0"
+    adminRoleId: "0"
   database:
     replicas: 1
     size: 10Gi

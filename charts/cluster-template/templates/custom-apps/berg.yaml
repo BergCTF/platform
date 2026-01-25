@@ -56,11 +56,25 @@ spec:
           berg:
             challengeInstanceTimeout: "0.01:00:00"
             extraEnv:
+              {{- if .Values.berg.oidc.enabled }}
               - name: "genericOpenId__clientSecret"
                 valueFrom:
                   secretKeyRef:
                     name: berg-client-secret
                     key: clientSecret
+              {{- end }}
+              {{- if .Values.berg.discordAuth.enabled }}
+              - name: "discord__clientSecret"
+                valueFrom:
+                  secretKeyRef:
+                    name: berg-discord-client
+                    key: clientSecret
+              - name: "discord__clientId"
+                valueFrom:
+                  secretKeyRef:
+                    name: berg-discord-client
+                    key: clientId
+              {{- end }}
               - name: "AllowedHosts"
                 value: "{{ .Values.domains.berg | default .Values.domains.cluster }}"
             domain: {{ .Values.domains.berg | default .Values.domains.cluster }}
@@ -89,12 +103,12 @@ spec:
               botToken: ""
               notificationGuildId: "0"
               notificationChannelId: "0"
-              playerGuildId: "0"
-              playerRoleId: "0"
-              authorGuildId: "0"
-              authorRoleId: "0"
-              adminGuildId: "0"
-              adminRoleId: "0"
+              playerGuildId: {{ .Values.berg.discordAuth.playerGuildId | quote }}
+              playerRoleId: {{ .Values.berg.discordAuth.playerRoleId | quote }}
+              authorGuildId: {{ .Values.berg.discordAuth.authorGuildId | quote }}
+              authorRoleId: {{ .Values.berg.discordAuth.authorRoleId | quote }}
+              adminGuildId: {{ .Values.berg.discordAuth.adminGuildId | quote }}
+              adminRoleId: {{ .Values.berg.discordAuth.adminRoleId | quote }}
             redirectUris:
               - "https://{{ .Values.domains.berg | default .Values.domains.cluster }}/frontend/oidc-callback"
             ctf:

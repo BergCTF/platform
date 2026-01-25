@@ -22,3 +22,17 @@ resource "kubernetes_secret_v1" "berg_pull_secret" {
   }
   type = "kubernetes.io/dockerconfigjson"
 }
+
+resource "kubernetes_secret_v1" "berg_discord_client" {
+  lifecycle { enabled = var.berg.enabled }
+  metadata {
+    name      = "berg-discord-client"
+    namespace = kubernetes_namespace_v1.berg.metadata[0].name
+  }
+  binary_data = {
+    "clientId"     = var.berg_client_id
+    "clientSecret" = var.berg_client_secret
+  }
+  type = "Opaque"
+}
+
