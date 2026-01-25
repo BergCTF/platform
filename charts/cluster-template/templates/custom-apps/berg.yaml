@@ -120,8 +120,8 @@ spec:
               eventOrganiser: {{ .Values.ctf.organiser | quote }}
               eventLogoUrl: {{ .Values.ctf.logoUrl | quote }}
               challengeDomain: "challs.{{ .Values.domains.cluster }}"
-              start: "2025-09-29T18:00:00+02:00"
-              end: "2025-10-05T23:59:59+02:00"
+              start: {{ .Values.berg.ctf.start }}
+              end: {{ .Values.berg.ctf.end }}
               teams: false
               allowAnonymousAccess: {{ .Values.berg.anonymousAccess }}
               playerAttributes:

@@ -25,6 +25,9 @@ berg:
   anonymousAccess: false
   # chart version - defaults to Chart.AppVersion
   # version: 
+  ctf:
+    start: "2050-10-05T23:59:59+02:00"
+    end: "2099-10-05T23:59:59+02:00"
   oidc:
     enabled: true
   discordAuth:
