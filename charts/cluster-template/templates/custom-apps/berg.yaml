@@ -39,12 +39,20 @@ spec:
                   </section>
             {{- end }}
           gateway:
-            domain: {{ .Values.domains.berg | default .Values.domains.cluster }}
-            name: "gw-berg"
-            namespace: "berg"
-            httpListenerName: "http"
-            httpsListenerName: "https"
+            domain: challs.{{ .Values.domains.berg | default .Values.domains.cluster }}
+            {{- if eq .Values.gateway.type "kgateway" }}
+            name: gw-berg
+            namespace: berg
+            httpListenerName: http
+            httpsListenerName: https
             httpRouteRedirectListenerName: "http"
+            {{- else }}
+            name: traefik-gateway
+            namespace: infra-traefik
+            httpListenerName: web
+            httpsListenerName: websecure
+            httpRouteRedirectListenerName: "http-chall"
+            {{- end }}
             httpRouteListenerName: "https-chall"
             tlsRouteListenerName: "tls-chall"
           handout:

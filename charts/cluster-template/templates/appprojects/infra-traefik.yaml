@@ -1,0 +1,28 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: infra-traefik
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-traefik
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  description: deploy traefik to the infra-traefik namespace
+  clusterResourceWhitelist:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: networking.k8s.io
+      kind: IngressClass
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: gateway.networking.k8s.io
+      kind: GatewayClass
+  destinations:
+    - namespace: infra-traefik
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - https://traefik.github.io/charts

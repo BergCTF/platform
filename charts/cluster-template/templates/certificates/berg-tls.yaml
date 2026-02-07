@@ -18,4 +18,4 @@ spec:
   dnsNames:
     - {{ .Values.domains.cluster }}
     - "*.{{ .Values.domains.cluster }}"
-    - "*.chall.{{ .Values.domains.cluster }}"
+    - "*.challs.{{ .Values.domains.cluster }}"

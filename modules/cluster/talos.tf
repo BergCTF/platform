@@ -41,6 +41,25 @@ module "talos" {
     "0.0.0.0/0"
   ]
 
+  # since berg currently requires NodePort services for publicPort exposure, we need to expose the nodeport range to the internet :(
+  # 30000-32767
+  firewall_extra_rules = [
+    {
+      description = "node port tcp access for all nodes"
+      direction   = "in"
+      source_ips  = ["0.0.0.0/0"]
+      protocol    = "tcp"
+      port        = "30000-32767"
+    },
+    {
+      description = "node port udp access for all nodes"
+      direction   = "in"
+      source_ips  = ["0.0.0.0/0"]
+      protocol    = "udp"
+      port        = "30000-32767"
+    }
+  ]
+
   # we use kgateway
   cilium_helm_values = {
     ingressController = {

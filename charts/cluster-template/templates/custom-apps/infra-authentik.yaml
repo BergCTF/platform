@@ -104,6 +104,7 @@ spec:
               main:
                 enabled: true
                 parentRefs:
+                  {{- if eq .Values.gateway.type "kgateway" }}
                   - group: gateway.networking.k8s.io
                     kind: Gateway
                     name: gw-berg
@@ -111,9 +112,21 @@ spec:
                     sectionName: https
                   - group: gateway.networking.k8s.io
                     kind: Gateway
-                    name: berg
+                    name: gw-berg
                     namespace: berg
                     sectionName: http
+                  {{- else }}
+                  - group: gateway.networking.k8s.io
+                    kind: Gateway
+                    name: traefik
+                    namespace: infra-traefik
+                    sectionName: web
+                  - group: gateway.networking.k8s.io
+                    kind: Gateway
+                    name: traefik
+                    namespace: infra-traefik
+                    sectionName: websecure
+                  {{- end }}
                 hostnames:
                   - idp.{{ .Values.domains.cluster }}
           worker:

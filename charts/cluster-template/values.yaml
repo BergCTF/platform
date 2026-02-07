@@ -10,6 +10,10 @@ infra:
   # repo: git@github.com:example/infrastructure.git
   # path: manifests/<environment>
 
+gateway:
+  # should be kgateway once https://github.com/kgateway-dev/kgateway/issues/13397 is resolved
+  type: traefik
+
 ctf:
   name: My CTF
   description: |
