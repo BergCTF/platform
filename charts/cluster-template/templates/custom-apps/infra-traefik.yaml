@@ -1,0 +1,193 @@
+# I'd like to switch to kgateway but unfortunately 
+# they do not support TLS-wrapped TCP (mode: Terminate) for TLSRoutes
+# alas, we are stuck with Traefik
+{{- if eq .Values.gateway.type "traefik" }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-traefik
+  namespace: infra-argocd
+  labels:
+    app.kubernetes.io/name: helm-infra-argocd
+    app.kubernetes.io/component: infra-traefik
+    app.kubernetes.io/managed-by: helm-infra-argocd
+spec:
+  project: infra-traefik
+  destination:
+    namespace: infra-traefik
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - ServerSideApply=true
+  source:
+    repoURL: https://traefik.github.io/charts
+    chart: traefik
+    targetRevision: 37.1.1
+    helm:
+      valuesObject:
+        deployment:
+          enabled: true
+          kind: Deployment
+          replicas: 2
+        gateway:
+          enabled: true
+          name: "traefik-gateway"
+          listeners:
+            web:
+              port: 8000
+              protocol: HTTP
+              namespacePolicy:
+                from: All
+            websecure:
+              port: 8443
+              protocol: HTTPS
+              namespacePolicy:
+                from: All
+              certificateRefs:
+                - group: ''
+                  kind: Secret
+                  name: berg-gateway-tls
+              mode: Terminate
+            http-chall:
+              port: 1337
+              protocol: HTTP
+              namespacePolicy:
+                from: All
+            https-chall:
+              port: 1337
+              protocol: HTTPS
+              namespacePolicy:
+                from: All
+              certificateRefs:
+                - group: ''
+                  kind: Secret
+                  name: berg-gateway-tls
+              mode: Terminate
+            tls-chall:
+              port: 31337
+              protocol: TLS
+              namespacePolicy:
+                from: All
+              certificateRefs:
+                - group: ''
+                  kind: Secret
+                  name: berg-gateway-tls
+              mode: Terminate
+        gatewayClass:
+          enabled: true
+        service:
+          enabled: true
+          type: LoadBalancer
+          annotations:
+            load-balancer.hetzner.cloud/uses-proxyprotocol: "true"
+            load-balancer.hetzner.cloud/name: "traefik.{{ .Values.domains.cluster }}"
+            # load-balancer.hetzner.cloud/location: fsn1
+            # load-balancer.hetzner.cloud/use-private-ip: "true"
+          loadBalancerSourceRanges: []
+          externalIPs: []
+
+        ports:
+          web:
+            port: 8000
+            expose:
+              default: true
+            protocol: TCP
+            proxyProtocol:
+              trustedIPs:
+                - 10.0.0.0/16
+          websecure:
+            port: 8443
+            expose:
+              default: true
+            protocol: TCP
+            http3:
+              enabled: false
+            proxyProtocol:
+              trustedIPs:
+                - 10.0.0.0/16
+          http-chall:
+            protocol: TCP
+            port: 1337
+            exposedPort: 1337
+            nodePort: 30337
+            expose:
+              default: true
+            proxyProtocol:
+              trustedIPs:
+                - 10.0.0.0/16
+          tls-chall:
+            protocol: TCP
+            port: 31337
+            exposedPort: 31337
+            nodePort: 31337
+            expose:
+              default: true
+            proxyProtocol:
+              trustedIPs:
+                - 10.0.0.0/16
+
+        providers:
+          kubernetesCRD:
+            enabled: true
+            allowCrossNamespace: true
+            allowExternalNameServices: true
+          kubernetesIngress:
+            enabled: true
+            allowExternalNameServices: true
+            publishedService:
+              enabled: true
+          kubernetesGateway:
+            enabled: true
+            experimentalChannel: true
+
+        ingressRoute:
+          dashboard:
+            enabled: false
+
+        ingressClass:
+          enabled: true
+          isDefaultClass: true
+          name: traefik
+
+        logs:
+          general:
+            level: INFO
+          access:
+            enabled: false
+
+        {{- if .Values.observability.enabled }}
+        metrics:
+          prometheus:
+            enabled: true
+            addEntryPointsLabels: true
+            addServicesLabels: true
+        {{- end }}
+
+        globalArguments:
+          - "--global.checknewversion=false"
+          - "--global.sendanonymoususage=false"
+
+        persistence:
+          enabled: false
+
+        tlsOptions:
+          default:
+            sniStrict: false
+            alpnProtocols:
+              - http/1.1
+
+        tlsStore:
+          default:
+            defaultCertificate:
+              secretName: berg-gateway-tls
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 50Mi
+          limits:
+            cpu: 300m
+            memory: 150Mi
+{{- end }}

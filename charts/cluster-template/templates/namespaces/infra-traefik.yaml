@@ -1,0 +1,8 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infra-traefik
+  labels:
+    app.kubernetes.io/name: infra-traefik
+    app.kubernetes.io/component: infra
