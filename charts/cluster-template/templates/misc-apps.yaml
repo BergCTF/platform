@@ -18,7 +18,7 @@ spec:
   source:
     repoURL: https://charts.adfinis.com
     chart: misc-apps
-    targetRevision: 0.61.0
+    targetRevision: 0.64.0
     helm:
       valuesObject:
         fullnameOverride: infra
