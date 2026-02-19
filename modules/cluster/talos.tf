@@ -1,6 +1,6 @@
 module "talos" {
   source  = "hcloud-k8s/kubernetes/hcloud"
-  version = "3.20.1"
+  version = "3.22.0"
 
   cluster_name = "${var.env}-${var.governance_name}"
   hcloud_token = var.hetzner_token
