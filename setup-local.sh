@@ -60,10 +60,6 @@ EOL
 
 kubectl --context kind-berg-dev-cluster cluster-info
 
-echo "Pre-loading cilium image"
-docker pull quay.io/cilium/cilium:v1.17.4
-kind load docker-image --name=berg-dev-cluster quay.io/cilium/cilium:v1.17.4
-
 echo "Installing cilium"
 cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait cilium cilium/cilium -n cilium --version 1.17.4 --create-namespace -f -
 ipam:
@@ -94,7 +90,7 @@ hubble:
 EOF
 
 echo "Installing traefik"
-cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait traefik traefik/traefik --version v35.4.0 -n traefik --create-namespace -f -
+cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait traefik traefik/traefik --version 35.4.0 -n traefik --create-namespace -f -
 globalArguments:
   - "--global.checknewversion=false"
   - "--global.sendanonymoususage=false"
@@ -280,48 +276,6 @@ readReplicas:
     requests:
       cpu: "0.1"
       memory: "300Mi"
-EOF
-
-echo "Installing uptrace"
-
-kubectl --context kind-berg-dev-cluster apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
-cat <<EOF | helm --kube-context kind-berg-dev-cluster install -n uptrace --create-namespace uptrace uptrace/uptrace -f -
-ingress:
-  enabled: true
-  annotations:
-    cert-manager.io/cluster-issuer: mkcert
-  hosts:
-    - host: uptrace.localhost
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - hosts:
-        - uptrace.localhost
-      secretName: uptrace-tls
-otelcol:
-  enabled: false
-uptrace:
-  config:
-    site:
-      addr: 'https://uptrace.localhost'
-    projects:
-      - id: 1
-        name: Uptrace
-        token: uptrace_token
-        pinned_attrs:
-          - service_name
-          - host_name
-          - deployment_environment
-        group_by_env: false
-        group_funcs_by_service: false
-        prom_compat: true
-      - id: 2
-        name: Berg
-        token: berg_uptrace_token
-        pinned_attrs:
-          - service_name
-          - host_name
 EOF
 
 echo "Installing zot"
