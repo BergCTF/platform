@@ -6,7 +6,6 @@ import { BrowserModule, bootstrapApplication } from '@angular/platform-browser';
 import { AppRoutingModule } from './app/app-routing.module';
 import { FormsModule } from '@angular/forms';
 import { AngularDraggableModule } from 'angular2-draggable';
-import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideEchartsCore } from 'ngx-echarts';
 import { AppComponent } from './app/app.component';
 import { importProvidersFrom, inject, provideAppInitializer } from '@angular/core';
@@ -43,7 +42,6 @@ bootstrapApplication(AppComponent, {
                 secureRoutes: [window.location.origin + '/api']
             },
         }),
-        provideAnimations(),
         provideAppInitializer(() => {
             let dataService = inject(DataService);
             return dataService.loginEvents.pipe(take(1), mergeMap(loginResponse => {
