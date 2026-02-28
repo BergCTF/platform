@@ -8,7 +8,7 @@ import { FormsModule } from '@angular/forms';
 import { AngularDraggableModule } from 'angular2-draggable';
 import { provideEchartsCore } from 'ngx-echarts';
 import { AppComponent } from './app/app.component';
-import { importProvidersFrom, inject, provideAppInitializer } from '@angular/core';
+import { importProvidersFrom, inject, provideAppInitializer, provideZoneChangeDetection } from '@angular/core';
 import { DataService } from './app/services/data.service';
 import { catchError, mergeMap, NEVER, take } from 'rxjs';
 import * as echarts from 'echarts/core';
@@ -42,6 +42,7 @@ bootstrapApplication(AppComponent, {
                 secureRoutes: [window.location.origin + '/api']
             },
         }),
+        provideZoneChangeDetection(),
         provideAppInitializer(() => {
             let dataService = inject(DataService);
             return dataService.loginEvents.pipe(take(1), mergeMap(loginResponse => {
