@@ -33,8 +33,7 @@ public class WatchService(
     private async Task WatchConfig(CancellationToken cancellationToken)
     {
         logger.LogInformation("WatchConfig started");
-        using var configMapListResponse = kubernetes.CoreV1.ListNamespacedConfigMapWithHttpMessagesAsync(kubernetesConfig.Namespace, watch: true, cancellationToken: cancellationToken);
-        await foreach (var (type, item) in configMapListResponse.WatchAsync<V1ConfigMap, V1ConfigMapList>(cancellationToken: cancellationToken))
+        await foreach (var (type, item) in kubernetes.CoreV1.WatchListNamespacedConfigMapAsync(kubernetesConfig.Namespace, cancellationToken: cancellationToken))
         {
             logger.LogDebug("ConfigMap {} was {}", item.Name(), type);
         }
@@ -98,8 +97,7 @@ public class WatchService(
         logger.LogInformation("WatchInstanceNamespaces started");
         using var scope = serviceScopeFactory.CreateScope();
         var challengeService = scope.ServiceProvider.GetRequiredService<IChallengeService>();
-        using var nsListResponse = kubernetes.CoreV1.ListNamespaceWithHttpMessagesAsync(watch: true, labelSelector: ChallengeService.ToLabelSelector(ChallengeService.ChallengeNamespaceLabelSelector), cancellationToken: cancellationToken);
-        await foreach (var (type, item) in nsListResponse.WatchAsync<V1Namespace, V1NamespaceList>(cancellationToken: cancellationToken))
+        await foreach (var (type, item) in  kubernetes.CoreV1.WatchListNamespaceAsync(labelSelector: ChallengeService.ToLabelSelector(ChallengeService.ChallengeNamespaceLabelSelector), cancellationToken: cancellationToken))
         {
             logger.LogDebug("{} was {}", item.Name(), type);
             var playerId = Guid.Parse(item.GetLabel(ChallengeService.PlayerIdLabel));
@@ -118,8 +116,7 @@ public class WatchService(
         using var scope = serviceScopeFactory.CreateScope();
         var challengeService = scope.ServiceProvider.GetRequiredService<IChallengeService>();
         var labelSelector = ChallengeService.ChallengePodLabelSelector;
-        using var podListResponse = kubernetes.CoreV1.ListPodForAllNamespacesWithHttpMessagesAsync(watch: true, labelSelector: ChallengeService.ToLabelSelector(labelSelector), cancellationToken: cancellationToken);
-        await foreach (var (type, item) in podListResponse.WatchAsync<V1Pod, V1PodList>(cancellationToken: cancellationToken))
+        await foreach (var (type, item) in kubernetes.CoreV1.WatchListPodForAllNamespacesAsync(labelSelector: ChallengeService.ToLabelSelector(labelSelector), cancellationToken: cancellationToken))
         {
             if (type == WatchEventType.Added)
                 continue;
