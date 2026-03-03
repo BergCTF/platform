@@ -67,7 +67,7 @@ public class ChallengeService(
     public async Task<IEnumerable<V1Challenge>> GetChallenges(CancellationToken cancellationToken)
     {
         return (await _challengeClient
-            .ListNamespacedAsync<CustomResourceList<V1Challenge>>(kubernetesConfig.Namespace, cancellationToken)).Items;
+            .ListNamespacedAsync<CustomResourceList<V1Challenge>>(kubernetesConfig.Namespace, cancel: cancellationToken)).Items;
     }
 
     public async Task<V1Challenge?> GetChallenge(string challengeName, CancellationToken cancellationToken)
@@ -87,7 +87,7 @@ public class ChallengeService(
         using var activity = Constants.BergActivitySource.StartActivity();
 
         var challengeList = (await _challengeClient
-            .ListNamespacedAsync<CustomResourceList<V1Challenge>>(kubernetesConfig.Namespace, cancellationToken)).Items;
+            .ListNamespacedAsync<CustomResourceList<V1Challenge>>(kubernetesConfig.Namespace, cancel: cancellationToken)).Items;
 
         var now = DateTime.UtcNow;
         var pastWindow = now.Subtract(window);
@@ -217,9 +217,9 @@ public class ChallengeService(
 
         var serviceList = await kubernetes.ListNamespacedServiceAsync(ns.Name(), cancellationToken: cancellationToken);
         var httpRouteList = await _httpRouteClient
-            .ListNamespacedAsync<CustomResourceList<V1HTTPRoute>>(ns.Name(), cancellationToken);
+            .ListNamespacedAsync<CustomResourceList<V1HTTPRoute>>(ns.Name(), cancel: cancellationToken);
         var tlsRouteList = await _tlsRouteClient
-            .ListNamespacedAsync<CustomResourceList<V1Alpha2TLSRoute>>(ns.Name(), cancellationToken);
+            .ListNamespacedAsync<CustomResourceList<V1Alpha2TLSRoute>>(ns.Name(), cancel: cancellationToken);
 
         var services = new List<Service>();
         foreach (var container in challenge.Spec.Containers ?? [])

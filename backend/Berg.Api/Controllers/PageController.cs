@@ -20,7 +20,7 @@ public class PageController(Kubernetes kubernetes, KubernetesClientConfiguration
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<Page>>> ListPages(CancellationToken cancellationToken)
     {
-        var pages = await pageClient.ListNamespacedAsync<CustomResourceList<V1Page>>(kubernetesConfig.Namespace, cancellationToken);
+        var pages = await pageClient.ListNamespacedAsync<CustomResourceList<V1Page>>(kubernetesConfig.Namespace, cancel: cancellationToken);
         return pages.Items
             .Select(ToPage)
             .ToList();
