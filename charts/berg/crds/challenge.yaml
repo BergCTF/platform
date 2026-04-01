@@ -46,9 +46,6 @@ spec:
                   format: date-time
                 difficulty:
                   type: string
-                staticValue:
-                  type: number
-                  nullable: true
                 categories:
                   type: array
                   items:
@@ -196,7 +193,3 @@ spec:
         - name: Hidden Until
           type: date
           jsonPath: .spec.hideUntil
-        - name: Static Value
-          type: integer
-          description: The static value assigned to the challenge
-          jsonPath: .spec.staticValue

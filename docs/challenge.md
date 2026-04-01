@@ -30,14 +30,6 @@ spec:
     hideUntil: 2025-10-01T18:00:00+02:00
 ```
 
-## Static challenge values
-If you don't want a challenge to be affected by dynamic scoring, you can assign a fixed value like this:
-```yaml
-spec:
-    # ...
-    staticValue: 1337  # Lots of points for this one
-```
-
 ## Outbound traffic
 Challenges deny outbound traffic to the internet by default. To change this, you need to set `allowOutboundTraffic` to `true`.
 ```yaml

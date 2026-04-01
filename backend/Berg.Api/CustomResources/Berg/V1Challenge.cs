@@ -36,9 +36,6 @@ public class V1ChallengeSpec
     [JsonPropertyName("hideUntil")]
     public DateTime? HideUntil { get; set; }
 
-    [JsonPropertyName("staticValue")]
-    public int? StaticValue { get; set; }
-
     [JsonPropertyName("difficulty")]
     public string Difficulty { get; set; } = "";
 
