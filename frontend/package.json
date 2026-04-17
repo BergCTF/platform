@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "21.2.5",
-    "@angular/cli": "21.2.1",
+    "@angular/cli": "21.2.7",
     "@angular/compiler-cli": "21.2.1",
     "@angular/localize": "21.2.1",
     "typescript": "5.9.3"
