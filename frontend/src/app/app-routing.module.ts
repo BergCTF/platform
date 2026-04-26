@@ -12,7 +12,7 @@ import { ChallengeDetailComponent } from "./pages/challenge-detail/challenge-det
 import { DynamicPageComponent } from "./pages/dynamic-page/dynamic-page.component";
 import { TeamDetailComponent } from "./pages/team-detail/team-detail.component";
 import { TeamComponent } from "./pages/team/team.component";
-import { ScoreboardComponent } from "./pages/scoreboard/scoreboard.component";
+import { provideEchartsCore } from "ngx-echarts";
 import { ActivityComponent } from "./pages/activity/activity.component";
 import { combineLatest, map, Observable, of, take } from "rxjs";
 import { DataService } from "./services/data.service";
@@ -192,7 +192,13 @@ const routes: Routes = [
   },
   {
     path: "scoreboard",
-    component: ScoreboardComponent,
+    loadComponent: () =>
+      import("./pages/scoreboard").then((m) => m.ScoreboardComponent),
+    providers: [
+      provideEchartsCore({
+        echarts: import("./pages/scoreboard").then((m) => m.echarts),
+      }),
+    ],
     title: prefixedTitleResolver("Scoreboard"),
     canActivate: [playerAttributeGuard],
     runGuardsAndResolvers: "always",

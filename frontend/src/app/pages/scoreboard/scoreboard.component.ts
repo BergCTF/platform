@@ -6,8 +6,8 @@ import {
   NgbPaginationModule,
   NgbTooltipModule,
 } from "@ng-bootstrap/ng-bootstrap";
-import { EChartsCoreOption } from "echarts/core";
-import { SeriesOption } from "echarts/types/dist/shared";
+import type { EChartsCoreOption } from "echarts/core";
+import type { SeriesOption } from "echarts/types/dist/shared";
 import { NgxEchartsDirective } from "ngx-echarts";
 import {
   BehaviorSubject,
