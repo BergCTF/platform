@@ -146,6 +146,11 @@ postgresql:
 
 ```yaml
 discord:
+  existingSecret:
+    name: ""
+    clientIdKey: "clientId"
+    clientSecretKey: "clientSecret"
+    botTokenKey: "botToken"
   clientId: ""
   clientSecret: ""
   botToken: ""
@@ -154,6 +159,8 @@ discord:
 ```
 
 Credentials and settings for Discord-based notifications and authentication. See [Discord](discord.md)
+
+If `existingSecret.name` is set, `clientId`, `clientSecret`, and `botToken` are loaded from the referenced Kubernetes Secret via environment variables instead of the inline values. The `*Key` fields specify which keys within that Secret hold each credential.
 
 ---
 

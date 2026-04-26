@@ -60,7 +60,11 @@ data:
         "openTelemetryGrpcLoggingEndpoint": {{ .Values.berg.openTelemetry.grpc.loggingEndpoint | toJson }},
         "useKubernetesSecretKeyProvider": true,
       },
-      "discord": {{ .Values.berg.discord | toJson }},
+      {{- if .Values.berg.discord.existingSecret.name }}
+      "discord": {{ omit .Values.berg.discord "clientId" "clientSecret" "botToken" "existingSecret" | toJson }},
+      {{- else }}
+      "discord": {{ omit .Values.berg.discord "existingSecret" | toJson }},
+      {{- end }}
       "genericOpenId": {{ .Values.berg.genericOpenId | toJson }},
       "ctf": {{ .Values.berg.ctf | toJson }}
     }

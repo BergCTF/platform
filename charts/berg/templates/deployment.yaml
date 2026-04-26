@@ -63,6 +63,23 @@ spec:
                   name: {{ .Values.berg.postgresql.existingSecret.name | quote }}
                   key: {{ .Values.berg.postgresql.existingSecret.passwordKey | quote }}
           {{- end }}
+          {{- if .Values.berg.discord.existingSecret.name }}
+            - name: discord__ClientId
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.berg.discord.existingSecret.name | quote }}
+                  key: {{ .Values.berg.discord.existingSecret.clientIdKey | quote }}
+            - name: discord__ClientSecret
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.berg.discord.existingSecret.name | quote }}
+                  key: {{ .Values.berg.discord.existingSecret.clientSecretKey | quote }}
+            - name: discord__BotToken
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.berg.discord.existingSecret.name | quote }}
+                  key: {{ .Values.berg.discord.existingSecret.botTokenKey | quote }}
+          {{- end }}
           {{- with .Values.berg.extraEnv }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
