@@ -5,6 +5,8 @@ icon: simple/helm
 
 This document provides a complete reference for configuring the `berg` Helm chart. Each section below corresponds to values you can set in your `values.yaml` file.
 
+Note: you must properly configure at least one of `berg.discord` or `berg.genericOpenId`, or the API pod will fail to start with `System.InvalidOperationException: The redirection endpoint must be enabled to use the authorization code and implicit flows.`
+
 ---
 
 ## GatewayAPI Configuration
