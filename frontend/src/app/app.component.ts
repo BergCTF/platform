@@ -82,11 +82,11 @@ export class AppComponent implements OnInit, OnDestroy {
       window.matchMedia("(prefers-color-scheme: dark)").matches
     ) {
       document.documentElement.setAttribute("data-bs-theme", "dark");
-      localStorage.setItem("theme", "dark");
     } else {
       document.documentElement.setAttribute("data-bs-theme", theme);
-      localStorage.setItem("theme", theme);
     }
+
+    localStorage.setItem("theme", theme);
     this.theme = theme;
   }
 }

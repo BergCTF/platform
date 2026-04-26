@@ -6,8 +6,18 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link id="favicon" rel="shortcut icon" />
+    <script>
+      (function () {
+        let theme = localStorage.getItem("theme");
+        if (!theme || theme === "auto") {
+          theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        document.documentElement.setAttribute("data-bs-theme", theme);
+      })();
+    </script>
   </head>
   <body>
+    <div data-bs-theme="dark"><!-- force dark tokens to be inlined as critical css --></div>
     <app-root></app-root>
   </body>
 </html>
