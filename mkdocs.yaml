@@ -1,10 +1,10 @@
 ---
 site_name: Berg CTF Platform
-site_url: https://berg.norelect.ch
+site_url: https://bergctf.github.io/platform
 
-repo_name: norelect/berg
-repo_url: https://github.com/norelect/berg
-edit_uri: https://github.com/norelect/berg/edit/main/docs
+repo_name: BergCTF/platform
+repo_url: https://github.com/BergCTF/platform
+edit_uri: https://github.com/BergCTF/platform/edit/main/docs
 
 copyright: "&copy; 2026 NoRelect"
 
