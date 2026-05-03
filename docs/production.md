@@ -326,7 +326,7 @@ spec:
             allowAnonymousAccess: true
             scoring:
               numSolvesBeforeMinimum: 5
-    repoURL: ghcr.io/norelect/charts
+    repoURL: ghcr.io/bergctf/charts
     targetRevision: 5.0.2
 ```
 

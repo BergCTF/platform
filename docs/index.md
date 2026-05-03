@@ -6,10 +6,6 @@ Welcome to the documentation for the Berg CTF Platform.
 
 Berg is a platform for hosting jeopardy-style CTFs.
 
-!!! info
-    Berg is currently in private beta, please contact [`info@norelect.ch`](mailto:info@norelect.ch) if you're interested in getting access to the repository.
-
-
 ### Features
 * Based on Kubernetes, horizontally scaleable
 * Support for challenge instances

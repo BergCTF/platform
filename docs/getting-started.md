@@ -8,7 +8,7 @@ icon: lucide/power
 
 First, clone the Berg repository on your local machine:
 ```bash
-git clone git@github.com:NoRelect/berg && cd berg
+git clone git@github.com:bergctf/platform && cd platform
 ```
 Then, prepare the test cluster with:
 ```bash

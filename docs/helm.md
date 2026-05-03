@@ -44,7 +44,7 @@ frontend:
   enabled: true
   pullSecretName: ""
   image:
-    repository: "ghcr.io/norelect/berg/frontend"
+    repository: "ghcr.io/bergctf/platform/frontend"
     imagePullPolicy: IfNotPresent
     tag: ""
   resources:
