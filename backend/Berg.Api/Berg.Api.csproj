@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Discord.Net" Version="3.19.1" />
     <PackageReference Include="KubernetesClient" Version="19.0.2" />
-    <PackageReference Include="MediatR" Version="12.5.0" />
+    <PackageReference Include="MediatR" Version="14.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.7" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">
