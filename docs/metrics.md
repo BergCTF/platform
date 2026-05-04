@@ -3,7 +3,7 @@ icon: lucide/chart-spline
 ---
 # Metrics
 
-When onfiguring an OTEL endpoint in the berg chart values, the following
+When configuring an OTEL endpoint in the berg chart values, the following
 custom metrics get exported:
 
 - `berg_instances_started`

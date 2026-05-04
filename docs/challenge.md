@@ -141,3 +141,6 @@ root@nginx:/# cat /folder/flag.txt
 flag{test_flag_da3cdd0ac0f9}
 root@nginx:/#
 ```
+
+## Attachments
+See the dedicated [attachments](/attachments) page.
