@@ -61,7 +61,7 @@ public class ChallengeService(
 
     private readonly GenericClient _challengeClient = CustomResource.CreateGenericClient<V1Challenge>(kubernetes, false);
     private readonly GenericClient _httpRouteClient = CustomResource.CreateGenericClient<V1HTTPRoute>(kubernetes, false);
-    private readonly GenericClient _tlsRouteClient = CustomResource.CreateGenericClient<V1Alpha2TLSRoute>(kubernetes, false);
+    private readonly GenericClient _tlsRouteClient = CustomResource.CreateGenericClient<V1TLSRoute>(kubernetes, false);
     private readonly GenericClient _ciliumNetworkPolicyClient = CustomResource.CreateGenericClient<V2CiliumNetworkPolicy>(kubernetes, false);
 
     public async Task<IEnumerable<V1Challenge>> GetChallenges(CancellationToken cancellationToken)
@@ -219,7 +219,7 @@ public class ChallengeService(
         var httpRouteList = await _httpRouteClient
             .ListNamespacedAsync<CustomResourceList<V1HTTPRoute>>(ns.Name(), cancel: cancellationToken);
         var tlsRouteList = await _tlsRouteClient
-            .ListNamespacedAsync<CustomResourceList<V1Alpha2TLSRoute>>(ns.Name(), cancel: cancellationToken);
+            .ListNamespacedAsync<CustomResourceList<V1TLSRoute>>(ns.Name(), cancel: cancellationToken);
 
         var services = new List<Service>();
         foreach (var container in challenge.Spec.Containers ?? [])
@@ -711,7 +711,7 @@ public class ChallengeService(
             foreach (var tlsRoutePort in tlsRoutePorts)
             {
                 var serviceGuid = Guid.NewGuid();
-                var tlsRoute = new V1Alpha2TLSRoute()
+                var tlsRoute = new V1TLSRoute()
                 {
                     Metadata = new V1ObjectMeta
                     {
@@ -724,7 +724,7 @@ public class ChallengeService(
                             { HostnameLabel, $"{serviceGuid}" }
                         }
                     },
-                    Spec = new V1Alpha2TLSRouteSpec
+                    Spec = new V1TLSRouteSpec
                     {
                         Hostnames =
                         [

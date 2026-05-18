@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Berg.Api.CustomResources.GatewayApi;
 
-public class V1Alpha2TLSRouteRule
+public class V1TLSRouteRule
 {
     [JsonPropertyName("name")]
     public string Name { get; set; } = default!;
