@@ -90,7 +90,7 @@ hubble:
 EOF
 
 echo "Installing traefik"
-cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait traefik traefik/traefik --version 35.4.0 -n traefik --create-namespace -f -
+cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait traefik traefik/traefik --version 40.2.0 -n traefik --create-namespace -f -
 globalArguments:
   - "--global.checknewversion=false"
   - "--global.sendanonymoususage=false"
@@ -138,7 +138,6 @@ providers:
       enabled: true
   kubernetesGateway:
     enabled: true
-    experimentalChannel: true
 service:
   type: NodePort
 ports:
@@ -172,7 +171,7 @@ tlsOptions:
 EOF
 
 echo "Installing Gateway API CRDs"
-kubectl --context kind-berg-dev-cluster apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.0/experimental-install.yaml
+kubectl --context kind-berg-dev-cluster apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml
 
 echo "Installing cert-manager"
 helm --kube-context kind-berg-dev-cluster install --wait \

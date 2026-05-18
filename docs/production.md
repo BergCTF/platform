@@ -70,8 +70,8 @@ EOF
 ## Traefik
 
 ```sh
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/experimental-install.yaml
-cat <<EOF | helm install --wait traefik traefik/traefik --version v35.4.0 -n traefik --create-namespace -f -
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml
+cat <<EOF | helm install --wait traefik traefik/traefik --version 40.2.0 -n traefik --create-namespace -f -
 globalArguments:
   - "--global.checknewversion=false"
   - "--global.sendanonymoususage=false"
@@ -119,7 +119,6 @@ providers:
       enabled: true
   kubernetesGateway:
     enabled: true
-    experimentalChannel: true
 service:
   type: LoadBalancer
 ports:
