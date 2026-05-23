@@ -17,7 +17,7 @@ spec:
         <marquee>Supports HTML!</marquee>
     flag: flag{1337}                # The flag
     flagFormat: flag{...}           # Flag format shown to the user
-    categories: ["web", "rev"]      # Categories, fist one is the primary category
+    categories: ["web", "rev"]      # Categories, first one is the primary category
     tags: ["xss", "bot"]            # Challenge tags
     event: "Demo CTF"               # Allows for logical grouping of challenges by event
 ```
@@ -59,10 +59,69 @@ spec:
             memory: "400Mi"
 ```
 ### Ports
+
+Each container can expose ports to different audiences using the `ports` field:
+
+```yaml
+spec:
+  containers:
+    - name: app
+      # ...
+      ports:
+        - name: web          # Optional name, used to reference this port's URL
+          port: 8080
+          protocol: tcp
+          appProtocol: http
+          type: publicHttpRoute
+```
+
+The `type` field controls how the port is exposed:
+
+| Type | Description |
+|---|---|
+| `internalPort` | Reachable only within the cluster (default) |
+| `publicPort` | Exposed as a NodePort for direct TCP access |
+| `publicHttpRoute` | Exposed via HTTP Gateway with a unique subdomain per deployment |
+| `publicTlsRoute` | Exposed via TLS passthrough Gateway with a unique subdomain per deployment |
+
+For `publicHttpRoute` and `publicTlsRoute`, berg generates a random UUID subdomain each time the challenge is deployed (e.g. `550e8400-e29b-41d4-a716-446655440000.ctf.example.com`). If the port has a `name`, players can see the URL for that specific port.
+
 ### Dynamic flag settings
 See [below](#dynamic-flags)
+
 ### Capabilities
+
+By default, containers run without any additional Linux capabilities. You can grant extra capabilities with `additionalCapabilities`:
+
+```yaml
+spec:
+  containers:
+    - name: app
+      # ...
+      additionalCapabilities:
+        - NET_ADMIN
+        - SYS_PTRACE
+```
+
+Specify capability names without the `CAP_` prefix. Containers are never privileged, but `allowPrivilegeEscalation` is enabled to support setuid/setgid binaries.
+
+> [!NOTE]
+> When using an [executable dynamic flag](#executable-binary), berg automatically drops `CAP_DAC_OVERRIDE` to prevent root users from reading the flag binary. If your image requires `DAC_OVERRIDE`, add it to `additionalCapabilities` to override this behaviour.
+
 ### Bandwidth
+
+Berg limits per-container network bandwidth to protect shared infrastructure. The defaults are configured by the platform operator. You can override them per container:
+
+```yaml
+spec:
+  containers:
+    - name: app
+      # ...
+      egressBandwidth: "10M"   # Outbound limit (default: 1M)
+      ingressBandwidth: "10M"  # Inbound limit (default: 1M)
+```
+
+Values follow the Kubernetes resource quantity format: `K`, `M`, `G` for kilobits, megabits, and gigabits per second respectively.
 
 ## Dynamic Flags
 
@@ -143,4 +202,4 @@ root@nginx:/#
 ```
 
 ## Attachments
-See the dedicated [attachments](/attachments) page.
+See the dedicated [attachments](attachments) page.
