@@ -225,24 +225,29 @@ tlsOptions:
 EOF
 
 echo "Installing mock idp"
-cat <<'EOF' | helm --kube-context kind-berg-dev-cluster install --wait idp oci://ghcr.io/norelect/charts/mock-identity-provider --version 0.7.1 --create-namespace -n mock-idp -f -
-issuer: https://idp.localhost
-users:
-  - id: player
-    name: Player
-    email: player@mock.idp
-    roles:
-      - player
-  - id: author
-    name: Author
-    email: author@mock.idp
-    roles:
-      - author
-  - id: admin
-    name: Admin
-    email: admin@mock.idp
-    roles:
-      - admin
+cat <<'EOF' | helm --kube-context kind-berg-dev-cluster install --wait idp oci://ghcr.io/norelect/charts/mock-identity-provider --version 1.3.1 --create-namespace -n mock-idp -f -
+config:
+  issuer: https://idp.localhost
+  key_size: 2048
+  users:
+    - sub: player
+      claims:
+        name: Player
+        email: player@mock.idp
+        roles:
+          - player
+    - sub: author
+      claims:
+        name: Author
+        email: author@mock.idp
+        roles:
+          - author
+    - sub: admin
+      claims:
+        name: Admin
+        email: admin@mock.idp
+        roles:
+          - admin
 ingress:
   annotations:
     cert-manager.io/cluster-issuer: mkcert

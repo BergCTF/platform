@@ -61,7 +61,7 @@ berg:
     password: "password"
   genericOpenId:
     issuer: "https://idp.localhost"
-    internalIssuer: "http://idp-mock-identity-provider.mock-idp.svc.cluster.local:80"
+    internalIssuer: "http://idp-mock-identity-provider.mock-idp.svc.cluster.local:8000"
     clientId: "berg-client"
     clientSecret: "berg-client-secret"
     scopes:
@@ -72,6 +72,7 @@ berg:
       id: "sub"
       name: "name"
       email: "email"
+      role: "roles"
   openTelemetry:
     grpc:
       tracingEndpoint: http://uptrace.uptrace.svc.cluster.local:14317
