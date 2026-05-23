@@ -89,11 +89,60 @@ hubble:
             - hubble.localhost
 EOF
 
+echo "Installing Gateway API CRDs"
+kubectl --context kind-berg-dev-cluster apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml
+
+echo "Installing cert-manager"
+helm --kube-context kind-berg-dev-cluster install --wait \
+    cert-manager \
+    jetstack/cert-manager \
+    --version v1.17.2 \
+    --create-namespace \
+    --namespace cert-manager \
+    --set ingressShim.defaultIssuerName=mkcert \
+    --set ingressShim.defaultIssuerKind=ClusterIssuer \
+    --set crds.enabled=true
+
+echo "Creating traefik namespace"
+kubectl --context kind-berg-dev-cluster create namespace traefik
+
+echo "Deploying mkcert private key to cert-manager namespace"
+kubectl --context kind-berg-dev-cluster create secret tls mkcert --namespace cert-manager --cert="${XDG_DATA_HOME:-$HOME/.local/share}/mkcert/rootCA.pem" --key="${XDG_DATA_HOME:-$HOME/.local/share}/mkcert/rootCA-key.pem"
+
+# Configure mkcert ClusterIssuer and cert
+cat <<EOF | kubectl --context kind-berg-dev-cluster create -f -
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: mkcert
+spec:
+  ca:
+    secretName: mkcert
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: berg-gateway-cert
+  namespace: traefik
+spec:
+  secretName: berg-gateway-tls
+  commonName: localhost
+  dnsNames:
+    - "berg.localhost"
+    - "*.berg.localhost"
+  ipAddresses:
+    - 127.0.0.1
+  issuerRef:
+    name: mkcert
+    kind: ClusterIssuer
+EOF
+
+echo "Waiting for berg-gateway-tls secret to be issued"
+kubectl --context kind-berg-dev-cluster wait --for=jsonpath='{.status.conditions[?(@.type=="Ready")].status}'=True \
+    certificate/berg-gateway-cert -n traefik --timeout=120s
+
 echo "Installing traefik"
-cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait traefik traefik/traefik --version 40.2.0 -n traefik --create-namespace -f -
-globalArguments:
-  - "--global.checknewversion=false"
-  - "--global.sendanonymoususage=false"
+cat <<EOF | helm --kube-context kind-berg-dev-cluster install traefik traefik/traefik --version 40.2.0 -n traefik --create-namespace -f -
 gateway:
   enabled: true
   name: "traefik-gateway"
@@ -101,11 +150,13 @@ gateway:
     web:
       port: 8000
       protocol: HTTP
-      namespacePolicy: All
+      namespacePolicy:
+        from: All
     websecure:
       port: 8443
       protocol: HTTPS
-      namespacePolicy: All
+      namespacePolicy:
+        from: All
       certificateRefs:
         - kind: Secret
           name: berg-gateway-tls
@@ -113,11 +164,13 @@ gateway:
     http-chall:
       port: 1337
       protocol: HTTP
-      namespacePolicy: All
+      namespacePolicy:
+        from: All
     https-chall:
       port: 1337
       protocol: HTTPS
-      namespacePolicy: All
+      namespacePolicy:
+        from: All
       certificateRefs:
         - kind: Secret
           name: berg-gateway-tls
@@ -125,7 +178,8 @@ gateway:
     tls-chall:
       port: 31337
       protocol: TLS
-      namespacePolicy: All
+      namespacePolicy:
+        from: All
       certificateRefs:
         - kind: Secret
           name: berg-gateway-tls
@@ -168,51 +222,6 @@ tlsOptions:
     sniStrict: false
     alpnProtocols:
       - http/1.1
-EOF
-
-echo "Installing Gateway API CRDs"
-kubectl --context kind-berg-dev-cluster apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml
-
-echo "Installing cert-manager"
-helm --kube-context kind-berg-dev-cluster install --wait \
-    cert-manager \
-    jetstack/cert-manager \
-    --version v1.17.2 \
-    --create-namespace \
-    --namespace cert-manager \
-    --set ingressShim.defaultIssuerName=mkcert \
-    --set ingressShim.defaultIssuerKind=ClusterIssuer \
-    --set crds.enabled=true
-
-echo "Deploying mkcert private key to cert-manager namespace"
-kubectl --context kind-berg-dev-cluster create secret tls mkcert --namespace cert-manager --cert="${XDG_DATA_HOME:-$HOME/.local/share}/mkcert/rootCA.pem" --key="${XDG_DATA_HOME:-$HOME/.local/share}/mkcert/rootCA-key.pem"
-
-# Configure mkcert ClusterIssuer and cert
-cat <<EOF | kubectl --context kind-berg-dev-cluster create -f -
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: mkcert
-spec:
-  ca:
-    secretName: mkcert
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: berg-gateway-cert
-  namespace: traefik
-spec:
-  secretName: berg-gateway-tls
-  commonName: localhost
-  dnsNames:
-    - "berg.localhost"
-    - "*.berg.localhost"
-  ipAddresses:
-    - 127.0.0.1
-  issuerRef:
-    name: mkcert
-    kind: ClusterIssuer
 EOF
 
 echo "Installing mock idp"
