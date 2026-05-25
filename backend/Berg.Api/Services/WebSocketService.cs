@@ -88,24 +88,35 @@ public class WebSocketService(
                 else if (webSocketMessage.Type == "auth" &&
                     !connection.CancellationTokenSource.IsCancellationRequested)
                 {
-                    try
+                    var token = webSocketMessage.Message?.Deserialize<string?>();
+                    if (string.IsNullOrEmpty(token))
                     {
-                        var token = webSocketMessage.Message?.Deserialize<string?>();
-                        var principal = await openIddictValidationService.ValidateAccessTokenAsync(token ?? "", connection.CancellationTokenSource.Token);
-                        connection.PlayerId = Guid.Parse(principal.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-                        connection.ExpiresAt = principal.GetExpirationDate()?.UtcDateTime;
-                        logger.LogDebug("WebSocket connection {ConnectionId} was authenticated", connection.Id);
-                    }
-                    catch (Exception ex) {
-                        logger.LogDebug(ex, "Got exception during authentication");
                         connection.PlayerId = null;
+                        logger.LogDebug("WebSocket connection {ConnectionId} got empty token during auth call", connection.Id);
+                        await SendPlayerIdMessage(connection);
                     }
-                    // Report back the current authentication state
-                    await SendPlayerIdMessage(connection);
+                    else
+                    {
+                        try
+                        {
+                            var principal = await openIddictValidationService.ValidateAccessTokenAsync(token ?? "", connection.CancellationTokenSource.Token);
+                            connection.PlayerId = Guid.Parse(principal.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
+                            connection.ExpiresAt = principal.GetExpirationDate()?.UtcDateTime;
+                            logger.LogDebug("WebSocket connection {ConnectionId} was authenticated", connection.Id);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogDebug(ex, "WebSocket connection {ConnectionId} got exception during authentication", connection.Id);
+                            connection.PlayerId = null;
+                        }
+                        // Report back the current authentication state
+                        await SendPlayerIdMessage(connection);
+                    }
                 }
                 else
                 {
                     var messageBytes = SerializeMessage("error", "Invalid message type");
+                    logger.LogDebug("WebSocket connection {ConnectionId} got invalid message type: {WebSocketMessageType}", connection.Id, webSocketMessage.Type);
                     await SendMessage(connection, messageBytes);
                 }
             }
@@ -166,7 +177,7 @@ public class WebSocketService(
     {
         using var activity = Constants.BergActivitySource.StartActivity();
 
-        await connection.SendMessageSemaphore.WaitAsync().ConfigureAwait(false);;
+        await connection.SendMessageSemaphore.WaitAsync().ConfigureAwait(false); ;
         try
         {
             await connection.WebSocket.SendAsync(messageBytes, WebSocketMessageType.Text, true, CancellationToken.None);
@@ -231,7 +242,7 @@ public class WebSocketService(
         await _connectionSemaphore.WaitAsync();
         try
         {
-            if(_connections.Remove(connection))
+            if (_connections.Remove(connection))
             {
                 logger.LogDebug("WebSocket connection {ConnectionId} closed", connection.Id);
                 metrics.WebSocketStopped();
@@ -245,7 +256,8 @@ public class WebSocketService(
         try
         {
             await connection.WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection closed", CancellationToken.None);
-        } catch {}
+        }
+        catch { }
     }
 
     private static byte[] SerializeMessage<T>(string type, T message)
