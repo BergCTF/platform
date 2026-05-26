@@ -10,29 +10,28 @@ Below, you can find a sample configuration with explanations:
 
 ```yaml
 berg:
-  # Issuer URL. Berg will fetch .well-known/openid-configuration 
-  issuer: "https://idp.localhost/application/o/berg/"
-  # Issuer URL to be used on the server side, if differs
-  internalIssuer: "https://idp.localhost/application/o/berg/"
-  # OIDC Client ID
-  clientId: "berg"
-  # OIDC Client Secret
-  clientSecret: ""
-  # OIDC Scopes to request. You might need to add 'groups' here if your IDP requires it
-  scopes:
-    - "profile"
-    - "email"
-  # OIDC claim mappings, if your IDP returns different claim names
-  claims:
-   id: sub
-   name: name
-   email: email
-   role: role
-  # Role mappings based on the 'role' claim value
-  roles:
-    player: berg-player
-    admin: berg-admin
-    author: berg-author
+  genericOpenId:
+    # Issuer URL. Berg will fetch .well-known/openid-configuration 
+    issuer: "https://idp.localhost/application/o/berg/"
+    # OIDC Client ID
+    clientId: "berg"
+    # OIDC Client Secret
+    clientSecret: ""
+    # OIDC Scopes to request. You might need to add 'groups' here if your IDP requires it
+    scopes:
+      - "profile"
+      - "email"
+    # OIDC claim mappings, if your IDP returns different claim names
+    claims:
+      id: sub
+      name: name
+      email: email
+      role: role
+    # Role mappings based on the 'role' claim value
+    roles:
+      player: berg-player
+      admin: berg-admin
+      author: berg-author
 ```
 
 

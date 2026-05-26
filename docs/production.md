@@ -36,20 +36,15 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='--flannel-backend=none --disabl
 ## Helm preparation
 
 ```sh
-helm repo add dex https://charts.dexidp.io
-helm repo add jetstack https://charts.jetstack.io
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
 helm repo add cilium https://helm.cilium.io/
 helm repo add traefik https://traefik.github.io/charts
-helm repo add uptrace https://charts.uptrace.dev
 helm repo update
 ```
 
 ## Cilium
 
 ```sh
-cat <<EOF | helm install --wait cilium cilium/cilium -n cilium --version 1.17.4 --create-namespace -f -
+cat <<EOF | helm install --wait cilium cilium/cilium -n cilium --version 1.19.4 --create-namespace -f -
 ipam:
   mode: kubernetes
 operator:
@@ -72,9 +67,6 @@ EOF
 ```sh
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml
 cat <<EOF | helm install --wait traefik traefik/traefik --version 40.2.0 -n traefik --create-namespace -f -
-globalArguments:
-  - "--global.checknewversion=false"
-  - "--global.sendanonymoususage=false"
 gateway:
   enabled: true
   name: "traefik-gateway"
@@ -82,11 +74,13 @@ gateway:
     web:
       port: 8000
       protocol: HTTP
-      namespacePolicy: All
+      namespacePolicy:
+        from: All
     websecure:
       port: 8443
       protocol: HTTPS
-      namespacePolicy: All
+      namespacePolicy:
+        from: All
       certificateRefs:
         - kind: Secret
           name: berg-gateway-tls
@@ -94,11 +88,13 @@ gateway:
     http-chall:
       port: 1337
       protocol: HTTP
-      namespacePolicy: All
+      namespacePolicy:
+        from: All
     https-chall:
       port: 1337
       protocol: HTTPS
-      namespacePolicy: All
+      namespacePolicy:
+        from: All
       certificateRefs:
         - kind: Secret
           name: berg-gateway-tls
@@ -106,7 +102,8 @@ gateway:
     tls-chall:
       port: 31337
       protocol: TLS
-      namespacePolicy: All
+      namespacePolicy:
+        from: All
       certificateRefs:
         - kind: Secret
           name: berg-gateway-tls
@@ -161,15 +158,15 @@ Alternatively, you can also use `certbot` and do it manually:
 ```sh
 certbot certonly --manual --preferred-challenges=dns -d '*.ctf.yourdomain.example' -d 'ctf.yourdomain.example'
 
-k3s kubectl create secret tls -n traefik berg-gateway-tls --cert=/etc/letsencrypt/live/ctf.yourdomain.example/fullchain.pem --key=/etc/letsencrypt/live/ctf.yourdomain.example/privkey.pem
+kubectl create secret tls -n traefik berg-gateway-tls --cert=/etc/letsencrypt/live/ctf.yourdomain.example/fullchain.pem --key=/etc/letsencrypt/live/ctf.yourdomain.example/privkey.pem
 ```
 
 ## ArgoCD
 
 ```sh
-k3s kubectl create namespace argocd
-k3s kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-cat <<EOF | k3s kubectl apply -n argocd -f -
+kubectl create namespace argocd
+kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+cat <<EOF | kubectl apply -n argocd -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -242,10 +239,11 @@ spec:
   source:
     chart: cloudnative-pg
     repoURL: https://cloudnative-pg.github.io/charts
-    targetRevision: 0.24.0
+    targetRevision: 0.28.2
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
+      - ServerSideApply=true
 ```
 
 ```yaml
@@ -268,7 +266,7 @@ spec:
           storage:
             size: 15Gi
     repoURL: https://cloudnative-pg.github.io/charts
-    targetRevision: 0.3.1
+    targetRevision: 0.6.1
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
@@ -326,7 +324,7 @@ spec:
             scoring:
               numSolvesBeforeMinimum: 5
     repoURL: ghcr.io/bergctf/charts
-    targetRevision: 5.0.2
+    targetRevision: 6.0.0
 ```
 
 ### Pull Secret
