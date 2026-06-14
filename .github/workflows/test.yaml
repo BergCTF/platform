@@ -2,8 +2,7 @@
 name: Test
 
 on:
-  push:
-    branches: [main]
+  pull_request:
 
 jobs:
   test:
@@ -25,16 +24,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Build and push Berg API
-        if: steps.semrel.outputs.version != ''
+      - name: Build Berg API
         id: berg-api-docker
         uses: docker/build-push-action@v7
         with:
           context: backend
           file: backend/Berg.Api/Dockerfile
 
-      - name: Build and push Berg Frontend
-        if: steps.semrel.outputs.version != ''
+      - name: Build Berg Frontend
         id: berg-frontend-docker
         uses: docker/build-push-action@v7
         with:
