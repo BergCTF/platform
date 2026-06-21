@@ -25,7 +25,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
     <PackageReference Include="OrasProject.Oras" Version="0.5.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.2" />
     <PackageReference Include="OpenIddict.AspNetCore" Version="7.5.0" />
     <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="7.5.0" />
     <PackageReference Include="OpenIddict.Quartz" Version="7.5.0" />
