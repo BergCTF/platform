@@ -22,7 +22,7 @@ jobs:
       id-token: none
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Build Berg API
         id: berg-api-docker
