@@ -32,7 +32,7 @@ const challengeTitleResolver: ResolveFn<string> = (
     map((params) => {
       const [metadata, challenge] = params;
       if (challenge) {
-        return `${metadata.eventName} - Challenge: ${challenge.challenge.name}`;
+        return `${metadata.eventName} - Challenge: ${challenge.challenge.displayName || challenge.challenge.name}`;
       }
       return `${metadata.eventName} - Challenge: Not Found`;
     }),
