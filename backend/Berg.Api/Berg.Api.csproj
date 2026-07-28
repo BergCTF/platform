@@ -24,12 +24,12 @@
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.17.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.17.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.17.0" />
-    <PackageReference Include="OrasProject.Oras" Version="0.6.0" />
+    <PackageReference Include="OrasProject.Oras" Version="0.7.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
     <PackageReference Include="OpenIddict.AspNetCore" Version="7.6.0" />
     <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="7.6.0" />
     <PackageReference Include="OpenIddict.Quartz" Version="7.6.0" />
-    <PackageReference Include="Quartz.AspNetCore" Version="3.18.2" />
+    <PackageReference Include="Quartz.AspNetCore" Version="3.19.0" />
     <PackageReference Include="UUIDNext" Version="4.2.4" />
   </ItemGroup>
 
