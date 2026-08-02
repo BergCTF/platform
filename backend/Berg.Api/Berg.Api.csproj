@@ -29,7 +29,7 @@
     <PackageReference Include="OpenIddict.AspNetCore" Version="7.6.0" />
     <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="7.6.0" />
     <PackageReference Include="OpenIddict.Quartz" Version="7.6.0" />
-    <PackageReference Include="Quartz.AspNetCore" Version="3.19.0" />
+    <PackageReference Include="Quartz.AspNetCore" Version="3.19.1" />
     <PackageReference Include="UUIDNext" Version="4.2.4" />
   </ItemGroup>
 
