@@ -17,7 +17,7 @@ public class RefreshService(
             using var activity = Constants.BergActivitySource.StartActivity("Refresh");
             using var scope = serviceScopeFactory.CreateScope();
             var challengeService = scope.ServiceProvider.GetRequiredService<IChallengeService>();
-            await challengeService.CheckChallengeInstanceTimeout(stoppingToken);
+            // await challengeService.CheckChallengeInstanceTimeout(stoppingToken);
             await challengeService.CheckNewlyUnhiddenChallenges(window, stoppingToken);
             await webSocketService.DowngradeExpiredConnections(stoppingToken);
             activity?.Stop();

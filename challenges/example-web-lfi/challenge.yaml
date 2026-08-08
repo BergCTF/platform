@@ -6,6 +6,7 @@ metadata:
 spec:
   author: NoRelect
   flag: bergctf{4n_3x4mpl3_lf1_ch4ll3ng3!}
+  flagFormat: bergctf{...}
   description: An example challenge demonstrating an LFI web challenge.
   difficulty: baby
   categories:
@@ -16,7 +17,7 @@ spec:
   event: Berg CTF
   containers:
     - hostname: example-web-lfi
-      image: kind.localhost/challenges/example-web-lfi:local
+      image: localhost:5001/challenges/example-web-lfi:local
       ports:
         - port: 5000
           protocol: tcp

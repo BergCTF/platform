@@ -34,7 +34,7 @@ public class V1ChallengeSpec
     public V1DynamicFlagMode DynamicFlagMode { get; set; } = V1DynamicFlagMode.Suffix;
 
     [JsonPropertyName("hideUntil")]
-    public DateTime? HideUntil { get; set; }
+    public DateTimeOffset? HideUntil { get; set; }
 
     [JsonPropertyName("difficulty")]
     public string Difficulty { get; set; } = "";
