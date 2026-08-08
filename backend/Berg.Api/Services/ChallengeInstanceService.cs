@@ -39,7 +39,7 @@ public class ChallengeInstanceService(
     public async Task<IEnumerable<V1ChallengeInstance>> GetChallengeInstances(CancellationToken cancellationToken)
     {
         return (await _challengeInstanceClient
-            .ListAsync<CustomResourceList<V1ChallengeInstance>>(cancellationToken)).Items;
+            .ListAsync<CustomResourceList<V1ChallengeInstance>>(cancellationToken.ToString())).Items;
     }
 
     public async Task<V1ChallengeInstance?> GetChallengeInstance(Guid playerId, CancellationToken cancellationToken)
