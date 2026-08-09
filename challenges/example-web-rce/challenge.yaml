@@ -17,7 +17,7 @@ spec:
   event: Berg CTF
   containers:
     - hostname: example-web-rce
-      image: localhost:5001/challenges/example-web-rce:local
+      image: kind.localhost/challenges/example-web-rce:local
       ports:
         - port: 5000
           protocol: tcp
