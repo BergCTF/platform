@@ -3,20 +3,20 @@
 set -e
 
 echo "Build images"
-docker build -t localhost:5001/berg/api:local -f backend/Berg.Api/Dockerfile backend
-docker build -t localhost:5001/berg/frontend:local -f frontend/Dockerfile frontend
+docker build -t kind.localhost/berg/api:local -f backend/Berg.Api/Dockerfile backend
+docker build -t kind.localhost/berg/frontend:local -f frontend/Dockerfile frontend
 echo "Transfer berg images"
-docker push localhost:5001/berg/api:local
-docker push localhost:5001/berg/frontend:local
+kind load docker-image --name=berg-dev-cluster kind.localhost/berg/api:local
+kind load docker-image --name=berg-dev-cluster kind.localhost/berg/frontend:local
 
 echo "Building handouts and challenge images"
-docker build -t localhost:5001/challenges/handouts:local -f challenges/Dockerfile challenges
-docker build -t localhost:5001/challenges/example-web-lfi:local -f challenges/example-web-lfi/challenge-src/Dockerfile challenges/example-web-lfi/challenge-src
-docker build -t localhost:5001/challenges/example-web-rce:local -f challenges/example-web-rce/challenge-src/Dockerfile challenges/example-web-rce/challenge-src
+docker build -t kind.localhost/challenges/handouts:local -f challenges/Dockerfile challenges
+docker build -t kind.localhost/challenges/example-web-lfi:local -f challenges/example-web-lfi/challenge-src/Dockerfile challenges/example-web-lfi/challenge-src
+docker build -t kind.localhost/challenges/example-web-rce:local -f challenges/example-web-rce/challenge-src/Dockerfile challenges/example-web-rce/challenge-src
 echo "Transfer handouts and challenge images"
-docker push localhost:5001/challenges/handouts:local
-docker push localhost:5001/challenges/example-web-lfi:local
-docker push localhost:5001/challenges/example-web-rce:local
+kind load docker-image --name=berg-dev-cluster kind.localhost/challenges/handouts:local
+kind load docker-image --name=berg-dev-cluster kind.localhost/challenges/example-web-lfi:local
+kind load docker-image --name=berg-dev-cluster kind.localhost/challenges/example-web-rce:local
 
 cd charts/berg
 echo "Uninstalling berg"
@@ -34,16 +34,16 @@ gateway:
   tlsRouteListenerName: "tls-chall"
 frontend:
   image:
-    repository: "localhost:5001/berg/frontend"
+    repository: "kind.localhost/berg/frontend"
     tag: local
 handout:
   enabled: false
   image:
-    repository: "localhost:5001/challenges/handouts"
+    repository: "kind.localhost/challenges/handouts"
     tag: local
 berg:
   image:
-    repository: "localhost:5001/berg/api"
+    repository: "kind.localhost/berg/api"
     imagePullPolicy: Always
     tag: local
   domain: berg.localhost

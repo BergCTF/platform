@@ -29,14 +29,6 @@ helm repo add uptrace https://charts.uptrace.dev
 helm repo add project-zot http://zotregistry.dev/helm-charts
 helm repo update
 
-reg_name='kind-registry'
-reg_port='5001'
-if [ "$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true)" != 'true' ]; then
-  docker run \
-    -d --restart=always -p "127.0.0.1:${reg_port}:5000" --network bridge --name "${reg_name}" \
-    registry:2
-fi
-
 echo "Recreating kind cluster"
 kind delete cluster --name=berg-dev-cluster || echo "Nothing to delete"
 cat << EOL | kind create cluster --config=-
@@ -64,42 +56,9 @@ nodes:
     hostPort: 31337
     listenAddress: "127.0.0.1"
     protocol: TCP
-containerdConfigPatches:
-- |-
-  [plugins."io.containerd.grpc.v1.cri".registry]
-    config_path = "/etc/containerd/certs.d"
 EOL
 
 kubectl --context kind-berg-dev-cluster cluster-info
-
-REGISTRY_DIR="/etc/containerd/certs.d/localhost:${reg_port}"
-for node in $(kind get nodes -n berg-dev-cluster); do
-  docker exec "${node}" mkdir -p "${REGISTRY_DIR}"
-  cat <<EOF | docker exec -i "${node}" cp /dev/stdin "${REGISTRY_DIR}/hosts.toml"
-[host."http://${reg_name}:5000"]
-EOF
-done
-
-if [ "$(docker inspect -f='{{json .NetworkSettings.Networks.kind}}' "${reg_name}")" = 'null' ]; then
-  docker network connect "kind" "${reg_name}"
-fi
-
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: local-registry-hosting
-  namespace: kube-public
-data:
-  localRegistryHosting.v1: |
-    host: "localhost:${reg_port}"
-    help: "https://kind.sigs.k8s.io/docs/user/local-registry/"
-EOF
-
-echo "Pre-loading cilium image"
-docker pull quay.io/cilium/cilium:v1.17.4
-docker tag quay.io/cilium/cilium:v1.17.4 localhost:5001/cilium:v1.17.4
-docker push localhost:5001/cilium:v1.17.4
 
 echo "Installing cilium"
 cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait cilium cilium/cilium -n cilium --version 1.17.4 --create-namespace -f -
