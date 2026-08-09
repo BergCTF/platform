@@ -70,9 +70,6 @@ public class ChallengeInstanceService(
         if ((challenge.Spec.Containers?.Count ?? 0) == 0)
             throw new ArgumentException("Challenge can't be instantiated");
 
-        // Create challenge instance for player
-        // TODO: configurable challengeInstanceClass
-        // TODO: custom timeout
         string? dynamicFlag = null;
         if (challenge.Spec.SupportsDynamicFlags)
         {
