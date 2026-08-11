@@ -38,7 +38,7 @@ public class ChallengeController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<Challenge>>> ListChallenges(CancellationToken cancellationToken)
     {
-        var utcNow = DateTime.UtcNow;
+        var utcNow = DateTimeOffset.UtcNow;
         var isAdmin = User.HasClaim(OpenIddictConstants.Claims.Role, Constants.Roles.Admin);
 
         if (utcNow < ctfConfig.Start && !isAdmin)

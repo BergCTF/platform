@@ -13,9 +13,10 @@ using Instance = Berg.Api.Models.Instance;
 namespace Berg.Api.Controllers;
 
 [ApiController]
-[ApiExplorerSettings(GroupName="berg-api")]
+[ApiExplorerSettings(GroupName = "berg-api")]
 public class InstanceController(
     IChallengeService challengeService,
+    IChallengeInstanceService challengeInstanceService,
     BergDbContext bergDbContext,
     CtfConfig ctfConfig) : ControllerBase
 {
@@ -31,7 +32,8 @@ public class InstanceController(
     [ProducesResponseType(typeof(List<Instance>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<Instance>>> GetAllChallengeInstances(CancellationToken cancel)
     {
-        return await challengeService.GetChallengeInstances(cancel);
+        var instances = await challengeInstanceService.GetChallengeInstances(cancel);
+        return instances.Select(cr => Instance.FromCR(cr)).ToList();
     }
 
     [HttpGet]
@@ -55,10 +57,16 @@ public class InstanceController(
     [Route("/api/instances/current")]
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(typeof(Instance), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Instance>> GetChallengeInstance(CancellationToken cancel)
     {
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-        return await challengeService.GetChallengeInstance(playerId, cancel);
+        var ci = await challengeInstanceService.GetChallengeInstance(playerId, cancel);
+        if (ci == null)
+        {
+            return NotFound();
+        }
+        return Instance.FromCR(ci);
     }
 
     [HttpPost]
@@ -71,7 +79,8 @@ public class InstanceController(
     {
         if (string.IsNullOrEmpty(startRequest.Challenge))
         {
-            return BadRequest(new ProblemDetails{
+            return BadRequest(new ProblemDetails
+            {
                 Title = "Bad request",
                 Detail = "Challenge can't be null"
             });
@@ -99,7 +108,8 @@ public class InstanceController(
             });
         }
 
-        return await challengeService.StartChallengeInstance(playerId, challenge, cancel);
+        var ci = await challengeInstanceService.CreateChallengeInstance(playerId, challenge, cancel);
+        return Instance.FromCR(ci);
     }
 
     [HttpDelete]
@@ -109,6 +119,9 @@ public class InstanceController(
     public async Task<ActionResult<Instance>> StopChallengeInstance(CancellationToken cancel)
     {
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-        return await challengeService.StopChallengeInstance(playerId, cancel);
+        var ci = await challengeInstanceService.DeleteChallengeInstance(playerId, cancel);
+        var instance = Instance.FromCR(ci);
+        instance.InstanceState = InstanceState.Terminating;
+        return instance;
     }
 }

@@ -37,13 +37,14 @@ frontend:
     repository: "kind.localhost/berg/frontend"
     tag: local
 handout:
-  enabled: true
+  enabled: false
   image:
     repository: "kind.localhost/challenges/handouts"
     tag: local
 berg:
   image:
     repository: "kind.localhost/berg/api"
+    imagePullPolicy: Always
     tag: local
   domain: berg.localhost
   pullSecretName: ""

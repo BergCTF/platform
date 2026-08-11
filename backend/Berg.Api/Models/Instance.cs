@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Berg.Api.CustomResources.Berg;
 
 namespace Berg.Api.Models;
 
@@ -27,6 +28,52 @@ public class Instance
 
     [JsonPropertyName("terminatedAt")]
     public DateTime? TerminatedAt { get; set; }
+
+    public static Instance FromCR(V1ChallengeInstance cr)
+    {
+        return new Instance
+        {
+            ChallengeName = cr.Spec.ChallengeRef.Name,
+            PlayerId = cr.Spec.OwnerId,
+            Id = cr.Status?.InstanceId,
+            InstanceState = Instance.ToInstanceState(cr.Status?.Phase),
+            Services = cr.Status?.Services?.Select(s => Instance.ToService(s)).ToList() ?? [],
+
+            // Timeout = (StartedAt + Spec.Timeout)
+            // Maybe there's a more idiomatic way to parse this.
+            Timeout = cr.Status?.StartedAt.HasValue == true && cr.Spec.Timeout != null
+                ? cr.Status.StartedAt.Value + TimeSpan.Parse(cr.Spec.Timeout)
+                : null,
+            StartedAt = cr.Status?.StartedAt,
+            TerminatedAt = cr.Status?.TerminatedAt
+        };
+    }
+
+    private static InstanceState ToInstanceState(V1ChallengeInstancePhase? phase) => phase switch
+    {
+        V1ChallengeInstancePhase.Pending => InstanceState.Starting,
+        V1ChallengeInstancePhase.Creating => InstanceState.Starting,
+        V1ChallengeInstancePhase.Starting => InstanceState.Starting,
+        V1ChallengeInstancePhase.Running => InstanceState.Running,
+        V1ChallengeInstancePhase.Terminating => InstanceState.Terminating,
+        V1ChallengeInstancePhase.Terminated => InstanceState.None,
+        V1ChallengeInstancePhase.Failed => InstanceState.None,
+        // default to Starting if nothing is set, controller is not running or hasn't seen the challenge yet
+        _ => InstanceState.Starting
+    };
+
+    private static Service ToService(V1ChallengeInstanceStatusService service)
+    {
+        return new Service
+        {
+            Name = service.Name,
+            Hostname = service.Hostname,
+            Port = service.Port,
+            Protocol = service.Protocol.ToLower(),
+            AppProtocol = service.AppProtocol?.ToLower() ?? "tcp",
+            Tls = service.Tls ?? false
+        };
+    }
 }
 
 public enum InstanceState
@@ -57,3 +104,5 @@ public class Service
     [JsonPropertyName("tls")]
     public bool Tls { get; set; } = false;
 }
+
+

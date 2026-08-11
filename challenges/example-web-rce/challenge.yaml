@@ -6,6 +6,7 @@ metadata:
 spec:
   author: NoRelect
   flag: bergctf{4n_3x4mpl3_rc3_ch4ll3ng3!}
+  flagFormat: bergctf{...}
   description: An example challenge demonstrating an RCE web challenge.
   difficulty: baby
   categories:

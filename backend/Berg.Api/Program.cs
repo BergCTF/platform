@@ -44,6 +44,7 @@ builder.Services.AddWebSockets(options =>
     options.KeepAliveInterval = TimeSpan.FromSeconds(15);
 });
 builder.Services.AddScoped<IChallengeService, ChallengeService>();
+builder.Services.AddScoped<IChallengeInstanceService, ChallengeInstanceService>();
 builder.Services.AddSingleton<IWebSocketService, WebSocketService>();
 builder.Services.AddSingleton<IDynamicFlagExecutableService, DynamicFlagExecutableService>();
 builder.Services.AddHostedService<WatchService>();
