@@ -19,9 +19,9 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageReference Include="Npgsql.OpenTelemetry" Version="10.0.3" />
-    <PackageReference Include="OpenTelemetry" Version="1.19.0" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.19.0" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.19.0" />
+    <PackageReference Include="OpenTelemetry" Version="1.19.1" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.19.1" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.19.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.19.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.19.0" />
     <PackageReference Include="OrasProject.Oras" Version="0.8.0" />
@@ -29,7 +29,7 @@
     <PackageReference Include="OpenIddict.AspNetCore" Version="7.7.1" />
     <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="7.7.1" />
     <PackageReference Include="OpenIddict.Quartz" Version="7.7.1" />
-    <PackageReference Include="Quartz.AspNetCore" Version="4.1.1" />
+    <PackageReference Include="Quartz.AspNetCore" Version="4.2.0" />
     <PackageReference Include="UUIDNext" Version="4.2.4" />
   </ItemGroup>
 
