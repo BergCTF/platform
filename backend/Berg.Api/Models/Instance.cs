@@ -39,12 +39,8 @@ public class Instance
             InstanceState = Instance.ToInstanceState(cr.Status?.Phase),
             Services = cr.Status?.Services?.Select(s => Instance.ToService(s)).ToList() ?? [],
 
-            // Timeout = (StartedAt + Spec.Timeout)
-            // Maybe there's a more idiomatic way to parse this.
-            Timeout = cr.Status?.StartedAt.HasValue == true && cr.Spec.Timeout != null
-                ? cr.Status.StartedAt.Value + TimeSpan.Parse(cr.Spec.Timeout)
-                : null,
             StartedAt = cr.Status?.StartedAt,
+            Timeout = cr.Status?.ExpiresAt,
             TerminatedAt = cr.Status?.TerminatedAt
         };
     }
