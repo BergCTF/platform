@@ -222,7 +222,8 @@ public static class OpenIddictBuilder
                             AuthorizationEndpoint = new Uri("https://discord.com/oauth2/authorize"),
                             RevocationEndpoint = new Uri("https://discord.com/api/oauth2/token/revoke"),
                             TokenEndpoint = new Uri("https://discord.com/api/oauth2/token"),
-                            UserInfoEndpoint = new Uri("https://discord.com/api/users/@me")
+                            UserInfoEndpoint = new Uri("https://discord.com/api/users/@me"),
+                            AuthorizationResponseIssParameterSupported = true,
                         },
                         RedirectUri = new Uri(Constants.Endpoints.FederationCallback, UriKind.RelativeOrAbsolute)
                     };
@@ -349,7 +350,7 @@ public static class OpenIddictBuilder
         {
             bergApp.RedirectUris.Add(new Uri(redirectUri));
         }
-        
+
         var postLogoutRedirectUris = infraConfig.PostLogoutRedirectUris ?? [];
         foreach (var redirectUri in postLogoutRedirectUris)
         {
