@@ -39,7 +39,7 @@ public class ChallengeInstanceService(
     public async Task<IEnumerable<V1ChallengeInstance>> GetChallengeInstances(CancellationToken cancellationToken)
     {
         return (await _challengeInstanceClient
-            .ListAsync<CustomResourceList<V1ChallengeInstance>>(cancellationToken.ToString())).Items;
+            .ListNamespacedAsync<CustomResourceList<V1ChallengeInstance>>(kubernetesConfig.Namespace, cancellationToken.ToString())).Items;
     }
 
     public async Task<V1ChallengeInstance?> GetChallengeInstance(Guid playerId, CancellationToken cancellationToken)
@@ -48,7 +48,7 @@ public class ChallengeInstanceService(
         logger.LogDebug("looking for challenge instance for player {}", playerId);
         try
         {
-            return await _challengeInstanceClient.ReadAsync<V1ChallengeInstance>(playerId.ToString(), cancellationToken);
+            return await _challengeInstanceClient.ReadNamespacedAsync<V1ChallengeInstance>(kubernetesConfig.Namespace, playerId.ToString(), cancellationToken);
         }
         catch (Exception ex)
         {
@@ -153,7 +153,7 @@ public class ChallengeInstanceService(
                 Flag = dynamicFlag ?? challenge.Spec.Flag
             }
         };
-        challengeInstance = await _challengeInstanceClient.CreateAsync(challengeInstance, cancellationToken);
+        challengeInstance = await _challengeInstanceClient.CreateNamespacedAsync(challengeInstance, kubernetesConfig.Namespace, cancellationToken);
 
         var instanceId = UUIDNext.Uuid.NewSequential();
         dbContext.Instances.Add(new Db.Instance
@@ -188,6 +188,6 @@ public class ChallengeInstanceService(
             return null;
         }
 
-        return await _challengeInstanceClient.DeleteAsync<V1ChallengeInstance>(playerId.ToString(), cancellationToken);
+        return await _challengeInstanceClient.DeleteNamespacedAsync<V1ChallengeInstance>(kubernetesConfig.Namespace, playerId.ToString(), cancellationToken);
     }
 }
