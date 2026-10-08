@@ -173,6 +173,7 @@ public class ChallengeInstanceService(
 
         var _ = mediator.Publish(new InstanceChangeNotification
         {
+            Player = playerId,
             Instance = instance,
         }, CancellationToken.None);
 

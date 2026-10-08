@@ -383,8 +383,12 @@ export class DataService {
           break;
         case "instance":
           {
-            let instance = message.message as Instance;
-            if (instance.playerId == this._currentPlayerId.getValue()) {
+            // The message can be null (e.g. when an instance was deleted)
+            let instance = message.message as Instance | null;
+            if (
+              instance != null &&
+              instance.playerId == this._currentPlayerId.getValue()
+            ) {
               this._instance.next(Object.freeze(instance));
             }
           }
@@ -470,7 +474,7 @@ export class DataService {
       this.oidcSecurityService.logoffLocal();
     } else {
       localStorage.setItem("urlBeforeAuthChange", this.router.url);
-      this.oidcSecurityService.logoff().subscribe((_) => {});
+      this.oidcSecurityService.logoff().subscribe((_) => { });
     }
     this._currentPlayer.next(null);
     this._currentPlayerId.next(null);
@@ -522,10 +526,10 @@ export class DataService {
         a.click();
       });
     } else {
-        const a = document.createElement("a");
-        a.href = relativeUrl;
-        a.download = filename;
-        a.click();
+      const a = document.createElement("a");
+      a.href = relativeUrl;
+      a.download = filename;
+      a.click();
     }
   }
 

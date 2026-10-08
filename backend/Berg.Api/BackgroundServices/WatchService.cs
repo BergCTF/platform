@@ -99,7 +99,7 @@ public class WatchService(
         var challengeService = scope.ServiceProvider.GetRequiredService<IChallengeService>();
 
         var challengeInstance = new V1ChallengeInstance();
-        using var challengeInstanceListResponse = kubernetes.CustomObjects.ListCustomObjectForAllNamespacesWithHttpMessagesAsync<CustomResourceList<V1ChallengeInstance>>(challengeInstance.Group, challengeInstance.Version, challengeInstance.Plural, watch: true, cancellationToken: cancellationToken);
+        using var challengeInstanceListResponse = kubernetes.CustomObjects.ListNamespacedCustomObjectWithHttpMessagesAsync<CustomResourceList<V1ChallengeInstance>>(challengeInstance.Group, challengeInstance.Version, kubernetesConfig.Namespace, challengeInstance.Plural, watch: true, cancellationToken: cancellationToken);
         await foreach (var (type, item) in challengeInstanceListResponse.WatchAsync<V1ChallengeInstance, CustomResourceList<V1ChallengeInstance>>(cancellationToken: cancellationToken))
         {
 
@@ -122,10 +122,19 @@ public class WatchService(
             }
             else if (type == WatchEventType.Deleted)
             {
+                // Push a terminated instance (PlayerId set) instead of null, so that the
+                // frontend can reset the affected player's instance state to "not running"
+                // and other (admin) clients can safely ignore the event.
                 await mediator.Publish(new InstanceChangeNotification
                 {
                     Player = item.Spec.OwnerId,
-                    Instance = null
+                    Instance = new Instance
+                    {
+                        Id = item.Status?.InstanceId,
+                        PlayerId = item.Spec.OwnerId,
+                        ChallengeName = item.Spec.ChallengeRef.Name,
+                        InstanceState = InstanceState.None
+                    }
                 }, cancellationToken);
             }
 
