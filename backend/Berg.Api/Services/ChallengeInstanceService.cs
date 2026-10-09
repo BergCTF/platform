@@ -134,7 +134,7 @@ public class ChallengeInstanceService(
 
         logger.LogInformation("Creating instance in namespace: {}", kubernetesConfig.Namespace);
         logger.LogInformation("Creating instance for player: {}", playerId);
-        logger.LogInformation("Creating instance with flag: {}", dynamicFlag ?? challenge.Spec.Flag);
+        logger.LogInformation("Creating instance with {} flag", dynamicFlag != null ? "dynamic" : "static");
         logger.LogInformation("Creating instance of challenge: {}", challenge.Metadata.Name);
         challengeInstance = new V1ChallengeInstance
         {

@@ -43,9 +43,9 @@ public class DynamicFlagExecutableService(
     public byte[] GenerateExecutable(string flag)
     {
         using var activity = Constants.BergActivitySource.StartActivity();
-        logger.LogDebug("Generating dynamic flag executable with flag: {Flag}", flag);
+        logger.LogDebug("Generating dynamic flag executable ({Length} bytes)", flag.Length);
 
-        var flagBytes = Encoding.UTF8.GetBytes(flag+"\n");
+        var flagBytes = Encoding.UTF8.GetBytes(flag + "\n");
         var flagLength = flagBytes.Length;
         if (flagLength > 0xffff)
             throw new ArgumentOutOfRangeException(nameof(flag), "Flag too long");
