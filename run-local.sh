@@ -44,7 +44,7 @@ handout:
 berg:
   image:
     repository: "kind.localhost/berg/api"
-    imagePullPolicy: Always
+    imagePullPolicy: IfNotPresent
     tag: local
   domain: berg.localhost
   pullSecretName: ""
