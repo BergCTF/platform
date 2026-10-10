@@ -11,7 +11,10 @@ rules:
   verbs: ["get", "list", "watch"]
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["get", "create", "patch"]
+  verbs: ["create"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "patch"]
   resourceNames:
     - "berg-openid"
     - "berg-protect"
