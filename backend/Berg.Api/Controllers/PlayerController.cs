@@ -15,10 +15,12 @@ using Player = Berg.Api.Models.Player;
 namespace Berg.Api.Controllers;
 
 [ApiController]
-[ApiExplorerSettings(GroupName="berg-api")]
-public class PlayerController(CtfConfig ctfConfig,
+[ApiExplorerSettings(GroupName = "berg-api")]
+public class PlayerController(ILogger<PlayerController> logger,
+    CtfConfig ctfConfig,
     BergDbContext dbContext,
     BergMetrics metrics,
+    IChallengeInstanceService challengeInstanceService,
     IMediator mediator) : ControllerBase
 {
     [HttpGet]
@@ -92,10 +94,10 @@ public class PlayerController(CtfConfig ctfConfig,
             .ToDictionary(a => a.Name) ?? [];
         foreach (var attr in attrUpdate.Attributes)
         {
-            if(!configAttributesByName.TryGetValue(attr.Key, out var configAttr))
-                return BadRequest(new ProblemDetails { Title = "Bad Request", Detail = $"Invalid attribute name: {attr.Key}"});
+            if (!configAttributesByName.TryGetValue(attr.Key, out var configAttr))
+                return BadRequest(new ProblemDetails { Title = "Bad Request", Detail = $"Invalid attribute name: {attr.Key}" });
             if (!configAttr.Values.Select(v => v.Value).Contains(attr.Value))
-                return BadRequest(new ProblemDetails { Title = "Bad Request", Detail = $"Invalid attribute value: {attr.Value}"});
+                return BadRequest(new ProblemDetails { Title = "Bad Request", Detail = $"Invalid attribute value: {attr.Value}" });
         }
 
         foreach (var pair in attrUpdate.Attributes)
@@ -130,17 +132,27 @@ public class PlayerController(CtfConfig ctfConfig,
     [Route("/api/players/current")]
     [Authorize(Policy = Constants.Policies.Player)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public ActionResult DeleteCurrentPlayer()
+    public async Task<ActionResult> DeleteCurrentPlayer()
     {
         var loginType = User.FindFirstValue(Constants.Claims.LoginType)!;
         var playerId = Guid.Parse(User.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
 
         if (loginType != Constants.LoginTypes.Federation)
         {
-            return BadRequest(new ProblemDetails {
+            return BadRequest(new ProblemDetails
+            {
                 Title = "Bad Request",
                 Detail = "Can't delete your account with a token obtained through api key authentication."
             });
+        }
+
+        try
+        {
+            await challengeInstanceService.DeleteChallengeInstance(playerId, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to delete challenge instance of deleted player {PlayerId}", playerId);
         }
 
         var player = dbContext.Players
@@ -153,7 +165,8 @@ public class PlayerController(CtfConfig ctfConfig,
             PlayerId = player.Id,
         });
 
-        if (player.TeamId != null) {
+        if (player.TeamId != null)
+        {
             // Also send a team update if the player was part of a team
             var dbTeam = dbContext.Teams
                 .Include(t => t.Players)
