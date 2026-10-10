@@ -1,0 +1,34 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "berg.fullname" . }}-frontend-deny-egress
+  labels:
+    {{- include "berg.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "berg.selectorLabels" . | nindent 6 }}
+      component: frontend
+  policyTypes:
+    - Egress
+  egress:
+    - {}
+{{- if .Values.handout.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "berg.fullname" . }}-handout-deny-egress
+  labels:
+    {{- include "berg.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "berg.selectorLabels" . | nindent 6 }}
+      component: handout
+  policyTypes:
+    - Egress
+  egress:
+    - {}
+{{- end }}
