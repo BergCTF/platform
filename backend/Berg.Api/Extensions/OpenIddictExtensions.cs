@@ -102,6 +102,17 @@ public class DynamicAuthenticatedUserAuthorizationHandler(
 
 public static class OpenIddictBuilder
 {
+    private static void EnsureProperKeyProviderOutsideDevelopment(WebApplicationBuilder builder)
+    {
+        if (!builder.Environment.IsDevelopment())
+        {
+            throw new InvalidOperationException(
+                "UseKubernetesSecretKeyProvider must be enabled outside of development. " +
+                "Falling back to the publicly known OpenIddict development certificates " +
+                "would allow anyone to forge valid tokens for this deployment.");
+        }
+    }
+
     public static void AddOpenIddict(this WebApplicationBuilder builder, Kubernetes kubernetes, KubernetesClientConfiguration kubernetesConfig, InfraConfig infraConfig, DiscordConfig discordConfig, GenericOpenIdConfig genericOpenIdConfig)
     {
         var keyProvider = infraConfig.UseKubernetesSecretKeyProvider ? new KubernetesSecretKeyProvider(kubernetes, kubernetesConfig) : null;
@@ -197,6 +208,7 @@ public static class OpenIddictBuilder
                 }
                 else
                 {
+                    EnsureProperKeyProviderOutsideDevelopment(builder);
                     options.AddDevelopmentEncryptionCertificate();
                     options.AddDevelopmentSigningCertificate();
                 }
@@ -291,6 +303,7 @@ public static class OpenIddictBuilder
                 }
                 else
                 {
+                    EnsureProperKeyProviderOutsideDevelopment(builder);
                     options.AddDevelopmentEncryptionCertificate();
                     options.AddDevelopmentSigningCertificate();
                 }
