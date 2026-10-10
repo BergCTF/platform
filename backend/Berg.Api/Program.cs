@@ -99,7 +99,7 @@ await using (var scope = app.Services.CreateAsyncScope())
     await app.InitializeOpenIddictApplicationsAsync(scope);
 }
 
-app.MapHealthChecks("/healthz");
+app.MapHealthChecks("/healthz").WithMetadata(new Microsoft.AspNetCore.Authorization.AllowAnonymousAttribute());
 
 app.UseForwardedHeaders();
 app.UseHsts();

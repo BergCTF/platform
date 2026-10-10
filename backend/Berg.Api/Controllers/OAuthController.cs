@@ -33,6 +33,7 @@ public class OAuthController(
     [HttpPost]
     [Route(Constants.Endpoints.Token)]
     [IgnoreAntiforgeryToken]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -118,6 +119,7 @@ public class OAuthController(
     [HttpGet]
     [HttpPost]
     [Route(Constants.Endpoints.Authorization)]
+    [AllowAnonymous]
     public async Task<IResult> Authorize(CancellationToken cancellationToken)
     {
         var oauthRequest = HttpContext.GetOpenIddictServerRequest();
