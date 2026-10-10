@@ -66,6 +66,10 @@ data:
       {{- else }}
       "discord": {{ omit .Values.berg.discord "existingSecret" | toJson }},
       {{- end }}
-      "genericOpenId": {{ .Values.berg.genericOpenId | toJson }},
+      {{- if .Values.berg.genericOpenId.existingSecret.name }}
+      "genericOpenId": {{ omit .Values.berg.genericOpenId "clientSecret" "existingSecret" | toJson }},
+      {{- else }}
+      "genericOpenId": {{ omit .Values.berg.genericOpenId "existingSecret" | toJson }},
+      {{- end }}
       "ctf": {{ .Values.berg.ctf | toJson }}
     }

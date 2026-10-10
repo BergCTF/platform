@@ -91,6 +91,13 @@ spec:
                   name: {{ .Values.berg.discord.existingSecret.name | quote }}
                   key: {{ .Values.berg.discord.existingSecret.botTokenKey | quote }}
           {{- end }}
+          {{- if .Values.berg.genericOpenId.existingSecret.name }}
+            - name: GenericOpenId__ClientSecret
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.berg.genericOpenId.existingSecret.name | quote }}
+                  key: {{ .Values.berg.genericOpenId.existingSecret.clientSecretKey | quote }}
+          {{- end }}
           {{- with .Values.berg.extraEnv }}
             {{- toYaml . | nindent 12 }}
           {{- end }}

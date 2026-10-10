@@ -121,6 +121,9 @@ berg:
     internalIssuer: ""
     clientId: ""
     clientSecret: ""
+    existingSecret:
+      name: ""
+      clientSecretKey: "clientSecret"
     scopes: []
     # - "profile"
     # - "email"
