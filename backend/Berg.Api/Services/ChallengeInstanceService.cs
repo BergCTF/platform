@@ -166,7 +166,16 @@ public class ChallengeInstanceService(
             ChallengeName = challenge.Metadata.Name,
             DynamicFlag = dynamicFlag,
         });
-        dbContext.SaveChanges();
+        try
+        {
+            dbContext.SaveChanges();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to persist instance for player {PlayerId}; deleting the challenge CR", playerId);
+            await _challengeInstanceClient.DeleteNamespacedAsync<V1ChallengeInstance>(kubernetesConfig.Namespace, challengeInstance.Metadata.Name, cancellationToken);
+            throw;
+        }
 
         logger.LogInformation("Created instance of challenge: {}", challenge.Metadata.Name);
         var instance = new Instance { Id = instanceId, PlayerId = playerId, ChallengeName = challenge.Metadata.Name, InstanceState = InstanceState.Starting, StartedAt = challengeInstance.Metadata.CreationTimestamp };
