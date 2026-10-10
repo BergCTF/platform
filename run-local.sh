@@ -118,9 +118,6 @@ pages:
       Extra Page Content
 EOF
 
-echo "Upgrading CRD's"
-kubectl --context kind-berg-dev-cluster apply -f crds/challenge.yaml
-kubectl --context kind-berg-dev-cluster apply -f crds/page.yaml
 
 echo "Deploying example challenges"
 

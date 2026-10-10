@@ -312,3 +312,25 @@ service:
     type: ClusterIP
     port: 5000
 EOF
+
+echo "Deploying challenge instance controller"
+CIC_DIR="$(mktemp -d)"
+echo "Cloning challenge instance controller"
+git clone --depth 1 https://github.com/BergCTF/challenge-instance-controller "$CIC_DIR"
+echo "Installing challenge instance controller CRDs"
+kubectl --context kind-berg-dev-cluster apply -f "$CIC_DIR/crds/crd.yaml"
+echo "Uninstalling berg-controller"
+helm --kube-context kind-berg-dev-cluster uninstall -n berg berg-controller || echo "Nothing to uninstall"
+echo "Installing berg-controller"
+cat <<EOF | helm --kube-context kind-berg-dev-cluster install --wait berg-controller "$CIC_DIR/charts/berg-controller" -n berg -f -
+logLevel: debug
+instanceClass:
+  defaultTimeout: "1m"
+  gateway:
+    name: "traefik-gateway"
+    namespace: "traefik"
+    domain: "berg.localhost"
+  imagePull:
+    policy: IfNotPresent
+EOF
+rm -rf "$CIC_DIR"
