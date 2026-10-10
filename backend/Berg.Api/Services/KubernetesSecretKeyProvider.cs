@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
@@ -25,57 +26,82 @@ public class KubernetesSecretKeyProvider : IXmlRepository
     {
         _kubernetes = kubernetes;
         _kubernetesConfig = kubernetesConfig;
-        var secretsLoaded = false;
-        var serverSigningRsa = RSA.Create(4096);
+
         var clientSigningRsa = RSA.Create(4096);
-        ClientEncryptionKey = GenerateSymmetricSecurityKey();
-        ServerEncryptionKey = GenerateSymmetricSecurityKey();
-        do
+        var serverSigningRsa = RSA.Create(4096);
+        var clientEncryptionKey = GenerateSymmetricSecurityKey();
+        var serverEncryptionKey = GenerateSymmetricSecurityKey();
+
+        try
         {
+            var secret = _kubernetes.ReadNamespacedSecret(BergOpenIdSecretName, _kubernetesConfig.Namespace);
+            (clientSigningRsa, serverSigningRsa, clientEncryptionKey, serverEncryptionKey) = LoadOpenIdSecret(secret);
+        }
+        catch (HttpOperationException ex)
+        {
+            if (ex.Response?.StatusCode != HttpStatusCode.NotFound)
+            {
+                throw RbacError("read the OpenID key secret", BergOpenIdSecretName, ex);
+            }
+
+            // First boot in this cluster: no stored keys yet, so generate and store them
             try
             {
-                var secret = kubernetes.ReadNamespacedSecret(BergOpenIdSecretName, _kubernetesConfig.Namespace);
-                ClientEncryptionKey = new SymmetricSecurityKey(secret.Data["clientEncryptionKey"]);
-                clientSigningRsa.ImportRSAPrivateKey(secret.Data["clientSigningKey"], out _);
-                ServerEncryptionKey = new SymmetricSecurityKey(secret.Data["serverEncryptionKey"]);
-                serverSigningRsa.ImportRSAPrivateKey(secret.Data["serverSigningKey"], out _);
-                secretsLoaded = true;
+                _kubernetes.CreateNamespacedSecret(new V1Secret
+                {
+                    Metadata = new V1ObjectMeta
+                    {
+                        Name = BergOpenIdSecretName
+                    },
+                    Data = new Dictionary<string, byte[]>
+                    {
+                        { "clientEncryptionKey", clientEncryptionKey.Key },
+                        { "clientSigningKey", clientSigningRsa.ExportRSAPrivateKey() },
+                        { "serverEncryptionKey", serverEncryptionKey.Key },
+                        { "serverSigningKey", serverSigningRsa.ExportRSAPrivateKey() },
+                    }
+                }, _kubernetesConfig.Namespace);
             }
-            catch (HttpOperationException)
+            catch (HttpOperationException createEx)
             {
-                Console.Error.WriteLine("Unable to load existing openid secret keys, generating new ones");
-            }
-            if (!secretsLoaded)
-            {
+                // A concurrent replica may have created the secret in the meantime
                 try
                 {
-                    kubernetes.CreateNamespacedSecret(new V1Secret
-                    {
-                        Metadata = new V1ObjectMeta
-                        {
-                            Name = BergOpenIdSecretName
-                        },
-                        Data = new Dictionary<string, byte[]> {
-                            { "clientEncryptionKey", ClientEncryptionKey.Key },
-                            { "clientSigningKey", clientSigningRsa.ExportRSAPrivateKey() },
-                            { "serverEncryptionKey", ServerEncryptionKey.Key },
-                            { "serverSigningKey", serverSigningRsa.ExportRSAPrivateKey() },
-                        }
-                    }, _kubernetesConfig.Namespace);
+                    var existing = _kubernetes.ReadNamespacedSecret(BergOpenIdSecretName, _kubernetesConfig.Namespace);
+                    (clientSigningRsa, serverSigningRsa, clientEncryptionKey, serverEncryptionKey) = LoadOpenIdSecret(existing);
                 }
-                catch (HttpOperationException ex)
+                catch (HttpOperationException)
                 {
-                    Console.Error.WriteLine("Failed to write newly created openid keys");
-                    Console.Error.WriteLine(ex);
+                    // neither create nor re-read succeeded
+                    throw RbacError("initialize the OpenID key secret", BergOpenIdSecretName, createEx);
                 }
             }
-        } while (!secretsLoaded);
+        }
 
+        EnsureDataProtectionSecret();
+
+        ClientEncryptionKey = clientEncryptionKey;
+        ServerEncryptionKey = serverEncryptionKey;
         ClientSigningKey = new RsaSecurityKey(clientSigningRsa);
         ServerSigningKey = new RsaSecurityKey(serverSigningRsa);
+    }
 
-        var secretNames = _kubernetes.ListNamespacedSecret(_kubernetesConfig.Namespace).Items.Select(s => s.Name()).ToHashSet();
-        if (!secretNames.Contains(BergProtectSecretName))
+    private void EnsureDataProtectionSecret()
+    {
+        try
+        {
+            _kubernetes.ReadNamespacedSecret(BergProtectSecretName, _kubernetesConfig.Namespace);
+            return;
+        }
+        catch (HttpOperationException ex)
+        {
+            if (ex.Response?.StatusCode != HttpStatusCode.NotFound)
+            {
+                throw RbacError("read the data protection secret", BergProtectSecretName, ex);
+            }
+        }
+
+        try
         {
             _kubernetes.CreateNamespacedSecret(new V1Secret
             {
@@ -86,7 +112,26 @@ public class KubernetesSecretKeyProvider : IXmlRepository
                 Data = new Dictionary<string, byte[]>()
             }, _kubernetesConfig.Namespace);
         }
+        catch (HttpOperationException ex)
+        {
+            throw RbacError("create the data protection secret", BergProtectSecretName, ex);
+        }
     }
+
+    private static (RSA ClientSigning, RSA ServerSigning, SymmetricSecurityKey ClientEncryption, SymmetricSecurityKey ServerEncryption) LoadOpenIdSecret(V1Secret secret)
+    {
+        var clientSigning = RSA.Create();
+        var serverSigning = RSA.Create();
+        clientSigning.ImportRSAPrivateKey(secret.Data["clientSigningKey"], out _);
+        serverSigning.ImportRSAPrivateKey(secret.Data["serverSigningKey"], out _);
+        return (clientSigning, serverSigning,
+            new SymmetricSecurityKey(secret.Data["clientEncryptionKey"]),
+            new SymmetricSecurityKey(secret.Data["serverEncryptionKey"]));
+    }
+
+    private static InvalidOperationException RbacError(string action, string secretName, HttpOperationException inner) =>
+        new InvalidOperationException(
+            $"Failed to {action} '{secretName}' (HTTP {inner.Response?.StatusCode.ToString() ?? "no response"}).");
 
     public IReadOnlyCollection<XElement> GetAllElements()
     {
