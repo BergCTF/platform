@@ -43,4 +43,4 @@ Then, you can use them inside a challenge manifest as follows:
 
 Berg will always pull the latest image from the registry when a download is requested. To change that, update `berg.challengeImagePullPolicy` to `IfNotPresent`.
 
-For downloading the images, the pull secret defined in `berg.pullSecretName` is used by default. It can be overwritten by setting `downloadImagePullSecret` in the `attachments` entry of the challenge CRD.
+For downloading the images, the pull secret defined in `berg.pullSecretName` is used.

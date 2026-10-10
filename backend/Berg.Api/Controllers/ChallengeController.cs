@@ -127,7 +127,7 @@ public class ChallengeController(
             // Download from an internal webserver that requires no authentication
             Response.Headers.XContentTypeOptions = "nosniff";
             Response.Headers.ContentType = "application/octet-stream";
-            Response.Headers.ContentDisposition = $"attachment; filename={attachment.FileName}";
+            Response.Headers.ContentDisposition = SanitizeFileName(attachment.FileName);
             var uri = new UriBuilder(new Uri(infraConfig.HandoutServiceUrl))
             {
                 Path = attachment.DownloadUrl,
@@ -141,24 +141,45 @@ public class ChallengeController(
             // Download from a docker image registry
             Response.Headers.XContentTypeOptions = "nosniff";
             Response.Headers.ContentType = "application/octet-stream";
-            Response.Headers.ContentDisposition = $"attachment; filename={attachment.FileName}";
+            Response.Headers.ContentDisposition = SanitizeFileName(attachment.FileName);
 
             var reference = Reference.Parse(attachment.DownloadImage);
 
-            var pullSecretName = attachment.DownloadImagePullSecret ?? infraConfig.PullSecretName;
+
+            if (!IsRegistryHostAllowed(reference.Host, infraConfig.HandoutRegistryAllowlist))
+            {
+                logger.LogWarning("Blocked handout pull from disallowed registry host {RegistryHost} for challenge {ChallengeName}", reference.Host, name);
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Bad Request",
+                    Detail = "This handout attachment is not allowed by the server configuration.",
+                });
+            }
+
+            var pullSecretName = infraConfig.PullSecretName;
             DockerConfig? dockerConfig = null;
             if (!string.IsNullOrWhiteSpace(pullSecretName))
             {
-                var pullSecret = await kubernetes.ReadNamespacedSecretAsync(pullSecretName, kubernetesConfig.Namespace, cancellationToken: cancellationToken);
-                if (pullSecret.Type != "kubernetes.io/dockerconfigjson")
+                try
                 {
-                    return Problem(
-                        title: "Invalid attachment pull secret",
-                        detail: $"The pull secret specified for this attachment has the wrong type: {pullSecret.Type}"
-                    );
+                    var pullSecret = await kubernetes.ReadNamespacedSecretAsync(pullSecretName, kubernetesConfig.Namespace, cancellationToken: cancellationToken);
+                    if (pullSecret.Type != "kubernetes.io/dockerconfigjson")
+                    {
+                        return Problem(
+                            title: "Invalid attachment pull secret",
+                            detail: "The pull secret configured for handout attachments has the wrong type."
+                        );
+                    }
+                    if (pullSecret.Data.TryGetValue(".dockerconfigjson", out var dockerConfigJson))
+                    {
+                        dockerConfig = JsonSerializer.Deserialize<DockerConfig>(dockerConfigJson);
+                    }
                 }
-                var dockerConfigJson = pullSecret.Data[".dockerconfigjson"];
-                dockerConfig = JsonSerializer.Deserialize<DockerConfig>(dockerConfigJson);
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to read handout pull secret {PullSecretName}", pullSecretName);
+                    return Problem(title: "Server error", detail: "Failed to read the handout pull secret.");
+                }
             }
 
             ICredentialProvider? credentialProvider = null;
@@ -203,6 +224,31 @@ public class ChallengeController(
             Title = "Bad Request",
             Detail = "This handout is not properly configured.",
         });
+    }
+
+    private static string SanitizeFileName(string? fileName)
+    {
+        // Strip characters that could break or forge response headers (quotes, CR, LF).
+        var clean = (fileName ?? "download")
+            .Replace("\"", string.Empty)
+            .Replace("\r", string.Empty)
+            .Replace("\n", string.Empty);
+        return $"attachment; filename=\"{clean}\"";
+    }
+
+    private static bool IsRegistryHostAllowed(string registryHost, List<string>? allowlist)
+    {
+        if (string.IsNullOrEmpty(registryHost))
+        {
+            return false;
+        }
+
+        if (allowlist == null || allowlist.Count == 0)
+        {
+            return false;
+        }
+
+        return allowlist.Any(allowed => string.Equals(allowed.Trim(), registryHost, StringComparison.OrdinalIgnoreCase));
     }
 
     internal static Challenge ToChallenge(V1Challenge c)

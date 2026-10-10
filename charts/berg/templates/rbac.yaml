@@ -12,6 +12,12 @@ rules:
 - apiGroups: [""]
   resources: ["secrets"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  resourceNames:
+    - "berg-openid"
+    - "berg-protect"
+    {{- if .Values.berg.pullSecretName }}
+    - {{ .Values.berg.pullSecretName | quote }}
+    {{- end }}
 - apiGroups: ["berg.norelect.ch"]
   resources: ["challenges", "pages"]
   verbs: ["get", "list", "watch"]

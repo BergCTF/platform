@@ -13,9 +13,6 @@ public class V1ChallengeAttachment
     [JsonPropertyName("downloadImage")]
     public string? DownloadImage { get; set; } = null;
 
-    [JsonPropertyName("downloadImagePullSecret")]
-    public string? DownloadImagePullSecret { get; set; } = null;
-
     [JsonPropertyName("downloadImageInsecure")]
     public bool DownloadImageInsecure { get; set; } = false;
 }

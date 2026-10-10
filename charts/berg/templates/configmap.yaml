@@ -27,6 +27,7 @@ data:
       },
       {{- end }}
       "infra": {
+        "handoutRegistryAllowlist": {{ .Values.berg.handoutRegistryAllowlist | toJson }},
         "challengeDomain": {{ .Values.gateway.domain | quote }},
         "platformDomain": {{ .Values.berg.domain | quote }},
         "gatewayName": {{ .Values.gateway.name | quote }},

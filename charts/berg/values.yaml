@@ -144,6 +144,7 @@ berg:
   # - "https://frontend.example.com"
   corsOrigins: []
   # - "https://frontend.example.com"
+  handoutRegistryAllowlist: []
   rateLimiting:
     replenishmentPeriod: "0.00:00:15"
     tokensPerPeriod: "1"

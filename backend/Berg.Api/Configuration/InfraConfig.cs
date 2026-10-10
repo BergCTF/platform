@@ -30,4 +30,5 @@ public class InfraConfig
     public string? OpenTelemetryGrpcMetricsEndpoint { get; set; }
     public string? OpenTelemetryGrpcLoggingEndpoint { get; set; }
     public bool UseKubernetesSecretKeyProvider { get; set; } = false;
+    public List<string>? HandoutRegistryAllowlist { get; set; }
 }
