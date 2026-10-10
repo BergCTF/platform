@@ -146,6 +146,9 @@ public static class OpenIddictBuilder
                 options.Cookie.Path = Constants.Endpoints.BasePath;
                 options.SlidingExpiration = true;
                 options.ExpireTimeSpan = Constants.Lifetimes.FederatedLoginCacheLifetime;
+                options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+                    ? CookieSecurePolicy.SameAsRequest
+                    : CookieSecurePolicy.Always;
 
                 // Hacky workaround due to https://github.com/dotnet/aspnetcore/issues/9039
                 options.Events = new CookieAuthenticationEvents()
