@@ -3,10 +3,11 @@ import { Router } from "@angular/router";
 import { Subscription } from "rxjs";
 import { Page } from "src/app/api-model";
 import { DataService } from "src/app/services/data.service";
+import { SanitizeHtmlPipe } from "src/app/pipes/sanitize-html.pipe";
 
 @Component({
   selector: "app-dynamic-page",
-  imports: [],
+  imports: [SanitizeHtmlPipe],
   templateUrl: "./dynamic-page.component.html",
   styleUrl: "./dynamic-page.component.less",
 })

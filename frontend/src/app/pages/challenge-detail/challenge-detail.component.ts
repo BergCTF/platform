@@ -9,12 +9,13 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { ChallengeDetail } from "src/app/model";
 import { NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
 import { HelperService } from "src/app/services/helper.service";
+import { SanitizeHtmlPipe } from "src/app/pipes/sanitize-html.pipe";
 
 @Component({
   selector: "app-challenge-detail",
   templateUrl: "./challenge-detail.component.html",
   styleUrl: "./challenge-detail.component.less",
-  imports: [ChallengeStatusComponent, DatePipe, RouterLink, NgbNavModule],
+  imports: [ChallengeStatusComponent, DatePipe, RouterLink, NgbNavModule, SanitizeHtmlPipe],
 })
 export class ChallengeDetailComponent implements OnInit, OnDestroy {
   challengeDetail: ChallengeDetail | null = null;

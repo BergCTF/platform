@@ -47,7 +47,7 @@
           }
           <br />
           <h5>Description</h5>
-          <p [innerHTML]="challengeDetail.challenge.description"></p>
+          <p [innerHTML]="challengeDetail.challenge.description | sanitizeHtml"></p>
           <h5>Author</h5>
           <p>{{ challengeDetail.challenge.author }}</p>
           @if (
