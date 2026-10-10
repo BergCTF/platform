@@ -105,13 +105,13 @@ app.UseForwardedHeaders();
 app.UseHsts();
 
 app.UseCors();
-app.UseRateLimiter();
 
 app.UseWebSockets();
 app.UseSwagger();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 
