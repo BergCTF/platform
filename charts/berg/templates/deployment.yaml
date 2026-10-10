@@ -27,10 +27,21 @@ spec:
         - name: {{ .Values.berg.pullSecretName }}
       {{- end }}
       serviceAccountName: {{ include "berg.fullname" . }}
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: berg-api
           image: "{{ .Values.berg.image.repository }}:{{ .Values.berg.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.berg.image.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
           env:
             - name: "ASPNETCORE_URLS"
               value: "http://0.0.0.0:8080"
@@ -93,12 +104,16 @@ spec:
             - name: appsettings
               mountPath: /app/appsettings.json
               subPath: appsettings.json
+            - name: tmp
+              mountPath: /tmp
           resources:
             {{- toYaml .Values.berg.resources | nindent 12 }}
       volumes:
         - name: appsettings
           configMap:
             name: {{ include "berg.fullname" . }}-appsettings
+        - name: tmp
+          emptyDir: {}
       {{- if .Values.berg.priorityClassName }}
       priorityClassName: {{ .Values.berg.priorityClassName }}
       {{- end }}
@@ -133,10 +148,29 @@ spec:
         - name: berg-frontend
           image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.frontend.image.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
           ports:
             - containerPort: 80
+          volumeMounts:
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+            - name: nginx-log
+              mountPath: /var/log/nginx
           resources:
             {{- toYaml .Values.frontend.resources | nindent 12 }}
+      volumes:
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
+        - name: nginx-log
+          emptyDir: {}
       {{- if .Values.frontend.priorityClassName }}
       priorityClassName: {{ .Values.frontend.priorityClassName }}
       {{- end }}
@@ -172,10 +206,29 @@ spec:
         - name: berg-handout
           image: "{{ .Values.handout.image.repository }}:{{ .Values.handout.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.handout.image.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
           ports:
             - containerPort: 80
+          volumeMounts:
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+            - name: nginx-log
+              mountPath: /var/log/nginx
           resources:
             {{- toYaml .Values.handout.resources | nindent 12 }}
+      volumes:
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
+        - name: nginx-log
+          emptyDir: {}
       {{- if .Values.handout.priorityClassName }}
       priorityClassName: {{ .Values.handout.priorityClassName }}
       {{- end }}

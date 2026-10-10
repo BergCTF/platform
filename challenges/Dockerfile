@@ -3,6 +3,6 @@ WORKDIR /data
 COPY . /data
 RUN ./create-handouts.py
 
-FROM nginx:latest
+FROM nginx:1.28-alpine
 
 COPY --from=builder /data/handouts/ /usr/share/nginx/html/handouts/
