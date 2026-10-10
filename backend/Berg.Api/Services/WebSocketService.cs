@@ -3,6 +3,9 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Berg.Api.Configuration;
+using Berg.Api.Db;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation;
 
@@ -43,7 +46,8 @@ public class WebSocketService(
     BergMetrics metrics,
     OpenIddictValidationService openIddictValidationService,
     CtfConfig ctfConfig,
-    IHostApplicationLifetime applicationLifetime) : IWebSocketService
+    IHostApplicationLifetime applicationLifetime,
+    IServiceScopeFactory scopeFactory) : IWebSocketService
 {
     private readonly List<WebSocketConnection> _connections = [];
     private readonly SemaphoreSlim _connectionSemaphore = new(1, 1);
@@ -97,12 +101,26 @@ public class WebSocketService(
                     }
                     else
                     {
+                        connection.PlayerId = null;
+                        connection.ExpiresAt = null;
                         try
                         {
                             var principal = await openIddictValidationService.ValidateAccessTokenAsync(token ?? "", connection.CancellationTokenSource.Token);
-                            connection.PlayerId = Guid.Parse(principal.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
-                            connection.ExpiresAt = principal.GetExpirationDate()?.UtcDateTime;
-                            logger.LogDebug("WebSocket connection {ConnectionId} was authenticated", connection.Id);
+                            var playerId = Guid.Parse(principal.FindFirstValue(OpenIddictConstants.Claims.Subject)!);
+                            // A token can remain valid (up to its lifetime) after its player
+                            // was deleted. Only trust it if the player still exists in the DB.
+                            using var scope = scopeFactory.CreateScope();
+                            var dbContext = scope.ServiceProvider.GetRequiredService<BergDbContext>();
+                            if (await dbContext.Players.AnyAsync(p => p.Id == playerId))
+                            {
+                                connection.PlayerId = playerId;
+                                connection.ExpiresAt = principal.GetExpirationDate()?.UtcDateTime;
+                                logger.LogDebug("WebSocket connection {ConnectionId} was authenticated", connection.Id);
+                            }
+                            else
+                            {
+                                logger.LogWarning("WebSocket connection {ConnectionId} authenticated with a token for a deleted player", connection.Id);
+                            }
                         }
                         catch (Exception ex)
                         {

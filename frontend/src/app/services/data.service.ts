@@ -311,117 +311,124 @@ export class DataService {
         },
       },
     });
-    this._webSocket.pipe(retry()).subscribe((message) => {
-      switch (message.type) {
-        case "pong":
-          {
-            this._lastCounterReceived = message.message as number;
-          }
-          break;
-        case "solve":
-          {
-            let solve = message.message as Solve;
-            let modifiedSolves = this._lastSolves.filter((_) => true);
-            modifiedSolves.push(solve);
-            this._solves.next(Object.freeze(modifiedSolves));
-          }
-          break;
-        case "team":
-          {
-            let team = message.message as Team;
-            let modifiedTeams = this._lastTeams.filter((t) => t.id != team.id);
-            modifiedTeams.push(team);
-            this._teams.next(Object.freeze(modifiedTeams));
-          }
-          break;
-        case "team-delete":
-          {
-            let teamId = message.message as string;
-            let modifiedTeams = this._lastTeams.filter((t) => t.id != teamId);
-            this._teams.next(Object.freeze(modifiedTeams));
-          }
-          break;
-        case "player":
-          {
-            let player = message.message as Player;
-            let modifiedPlayers = this._lastPlayers.filter(
-              (t) => t.id != player.id,
-            );
-            modifiedPlayers.push(player);
-            this._players.next(Object.freeze(modifiedPlayers));
-          }
-          break;
-        case "player-delete":
-          {
-            let playerId = message.message as string;
-            let modifiedPlayers = this._lastPlayers.filter(
-              (t) => t.id != playerId,
-            );
-            this._players.next(Object.freeze(modifiedPlayers));
-          }
-          break;
-        case "challenge":
-          {
-            let challenge = message.message as Challenge;
-            let modifiedChallenges = this._lastChallenges.filter(
-              (t) => t.name != challenge.name,
-            );
-            modifiedChallenges.push(challenge);
-            this._challenges.next(Object.freeze(modifiedChallenges));
-          }
-          break;
-        case "page":
-          {
-            let page = message.message as Page;
-            let modifiedPages = structuredClone(this._pages.getValue()).filter(
-              (p) => p.path != page.path,
-            );
-            modifiedPages.push(page);
-            modifiedPages.sort((a, b) => a.index - b.index);
-            this._pages.next(Object.freeze(modifiedPages));
-          }
-          break;
-        case "instance":
-          {
-            // The message can be null (e.g. when an instance was deleted)
-            let instance = message.message as Instance | null;
-            if (
-              instance != null &&
-              instance.playerId == this._currentPlayerId.getValue()
-            ) {
-              this._instance.next(Object.freeze(instance));
+    // Reconnect with exponential backoff
+    this._webSocket
+      .pipe(
+        retry({
+          delay: (error, count) => timer(1000 * Math.min(2 ** count, 32)),
+        }),
+      )
+      .subscribe((message) => {
+        switch (message.type) {
+          case "pong":
+            {
+              this._lastCounterReceived = message.message as number;
             }
-          }
-          break;
-        case "metadata":
-          {
-            let metadata = message.message as Metadata;
-            this._metadata.next(Object.freeze(metadata));
-          }
-          break;
-        case "current-player":
-          {
-            let playerId = message.message as string | null;
-            var currentPlayerId: string | null =
-              this._currentPlayerId.getValue();
-            if (playerId != currentPlayerId) {
-              this.oidcSecurityService
-                .getAccessToken()
-                .subscribe((accessToken) => {
-                  let message: WebSocketMessage<string | null> = {
-                    type: "auth",
-                    message: accessToken,
-                  };
-                  this._webSocket?.next(message);
-                });
+            break;
+          case "solve":
+            {
+              let solve = message.message as Solve;
+              let modifiedSolves = this._lastSolves.filter((_) => true);
+              modifiedSolves.push(solve);
+              this._solves.next(Object.freeze(modifiedSolves));
             }
-          }
-          break;
-        default:
-          console.warn("Unknown websocket message type: " + message.type);
-          break;
-      }
-    });
+            break;
+          case "team":
+            {
+              let team = message.message as Team;
+              let modifiedTeams = this._lastTeams.filter((t) => t.id != team.id);
+              modifiedTeams.push(team);
+              this._teams.next(Object.freeze(modifiedTeams));
+            }
+            break;
+          case "team-delete":
+            {
+              let teamId = message.message as string;
+              let modifiedTeams = this._lastTeams.filter((t) => t.id != teamId);
+              this._teams.next(Object.freeze(modifiedTeams));
+            }
+            break;
+          case "player":
+            {
+              let player = message.message as Player;
+              let modifiedPlayers = this._lastPlayers.filter(
+                (t) => t.id != player.id,
+              );
+              modifiedPlayers.push(player);
+              this._players.next(Object.freeze(modifiedPlayers));
+            }
+            break;
+          case "player-delete":
+            {
+              let playerId = message.message as string;
+              let modifiedPlayers = this._lastPlayers.filter(
+                (t) => t.id != playerId,
+              );
+              this._players.next(Object.freeze(modifiedPlayers));
+            }
+            break;
+          case "challenge":
+            {
+              let challenge = message.message as Challenge;
+              let modifiedChallenges = this._lastChallenges.filter(
+                (t) => t.name != challenge.name,
+              );
+              modifiedChallenges.push(challenge);
+              this._challenges.next(Object.freeze(modifiedChallenges));
+            }
+            break;
+          case "page":
+            {
+              let page = message.message as Page;
+              let modifiedPages = structuredClone(this._pages.getValue()).filter(
+                (p) => p.path != page.path,
+              );
+              modifiedPages.push(page);
+              modifiedPages.sort((a, b) => a.index - b.index);
+              this._pages.next(Object.freeze(modifiedPages));
+            }
+            break;
+          case "instance":
+            {
+              // The message can be null (e.g. when an instance was deleted)
+              let instance = message.message as Instance | null;
+              if (
+                instance != null &&
+                instance.playerId == this._currentPlayerId.getValue()
+              ) {
+                this._instance.next(Object.freeze(instance));
+              }
+            }
+            break;
+          case "metadata":
+            {
+              let metadata = message.message as Metadata;
+              this._metadata.next(Object.freeze(metadata));
+            }
+            break;
+          case "current-player":
+            {
+              let playerId = message.message as string | null;
+              var currentPlayerId: string | null =
+                this._currentPlayerId.getValue();
+              if (playerId != currentPlayerId) {
+                this.oidcSecurityService
+                  .getAccessToken()
+                  .subscribe((accessToken) => {
+                    let message: WebSocketMessage<string | null> = {
+                      type: "auth",
+                      message: accessToken,
+                    };
+                    this._webSocket?.next(message);
+                  });
+              }
+            }
+            break;
+          default:
+            console.warn("Unknown websocket message type: " + message.type);
+            break;
+        }
+      });
   }
 
   refreshMetadata(): Observable<Metadata> {
