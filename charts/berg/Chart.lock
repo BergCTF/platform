@@ -1,3 +1,6 @@
-dependencies: []
-digest: sha256:643d5437104296e21d906ecb15b2c96ad278f20cfc4af53b12bb6069bd853726
-generated: "2025-02-02T17:58:35.002505885+01:00"
+dependencies:
+- name: berg-controller
+  repository: oci://ghcr.io/bergctf/charts
+  version: 1.1.4
+digest: sha256:9cdcd2f5aac469f031e59ab0d28e4acf4961df34575e42ad7b51334cc9371842
+generated: "2026-10-13T14:49:34.323781774+02:00"
