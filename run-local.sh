@@ -116,8 +116,18 @@ pages:
     index: 1
     content: |
       Extra Page Content
-EOF
 
+controller:
+  logLevel: debug
+  instanceClass:
+    defaultTimeout: "1m"
+    gateway:
+      name: "traefik-gateway"
+      namespace: "traefik"
+      domain: "berg.localhost"
+    imagePull:
+      policy: IfNotPresent
+EOF
 
 echo "Deploying example challenges"
 
