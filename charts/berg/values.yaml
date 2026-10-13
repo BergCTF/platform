@@ -188,3 +188,8 @@ pages:
     index: 0
     content: |
       Welcome to your berg installation!
+
+controller:
+  enabled: true
+  
+
